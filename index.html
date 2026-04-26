@@ -609,10 +609,10 @@ var LAB_NOMBRE = 'Mi Laboratorio';   // ← cambia por el nombre real
 var LAB_COLOR  = '#0F766E';          // ← color del laboratorio
 var LAB_ID     = 'default';          // ← id corto ej: 'abamia', 'nestle'
 var LABS=[
-  {id:'nestle',  name:'Nestle',    color:'#E2001A',colorLight:'#FEE2E2',icon:'fa-cube'},
-  {id:'abamia',  name:'Abamia',    color:'#0066CC',colorLight:'#DBEAFE',icon:'fa-pills'},
-  {id:'fresenius',name:'Fresenius',color:'#009036',colorLight:'#DCFCE7',icon:'fa-syringe'},
-  {id:'ketolance',name:'Ketolance',color:'#F59E0B',colorLight:'#FEF3C7',icon:'fa-flask'}
+  {id:'nestle',  name:'Nestle',    color:'#E2001A',colorLight:'#FEE2E2',icon:'fa-cube',   logo:'assets/nestle.png'},
+  {id:'abamia',  name:'Abamia',    color:'#0066CC',colorLight:'#DBEAFE',icon:'fa-pills',  logo:'assets/abamia.png'},
+  {id:'fresenius',name:'Fresenius',color:'#009036',colorLight:'#DCFCE7',icon:'fa-syringe',logo:'assets/fresenius.png'},
+  {id:'ketolance',name:'Ketolance',color:'#F59E0B',colorLight:'#FEF3C7',icon:'fa-flask',  logo:'assets/ketolance.png'}
 ];
 
 // ══════════════════════════════════════════════════════════
@@ -881,7 +881,7 @@ function openSuperDetail(uid){lastSuperDetailId=uid;currentSuperTab='superDetail
 function superEditUser(id){var u=userById(id);if(!u)return;document.getElementById('superEditId').value=id;document.getElementById('seName').value=u.name;document.getElementById('seUsername').value=u.username;document.getElementById('sePassword').value='';document.getElementById('seRole').value=u.role;document.getElementById('seLabId').value=u.labId||'nestle';document.getElementById('modalSuperEditTitle').textContent='Editar Usuario';document.getElementById('superDeleteBtn').style.display='inline-flex';openModal('modalSuperEdit');}
 function superSaveUser(){var id=document.getElementById('superEditId').value,name=document.getElementById('seName').value.trim(),username=document.getElementById('seUsername').value.trim(),password=document.getElementById('sePassword').value,role=document.getElementById('seRole').value,labId=document.getElementById('seLabId').value;if(!name||!username){toast('Nombre y usuario obligatorios','err');return;}if(D.users.find(function(u){return u.username===username&&u.id!==id;})){toast('Usuario duplicado','err');return;}if(id){var u=userById(id);if(u){u.name=name;u.username=username;if(password)u.password=password;u.role=role;u.labId=labId;}}else{if(!password||password.length<4){toast('Contrasena minimo 4 caracteres','err');return;}D.users.push({id:uid(),username:username,password:password,role:role,name:name,active:true,labId:labId});}save(D);closeModal('modalSuperEdit');renderSuperAdmin();toast(id?'Actualizado':'Usuario creado');}
 
-function superNuevoUsuario(){document.getElementById('superEditId').value='';document.getElementById('seName').value='';document.getElementById('seUsername').value='';document.getElementById('sePassword').value='';document.getElementById('seRole').value='visitor';document.getElementById('seLabId').value='nestle';document.getElementById('modalSuperEditTitle').textContent='Nuevo Usuario';openModal('modalSuperEdit');}
+function superNuevoUsuario(){document.getElementById('superEditId').value='';document.getElementById('seName').value='';document.getElementById('seUsername').value='';document.getElementById('sePassword').value='';document.getElementById('seRole').value='visitor';document.getElementById('seLabId').value='nestle';document.getElementById('modalSuperEditTitle').textContent='Nuevo Usuario';document.getElementById('superDeleteBtn').style.display='none';openModal('modalSuperEdit');}
 
 function superDeleteUser(id){
   showConfirm('Eliminar Usuario','Esta accion no se puede deshacer.','danger',function(){
@@ -932,7 +932,7 @@ function renderSuperLabs(){
     var profCt=visits.filter(function(v){return v.tipoVisita==='profesional';}).length;
     return '<div class="card" style="margin-bottom:12px;border-left:4px solid '+lab.color+';padding:16px;">'+
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">'+
-      '<div style="width:38px;height:38px;border-radius:10px;background:'+lab.color+';display:flex;align-items:center;justify-content:center;color:#fff;"><i class="fa-solid '+lab.icon+'"></i></div>'+
+      '<div style="width:38px;height:38px;border-radius:10px;background:'+lab.color+';display:flex;align-items:center;justify-content:center;color:#fff;overflow:hidden;">'+(lab.logo?'<img src="'+lab.logo+'" style="width:32px;height:32px;object-fit:contain;">':'<i class="fa-solid '+lab.icon+'"></i>')+'</div>'+
       '<div style="flex:1;"><div style="font-size:16px;font-weight:800;">'+esc(lab.name)+'</div>'+
       '<div style="font-size:11px;color:var(--muted);">'+visitors.length+' visitadores &middot; '+points.length+' puntos</div></div></div>'+
       '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">'+
@@ -1230,7 +1230,7 @@ function renderLabSelect(){
     return '<div class="canvas-card" style="background:linear-gradient(135deg,'+lab.colorLight+' 0%,#fff 100%);" onclick="selectLab(\''+lab.id+'\')">' +
       '<div class="card-stripe" style="background:'+lab.color+';"></div>' +
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">' +
-      '<div style="width:44px;height:44px;border-radius:12px;background:'+lab.color+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,0.15);"><i class="fa-solid '+lab.icon+'"></i></div>' +
+      '<div style="width:44px;height:44px;border-radius:12px;background:'+lab.color+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,0.15);overflow:hidden;">'+(lab.logo?'<img src="'+lab.logo+'" style="width:38px;height:38px;object-fit:contain;">':'<i class="fa-solid '+lab.icon+'"></i>')+'</div>' +
       '<div style="flex:1;"><div style="font-size:16px;font-weight:800;color:var(--fg);">'+esc(lab.name)+'</div><div style="font-size:12px;color:var(--muted);">'+visitors+' visitadores</div></div>' +
       '<i class="fa-solid fa-chevron-right" style="color:'+lab.color+';"></i></div>' +
       '<div style="font-size:12px;color:var(--muted);">Hoy: <strong style="color:'+lab.color+';">'+todayDone+'</strong> completadas</div></div>';
