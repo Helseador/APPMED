@@ -13,5 +13,8 @@
   "type": "module",
   "devDependencies": {
     "prettier": "^3.8.3"
+  },
+  "dependencies": {
+    "firebase": "^12.12.1"
   }
 }

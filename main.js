@@ -184,12 +184,12 @@ function haversine(a, b, c, d) {
     Math.atan2(
       Math.sqrt(
         Math.sin(e / 2) ** 2 +
-          Math.cos(t(a)) * Math.cos(t(c)) * Math.sin(f / 2) ** 2,
+        Math.cos(t(a)) * Math.cos(t(c)) * Math.sin(f / 2) ** 2,
       ),
       Math.sqrt(
         1 -
-          (Math.sin(e / 2) ** 2 +
-            Math.cos(t(a)) * Math.cos(t(c)) * Math.sin(f / 2) ** 2),
+        (Math.sin(e / 2) ** 2 +
+          Math.cos(t(a)) * Math.cos(t(c)) * Math.sin(f / 2) ** 2),
       ),
     )
   );
@@ -490,7 +490,7 @@ function defaultData() {
 function saveLocal(d) {
   try {
     localStorage.setItem("appmed_v1", JSON.stringify(d));
-  } catch (e) {}
+  } catch (e) { }
 }
 function save(d) {
   myLastWriteId = Date.now() + "_" + Math.random().toString(36).substr(2, 6);
@@ -633,7 +633,7 @@ function initFirebase() {
         try {
           var l = JSON.parse(localStorage.getItem("appmed_v1"));
           if (l && l.users) D = l;
-        } catch (e) {}
+        } catch (e) { }
         saveLocal(D);
         firebaseReady = false;
         firebaseOnline = false;
@@ -659,7 +659,7 @@ function initFirebase() {
     try {
       var l = JSON.parse(localStorage.getItem("appmed_v1"));
       if (l && l.users) D = l;
-    } catch (ex) {}
+    } catch (ex) { }
     saveLocal(D);
     firebaseReady = false;
     loginBtn.disabled = false;
@@ -1281,8 +1281,8 @@ function renderCanvasDashboard() {
   var labBadge =
     LAB_NOMBRE && LAB_NOMBRE !== "Mi Laboratorio"
       ? '<div style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;margin-bottom:10px;"><i class="fa-solid fa-flask" style="font-size:9px;"></i> ' +
-        esc(LAB_NOMBRE) +
-        "</div><br>"
+      esc(LAB_NOMBRE) +
+      "</div><br>"
       : "";
   var html =
     '<div class="canvas-hero" style="background:linear-gradient(135deg,' +
@@ -1570,7 +1570,7 @@ function openVisitorDetail(vid) {
   else {
     if (!D.routes) D.routes = [];
     var myRoutes2 = D.routes.filter(function (r) {
-      return r.assignedTo === uid;
+      return r.assignedTo === vid;
     });
     if (!myRoutes2.length) {
       ph =
@@ -1605,7 +1605,7 @@ function openVisitorDetail(vid) {
                 '</div></div><button class="btn btn-sm delpt-btn" data-pid="' +
                 p2.id +
                 '" data-vid="' +
-                uid +
+                vid +
                 '" style="width:28px;height:28px;padding:0;background:var(--danger-light);color:var(--danger);flex-shrink:0;" onclick="event.stopPropagation();deletePointConfirm(this.dataset.pid,this.dataset.vid)"><i class="fa-solid fa-trash" style="font-size:10px;"></i></button></div></div>'
               );
             })
@@ -1764,512 +1764,671 @@ function openVisitorDetail(vid) {
       byV: byV,
     };
   }
+}
 
-  function renderInformes() {
-    _updateRptLabel();
-    setRptPreset(rptPreset);
+function renderInformes() {
+  _updateRptLabel();
+  setRptPreset(rptPreset);
+}
+
+function renderRptLabCards() {
+  var el = document.getElementById("rptLabCards");
+  if (!el) return;
+  el.innerHTML = LABS.map(function (lab) {
+    var d = getRptData(lab.id);
+    var pct =
+      d.visitors.length > 0
+        ? Math.round(d.completed.length / (d.visitors.length || 1))
+        : 0;
+    var totalProf = Object.values(d.byV).reduce(function (s, v) {
+      return s + v.prof;
+    }, 0);
+    return (
+      '<div class="card" style="margin-bottom:12px;border-left:4px solid ' +
+      lab.color +
+      ';padding:14px;">' +
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">' +
+      '<div style="width:42px;height:42px;border-radius:12px;background:' +
+      lab.color +
+      ';display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0;"><i class="fa-solid ' +
+      lab.icon +
+      '"></i></div>' +
+      '<div style="flex:1;"><div style="font-size:15px;font-weight:800;">' +
+      esc(lab.name) +
+      "</div>" +
+      '<div style="font-size:11px;color:var(--muted);">' +
+      d.visitors.length +
+      " visit. &middot; " +
+      d.completed.length +
+      " completadas &middot; " +
+      totalProf +
+      " prof.</div></div>" +
+      '<div style="font-size:22px;font-weight:900;color:' +
+      lab.color +
+      ';">' +
+      pct +
+      "%</div></div>" +
+      '<div style="display:flex;gap:7px;flex-wrap:wrap;">' +
+      '<button class="btn btn-sm btn-primary" onclick="generarPDF(\'' +
+      lab.id +
+      '\')"><i class="fa-solid fa-file-pdf"></i> PDF</button>' +
+      '<button class="btn btn-sm btn-success" onclick="generarExcel(\'' +
+      lab.id +
+      '\')"><i class="fa-solid fa-file-excel"></i> Excel</button>' +
+      '<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTX(\'' +
+      lab.id +
+      '\')"><i class="fa-solid fa-file-powerpoint"></i> PPTX</button>' +
+      "</div></div>"
+    );
+  }).join("");
+}
+
+// ══════════════════════════════════════════════════════════
+// PDF / EXCEL / PPTX
+// ══════════════════════════════════════════════════════════
+function hexToRgb(h) {
+  var r = parseInt(h.slice(1, 3), 16),
+    g = parseInt(h.slice(3, 5), 16),
+    b = parseInt(h.slice(5, 7), 16);
+  return [r, g, b];
+}
+
+function generarPDF(labId) {
+  if (typeof jspdf === "undefined") {
+    toast("Cargando libreria PDF...", "info");
+    setTimeout(function () {
+      generarPDF(labId);
+    }, 1500);
+    return;
   }
+  var jsPDF = jspdf.jsPDF;
+  var lab = labId
+    ? LABS.find(function (l) {
+      return l.id === labId;
+    })
+    : null;
+  var data = getRptData(labId);
+  var doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  var color = lab ? lab.color : "#0F766E";
+  var rgb = hexToRgb(color);
+  var labName = lab ? lab.name : "Todos los Laboratorios";
+  var W = 210,
+    margin = 16;
 
-  function renderRptLabCards() {
-    var el = document.getElementById("rptLabCards");
-    if (!el) return;
-    el.innerHTML = LABS.map(function (lab) {
-      var d = getRptData(lab.id);
-      var pct =
-        d.visitors.length > 0
-          ? Math.round(d.completed.length / (d.visitors.length || 1))
-          : 0;
-      return (
-        '<div class="card" style="margin-bottom:12px;border-left:4px solid ' +
-          lab.color +
-          ';padding:14px;">' +
-          '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">' +
-          '<div style="width:42px;height:42px;border-radius:12px;background:' +
-          lab.color +
-          ';display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0;"><i class="fa-solid ' +
-          lab.icon +
-          '"></i></div>' +
-          '<div style="flex:1;"><div style="font-size:15px;font-weight:800;">' +
-          esc(lab.name) +
-          "</div>" +
-          '<div style="font-size:11px;color:var(--muted);">' +
-          d.visitors.length +
-          " visit. &middot; " +
-          d.completed.length +
-          " completadas &middot; " +
-          d.byV &&
-        Object.values(d.byV).reduce(function (s, v) {
-          return s + v.prof;
-        }, 0) +
-          " prof.</div></div>" +
-          '<div style="font-size:22px;font-weight:900;color:' +
-          lab.color +
-          ';">' +
-          pct +
-          "%</div></div>" +
-          '<div style="display:flex;gap:7px;flex-wrap:wrap;">' +
-          '<button class="btn btn-sm btn-primary" onclick="generarPDF(\'' +
-          lab.id +
-          '\')"><i class="fa-solid fa-file-pdf"></i> PDF</button>' +
-          '<button class="btn btn-sm btn-success" onclick="generarExcel(\'' +
-          lab.id +
-          '\')"><i class="fa-solid fa-file-excel"></i> Excel</button>' +
-          '<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTX(\'' +
-          lab.id +
-          '\')"><i class="fa-solid fa-file-powerpoint"></i> PPTX</button>' +
-          "</div></div>"
-      );
-    }).join("");
-  }
+  doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+  doc.rect(0, 0, W, 70, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(24);
+  doc.setFont("helvetica", "bold");
+  doc.text("APPMED", margin, 22);
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "normal");
+  doc.text("Informe de Cumplimiento", margin, 32);
+  doc.setFontSize(20);
+  doc.setFont("helvetica", "bold");
+  doc.text(labName, margin, 48);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(
+    "Periodo: " + fmtDateShort(rptDesde) + " \u2013 " + fmtDate(rptHasta),
+    margin,
+    58,
+  );
+  doc.text("Generado: " + new Date().toLocaleString("es-MX"), margin, 64);
 
-  // ══════════════════════════════════════════════════════════
-  // PDF / EXCEL / PPTX
-  // ══════════════════════════════════════════════════════════
-  function hexToRgb(h) {
-    var r = parseInt(h.slice(1, 3), 16),
-      g = parseInt(h.slice(3, 5), 16),
-      b = parseInt(h.slice(5, 7), 16);
-    return [r, g, b];
-  }
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.text("Resumen Ejecutivo", margin, 82);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  var totalProf = Object.values(data.byV).reduce(function (s, v) {
+    return s + v.prof;
+  }, 0);
+  var rows = [
+    ["Total visitadores", data.visitors.length],
+    ["Visitas completadas", data.completed.length],
+    ["Visitas a profesionales", totalProf],
+    ["Visitas generales", data.completed.length - totalProf],
+  ];
+  doc.autoTable({
+    startY: 86,
+    head: [["Indicador", "Valor"]],
+    body: rows,
+    theme: "striped",
+    headStyles: { fillColor: rgb },
+    margin: { left: margin, right: margin },
+    styles: { fontSize: 10 },
+  });
 
-  function generarPDF(labId) {
-    if (typeof jspdf === "undefined") {
-      toast("Cargando libreria PDF...", "info");
-      setTimeout(function () {
-        generarPDF(labId);
-      }, 1500);
-      return;
-    }
-    var jsPDF = jspdf.jsPDF;
-    var lab = labId
-      ? LABS.find(function (l) {
-          return l.id === labId;
-        })
-      : null;
-    var data = getRptData(labId);
-    var doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    var color = lab ? lab.color : "#0F766E";
-    var rgb = hexToRgb(color);
-    var labName = lab ? lab.name : "Todos los Laboratorios";
-    var W = 210,
-      margin = 16;
+  var y = doc.lastAutoTable.finalY + 10;
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.text("Cumplimiento por Visitador", margin, y);
+  var visRows = data.visitors.map(function (u) {
+    var bv = data.byV[u.id];
+    return [u.name, "@" + u.username, bv.completed, bv.general, bv.prof];
+  });
+  doc.autoTable({
+    startY: y + 4,
+    head: [
+      ["Nombre", "Usuario", "Completadas", "Generales", "Profesionales"],
+    ],
+    body: visRows.length ? visRows : [["Sin visitadores", "", "", "", ""]],
+    theme: "striped",
+    headStyles: { fillColor: rgb },
+    margin: { left: margin, right: margin },
+    styles: { fontSize: 9 },
+  });
 
+  data.visitors.forEach(function (u) {
+    var bv = data.byV[u.id];
+    if (!bv.visits.length) return;
+    doc.addPage();
     doc.setFillColor(rgb[0], rgb[1], rgb[2]);
-    doc.rect(0, 0, W, 70, "F");
+    doc.rect(0, 0, W, 18, "F");
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
+    doc.setFontSize(13);
     doc.setFont("helvetica", "bold");
-    doc.text("APPMED", margin, 22);
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "normal");
-    doc.text("Informe de Cumplimiento", margin, 32);
-    doc.setFontSize(20);
-    doc.setFont("helvetica", "bold");
-    doc.text(labName, margin, 48);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      "Periodo: " + fmtDateShort(rptDesde) + " \u2013 " + fmtDate(rptHasta),
-      margin,
-      58,
-    );
-    doc.text("Generado: " + new Date().toLocaleString("es-MX"), margin, 64);
-
+    doc.text(u.name, margin, 12);
     doc.setTextColor(0, 0, 0);
-    doc.setFontSize(13);
-    doc.setFont("helvetica", "bold");
-    doc.text("Resumen Ejecutivo", margin, 82);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    var totalProf = Object.values(data.byV).reduce(function (s, v) {
-      return s + v.prof;
-    }, 0);
-    var rows = [
-      ["Total visitadores", data.visitors.length],
-      ["Visitas completadas", data.completed.length],
-      ["Visitas a profesionales", totalProf],
-      ["Visitas generales", data.completed.length - totalProf],
-    ];
-    doc.autoTable({
-      startY: 86,
-      head: [["Indicador", "Valor"]],
-      body: rows,
-      theme: "striped",
-      headStyles: { fillColor: rgb },
-      margin: { left: margin, right: margin },
-      styles: { fontSize: 10 },
-    });
-
-    var y = doc.lastAutoTable.finalY + 10;
-    doc.setFontSize(13);
-    doc.setFont("helvetica", "bold");
-    doc.text("Cumplimiento por Visitador", margin, y);
-    var visRows = data.visitors.map(function (u) {
-      var bv = data.byV[u.id];
-      return [u.name, "@" + u.username, bv.completed, bv.general, bv.prof];
+    var ptRows = bv.visits.map(function (v) {
+      var pt = pointById(v.pointId);
+      var tipo = v.tipoVisita === "profesional" ? "Profesional" : "General";
+      var nombre =
+        v.tipoVisita === "profesional"
+          ? v.nombreProfesional || "Profesional"
+          : pt
+            ? pt.name
+            : v.lugar || "—";
+      return [
+        fmtDateShort(v.date),
+        nombre,
+        tipo,
+        v.arrivalTime || "—",
+        v.closeTime || "—",
+        v.status === "completed" ? "\u2713 Completada" : "En curso",
+      ];
     });
     doc.autoTable({
-      startY: y + 4,
+      startY: 22,
       head: [
-        ["Nombre", "Usuario", "Completadas", "Generales", "Profesionales"],
+        ["Fecha", "Punto/Profesional", "Tipo", "Llegada", "Cierre", "Estado"],
       ],
-      body: visRows.length ? visRows : [["Sin visitadores", "", "", "", ""]],
+      body: ptRows,
       theme: "striped",
       headStyles: { fillColor: rgb },
       margin: { left: margin, right: margin },
-      styles: { fontSize: 9 },
+      styles: { fontSize: 8 },
     });
+  });
 
-    data.visitors.forEach(function (u) {
-      var bv = data.byV[u.id];
-      if (!bv.visits.length) return;
-      doc.addPage();
-      doc.setFillColor(rgb[0], rgb[1], rgb[2]);
-      doc.rect(0, 0, W, 18, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(13);
-      doc.setFont("helvetica", "bold");
-      doc.text(u.name, margin, 12);
-      doc.setTextColor(0, 0, 0);
-      var ptRows = bv.visits.map(function (v) {
-        var pt = pointById(v.pointId);
-        var tipo = v.tipoVisita === "profesional" ? "Profesional" : "General";
-        var nombre =
-          v.tipoVisita === "profesional"
-            ? v.nombreProfesional || "Profesional"
-            : pt
-              ? pt.name
-              : v.lugar || "—";
-        return [
-          fmtDateShort(v.date),
-          nombre,
-          tipo,
-          v.arrivalTime || "—",
-          v.closeTime || "—",
-          v.status === "completed" ? "\u2713 Completada" : "En curso",
-        ];
-      });
-      doc.autoTable({
-        startY: 22,
-        head: [
-          ["Fecha", "Punto/Profesional", "Tipo", "Llegada", "Cierre", "Estado"],
-        ],
-        body: ptRows,
-        theme: "striped",
-        headStyles: { fillColor: rgb },
-        margin: { left: margin, right: margin },
-        styles: { fontSize: 8 },
-      });
-    });
+  doc.save(
+    "APPMED_" +
+    labName.replace(/\s/g, "_") +
+    "_" +
+    rptDesde +
+    "_" +
+    rptHasta +
+    ".pdf",
+  );
+  toast("PDF generado");
+}
 
-    doc.save(
-      "APPMED_" +
-        labName.replace(/\s/g, "_") +
-        "_" +
-        rptDesde +
-        "_" +
-        rptHasta +
-        ".pdf",
-    );
-    toast("PDF generado");
+function generarExcel(labId) {
+  if (typeof XLSX === "undefined") {
+    toast("Cargando libreria Excel...", "info");
+    setTimeout(function () {
+      generarExcel(labId);
+    }, 1500);
+    return;
   }
+  var lab = labId
+    ? LABS.find(function (l) {
+      return l.id === labId;
+    })
+    : null;
+  var labName = lab ? lab.name : "General";
+  var data = getRptData(labId);
+  var wb = XLSX.utils.book_new();
+  var totalProf = Object.values(data.byV).reduce(function (s, v) {
+    return s + v.prof;
+  }, 0);
+  var resumen = [
+    ["APPMED — Informe de Cumplimiento"],
+    ["Laboratorio", labName],
+    ["Periodo", fmtDateShort(rptDesde) + " — " + fmtDate(rptHasta)],
+    ["Generado", new Date().toLocaleString("es-MX")],
+    [],
+    ["RESUMEN"],
+    ["Total visitadores", data.visitors.length],
+    ["Visitas completadas", data.completed.length],
+    ["Visitas generales", data.completed.length - totalProf],
+    ["Visitas a profesionales", totalProf],
+    [],
+    ["CUMPLIMIENTO POR VISITADOR"],
+    [
+      "Nombre",
+      "Usuario",
+      "Laboratorio",
+      "Completadas",
+      "Generales",
+      "Profesionales",
+    ],
+  ];
+  data.visitors.forEach(function (u) {
+    var bv = data.byV[u.id];
+    resumen.push([
+      u.name,
+      "@" + u.username,
+      u.labId || "—",
+      bv.completed,
+      bv.general,
+      bv.prof,
+    ]);
+  });
+  var ws1 = XLSX.utils.aoa_to_sheet(resumen);
+  ws1["!cols"] = [
+    { wch: 30 },
+    { wch: 18 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 14 },
+  ];
+  XLSX.utils.book_append_sheet(wb, ws1, "Resumen");
 
-  function generarExcel(labId) {
-    if (typeof XLSX === "undefined") {
-      toast("Cargando libreria Excel...", "info");
-      setTimeout(function () {
-        generarExcel(labId);
-      }, 1500);
-      return;
-    }
-    var lab = labId
-      ? LABS.find(function (l) {
-          return l.id === labId;
-        })
-      : null;
-    var labName = lab ? lab.name : "General";
-    var data = getRptData(labId);
-    var wb = XLSX.utils.book_new();
-    var totalProf = Object.values(data.byV).reduce(function (s, v) {
-      return s + v.prof;
-    }, 0);
-    var resumen = [
-      ["APPMED — Informe de Cumplimiento"],
-      ["Laboratorio", labName],
-      ["Periodo", fmtDateShort(rptDesde) + " — " + fmtDate(rptHasta)],
-      ["Generado", new Date().toLocaleString("es-MX")],
-      [],
-      ["RESUMEN"],
-      ["Total visitadores", data.visitors.length],
-      ["Visitas completadas", data.completed.length],
-      ["Visitas generales", data.completed.length - totalProf],
-      ["Visitas a profesionales", totalProf],
-      [],
-      ["CUMPLIMIENTO POR VISITADOR"],
+  var detalle = [
+    [
+      "Fecha",
+      "Visitador",
+      "Laboratorio",
+      "Punto/Lugar",
+      "Tipo",
+      "Profesional",
+      "Especialidad",
+      "Llegada",
+      "Cierre",
+      "Estado",
+    ],
+  ];
+  data.visits
+    .filter(function (v) {
+      return v.status === "completed";
+    })
+    .forEach(function (v) {
+      var u = userById(v.visitorId);
+      var pt = pointById(v.pointId);
+      detalle.push([
+        v.date,
+        u ? u.name : "?",
+        u ? u.labId : "?",
+        pt ? pt.name : v.lugar || "—",
+        v.tipoVisita || "general",
+        v.nombreProfesional || "—",
+        v.especialidad || "—",
+        v.arrivalTime || "—",
+        v.closeTime || "—",
+        v.status,
+      ]);
+    });
+  var ws2 = XLSX.utils.aoa_to_sheet(detalle);
+  ws2["!cols"] = [
+    { wch: 12 },
+    { wch: 24 },
+    { wch: 12 },
+    { wch: 28 },
+    { wch: 12 },
+    { wch: 24 },
+    { wch: 18 },
+    { wch: 10 },
+    { wch: 10 },
+    { wch: 14 },
+  ];
+  XLSX.utils.book_append_sheet(wb, ws2, "Visitas");
+
+  if (!labId) {
+    var comp = [
       [
-        "Nombre",
-        "Usuario",
         "Laboratorio",
+        "Visitadores",
         "Completadas",
         "Generales",
         "Profesionales",
+        "% Cumplimiento",
       ],
     ];
-    data.visitors.forEach(function (u) {
-      var bv = data.byV[u.id];
-      resumen.push([
-        u.name,
-        "@" + u.username,
-        u.labId || "—",
-        bv.completed,
-        bv.general,
-        bv.prof,
+    LABS.forEach(function (l) {
+      var ld = getRptData(l.id);
+      var pct =
+        ld.visitors.length > 0
+          ? Math.round(ld.completed.length / ld.visitors.length)
+          : 0;
+      var prof = Object.values(ld.byV).reduce(function (s, v) {
+        return s + v.prof;
+      }, 0);
+      comp.push([
+        l.name,
+        ld.visitors.length,
+        ld.completed.length,
+        ld.completed.length - prof,
+        prof,
+        pct + "%",
       ]);
     });
-    var ws1 = XLSX.utils.aoa_to_sheet(resumen);
-    ws1["!cols"] = [
-      { wch: 30 },
-      { wch: 18 },
+    var ws3 = XLSX.utils.aoa_to_sheet(comp);
+    ws3["!cols"] = [
+      { wch: 16 },
       { wch: 14 },
       { wch: 14 },
       { wch: 14 },
-      { wch: 14 },
+      { wch: 16 },
+      { wch: 16 },
     ];
-    XLSX.utils.book_append_sheet(wb, ws1, "Resumen");
-
-    var detalle = [
-      [
-        "Fecha",
-        "Visitador",
-        "Laboratorio",
-        "Punto/Lugar",
-        "Tipo",
-        "Profesional",
-        "Especialidad",
-        "Llegada",
-        "Cierre",
-        "Estado",
-      ],
-    ];
-    data.visits
-      .filter(function (v) {
-        return v.status === "completed";
-      })
-      .forEach(function (v) {
-        var u = userById(v.visitorId);
-        var pt = pointById(v.pointId);
-        detalle.push([
-          v.date,
-          u ? u.name : "?",
-          u ? u.labId : "?",
-          pt ? pt.name : v.lugar || "—",
-          v.tipoVisita || "general",
-          v.nombreProfesional || "—",
-          v.especialidad || "—",
-          v.arrivalTime || "—",
-          v.closeTime || "—",
-          v.status,
-        ]);
-      });
-    var ws2 = XLSX.utils.aoa_to_sheet(detalle);
-    ws2["!cols"] = [
-      { wch: 12 },
-      { wch: 24 },
-      { wch: 12 },
-      { wch: 28 },
-      { wch: 12 },
-      { wch: 24 },
-      { wch: 18 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 14 },
-    ];
-    XLSX.utils.book_append_sheet(wb, ws2, "Visitas");
-
-    if (!labId) {
-      var comp = [
-        [
-          "Laboratorio",
-          "Visitadores",
-          "Completadas",
-          "Generales",
-          "Profesionales",
-          "% Cumplimiento",
-        ],
-      ];
-      LABS.forEach(function (l) {
-        var ld = getRptData(l.id);
-        var pct =
-          ld.visitors.length > 0
-            ? Math.round(ld.completed.length / ld.visitors.length)
-            : 0;
-        var prof = Object.values(ld.byV).reduce(function (s, v) {
-          return s + v.prof;
-        }, 0);
-        comp.push([
-          l.name,
-          ld.visitors.length,
-          ld.completed.length,
-          ld.completed.length - prof,
-          prof,
-          pct + "%",
-        ]);
-      });
-      var ws3 = XLSX.utils.aoa_to_sheet(comp);
-      ws3["!cols"] = [
-        { wch: 16 },
-        { wch: 14 },
-        { wch: 14 },
-        { wch: 14 },
-        { wch: 16 },
-        { wch: 16 },
-      ];
-      XLSX.utils.book_append_sheet(wb, ws3, "Comparativo Labs");
-    }
-
-    XLSX.writeFile(
-      wb,
-      "APPMED_" +
-        labName.replace(/\s/g, "_") +
-        "_" +
-        rptDesde +
-        "_" +
-        rptHasta +
-        ".xlsx",
-    );
-    toast("Excel generado");
+    XLSX.utils.book_append_sheet(wb, ws3, "Comparativo Labs");
   }
 
-  function generarPPTX(labId) {
-    if (typeof PptxGenJS === "undefined") {
-      toast("Cargando libreria PPTX...", "info");
-      setTimeout(function () {
-        generarPPTX(labId);
-      }, 2000);
-      return;
-    }
-    var lab = labId
-      ? LABS.find(function (l) {
-          return l.id === labId;
-        })
-      : null;
-    var labName = lab ? lab.name : "Todos los Laboratorios";
-    var color = lab ? lab.color.replace("#", "") : "0F766E";
-    var data = getRptData(labId);
-    var totalProf = Object.values(data.byV).reduce(function (s, v) {
-      return s + v.prof;
-    }, 0);
+  XLSX.writeFile(
+    wb,
+    "APPMED_" +
+    labName.replace(/\s/g, "_") +
+    "_" +
+    rptDesde +
+    "_" +
+    rptHasta +
+    ".xlsx",
+  );
+  toast("Excel generado");
+}
 
-    var pptx = new PptxGenJS();
-    pptx.layout = "LAYOUT_16x9";
-    pptx.title = "APPMED — " + labName;
+function generarPPTX(labId) {
+  if (typeof PptxGenJS === "undefined") {
+    toast("Cargando libreria PPTX...", "info");
+    setTimeout(function () {
+      generarPPTX(labId);
+    }, 2000);
+    return;
+  }
+  var lab = labId
+    ? LABS.find(function (l) {
+      return l.id === labId;
+    })
+    : null;
+  var labName = lab ? lab.name : "Todos los Laboratorios";
+  var color = lab ? lab.color.replace("#", "") : "0F766E";
+  var data = getRptData(labId);
+  var totalProf = Object.values(data.byV).reduce(function (s, v) {
+    return s + v.prof;
+  }, 0);
 
-    var s1 = pptx.addSlide();
-    s1.background = { color: color };
-    s1.addText("APPMED", {
+  var pptx = new PptxGenJS();
+  pptx.layout = "LAYOUT_16x9";
+  pptx.title = "APPMED — " + labName;
+
+  var s1 = pptx.addSlide();
+  s1.background = { color: color };
+  s1.addText("APPMED", {
+    x: 0.5,
+    y: 0.8,
+    w: 9,
+    h: 0.8,
+    fontSize: 36,
+    bold: true,
+    color: "FFFFFF",
+    fontFace: "Calibri",
+  });
+  s1.addText("Informe de Cumplimiento", {
+    x: 0.5,
+    y: 1.5,
+    w: 9,
+    h: 0.5,
+    fontSize: 18,
+    color: "FFFFFF",
+    fontFace: "Calibri",
+  });
+  s1.addText(labName, {
+    x: 0.5,
+    y: 2.2,
+    w: 9,
+    h: 0.7,
+    fontSize: 28,
+    bold: true,
+    color: "FFFFFF",
+    fontFace: "Calibri",
+  });
+  s1.addText(
+    "Periodo: " + fmtDateShort(rptDesde) + " \u2013 " + fmtDate(rptHasta),
+    {
       x: 0.5,
-      y: 0.8,
+      y: 3.1,
       w: 9,
-      h: 0.8,
+      h: 0.4,
+      fontSize: 14,
+      color: "FFFFFF",
+      fontFace: "Calibri",
+    },
+  );
+  s1.addText("Generado: " + new Date().toLocaleDateString("es-MX"), {
+    x: 0.5,
+    y: 3.6,
+    w: 9,
+    h: 0.35,
+    fontSize: 12,
+    color: "FFFFFF",
+    fontFace: "Calibri",
+  });
+
+  var s2 = pptx.addSlide();
+  s2.addText("Resumen Ejecutivo", {
+    x: 0.5,
+    y: 0.3,
+    w: 9,
+    h: 0.6,
+    fontSize: 24,
+    bold: true,
+    color: color,
+    fontFace: "Calibri",
+  });
+  var kpis = [
+    { label: "Visitadores", val: data.visitors.length },
+    { label: "Visitas Completadas", val: data.completed.length },
+    { label: "A Profesionales", val: totalProf },
+    { label: "Generales", val: data.completed.length - totalProf },
+  ];
+  kpis.forEach(function (k, i) {
+    var x = 0.5 + (i % 2) * 4.7,
+      y = 1.1 + Math.floor(i / 2) * 1.5;
+    s2.addShape(pptx.ShapeType.roundRect, {
+      x: x,
+      y: y,
+      w: 4.2,
+      h: 1.2,
+      fill: { color: color + "22" },
+      line: { color: color, width: 1.5 },
+    });
+    s2.addText(String(k.val), {
+      x: x,
+      y: y + 0.05,
+      w: 4.2,
+      h: 0.7,
       fontSize: 36,
       bold: true,
-      color: "FFFFFF",
+      color: color,
+      align: "center",
       fontFace: "Calibri",
     });
-    s1.addText("Informe de Cumplimiento", {
-      x: 0.5,
-      y: 1.5,
-      w: 9,
-      h: 0.5,
-      fontSize: 18,
-      color: "FFFFFF",
+    s2.addText(k.label, {
+      x: x,
+      y: y + 0.75,
+      w: 4.2,
+      h: 0.35,
+      fontSize: 13,
+      color: "444444",
+      align: "center",
       fontFace: "Calibri",
     });
-    s1.addText(labName, {
-      x: 0.5,
-      y: 2.2,
+  });
+
+  var s3 = pptx.addSlide();
+  s3.addText("Cumplimiento por Visitador", {
+    x: 0.5,
+    y: 0.3,
+    w: 9,
+    h: 0.6,
+    fontSize: 22,
+    bold: true,
+    color: color,
+    fontFace: "Calibri",
+  });
+  var tableRows = [
+    [
+      {
+        text: "Visitador",
+        options: { bold: true, fill: color, color: "FFFFFF" },
+      },
+      {
+        text: "Completadas",
+        options: { bold: true, fill: color, color: "FFFFFF" },
+      },
+      {
+        text: "Generales",
+        options: { bold: true, fill: color, color: "FFFFFF" },
+      },
+      {
+        text: "Profesionales",
+        options: { bold: true, fill: color, color: "FFFFFF" },
+      },
+    ],
+  ];
+  data.visitors.forEach(function (u, i) {
+    var bv = data.byV[u.id];
+    var bg = i % 2 === 0 ? "F8F9FA" : "FFFFFF";
+    tableRows.push([
+      { text: u.name, options: { fill: bg } },
+      { text: String(bv.completed), options: { fill: bg, align: "center" } },
+      { text: String(bv.general), options: { fill: bg, align: "center" } },
+      { text: String(bv.prof), options: { fill: bg, align: "center" } },
+    ]);
+  });
+  if (tableRows.length === 1)
+    tableRows.push([{ text: "Sin visitadores", options: { colspan: 4 } }]);
+  s3.addTable(tableRows, {
+    x: 0.5,
+    y: 1.0,
+    w: 9,
+    colW: [4, 1.8, 1.6, 1.6],
+    fontSize: 11,
+    fontFace: "Calibri",
+    border: { color: "CCCCCC", pt: 0.5 },
+  });
+
+  data.visitors.forEach(function (u) {
+    var bv = data.byV[u.id];
+    if (!bv.visits.length) return;
+    var sv = pptx.addSlide();
+    sv.addShape(pptx.ShapeType.rect, {
+      x: 0,
+      y: 0,
+      w: 10,
+      h: 0.9,
+      fill: { color: color },
+    });
+    sv.addText(u.name, {
+      x: 0.3,
+      y: 0.1,
       w: 9,
       h: 0.7,
-      fontSize: 28,
+      fontSize: 20,
       bold: true,
       color: "FFFFFF",
       fontFace: "Calibri",
     });
-    s1.addText(
+    sv.addText(
       "Periodo: " + fmtDateShort(rptDesde) + " \u2013 " + fmtDate(rptHasta),
       {
-        x: 0.5,
-        y: 3.1,
+        x: 0.3,
+        y: 0.55,
         w: 9,
-        h: 0.4,
-        fontSize: 14,
+        h: 0.28,
+        fontSize: 10,
         color: "FFFFFF",
         fontFace: "Calibri",
       },
     );
-    s1.addText("Generado: " + new Date().toLocaleDateString("es-MX"), {
-      x: 0.5,
-      y: 3.6,
-      w: 9,
-      h: 0.35,
-      fontSize: 12,
-      color: "FFFFFF",
-      fontFace: "Calibri",
-    });
-
-    var s2 = pptx.addSlide();
-    s2.addText("Resumen Ejecutivo", {
-      x: 0.5,
-      y: 0.3,
-      w: 9,
-      h: 0.6,
-      fontSize: 24,
-      bold: true,
-      color: color,
-      fontFace: "Calibri",
-    });
-    var kpis = [
-      { label: "Visitadores", val: data.visitors.length },
-      { label: "Visitas Completadas", val: data.completed.length },
-      { label: "A Profesionales", val: totalProf },
-      { label: "Generales", val: data.completed.length - totalProf },
+    var vrows = [
+      [
+        {
+          text: "Fecha",
+          options: { bold: true, fill: color, color: "FFFFFF" },
+        },
+        {
+          text: "Punto / Profesional",
+          options: { bold: true, fill: color, color: "FFFFFF" },
+        },
+        {
+          text: "Tipo",
+          options: { bold: true, fill: color, color: "FFFFFF" },
+        },
+        {
+          text: "Llegada",
+          options: { bold: true, fill: color, color: "FFFFFF" },
+        },
+        {
+          text: "Cierre",
+          options: { bold: true, fill: color, color: "FFFFFF" },
+        },
+      ],
     ];
-    kpis.forEach(function (k, i) {
-      var x = 0.5 + (i % 2) * 4.7,
-        y = 1.1 + Math.floor(i / 2) * 1.5;
-      s2.addShape(pptx.ShapeType.roundRect, {
-        x: x,
-        y: y,
-        w: 4.2,
-        h: 1.2,
-        fill: { color: color + "22" },
-        line: { color: color, width: 1.5 },
-      });
-      s2.addText(String(k.val), {
-        x: x,
-        y: y + 0.05,
-        w: 4.2,
-        h: 0.7,
-        fontSize: 36,
-        bold: true,
-        color: color,
-        align: "center",
-        fontFace: "Calibri",
-      });
-      s2.addText(k.label, {
-        x: x,
-        y: y + 0.75,
-        w: 4.2,
-        h: 0.35,
-        fontSize: 13,
-        color: "444444",
-        align: "center",
-        fontFace: "Calibri",
-      });
+    bv.visits.slice(0, 12).forEach(function (v, i) {
+      var pt = pointById(v.pointId);
+      var nombre =
+        v.tipoVisita === "profesional"
+          ? v.nombreProfesional || "Profesional"
+          : pt
+            ? pt.name
+            : v.lugar || "—";
+      var bg = i % 2 === 0 ? "F8F9FA" : "FFFFFF";
+      vrows.push([
+        { text: fmtDateShort(v.date), options: { fill: bg } },
+        { text: nombre.substring(0, 30), options: { fill: bg } },
+        {
+          text: v.tipoVisita === "profesional" ? "Prof." : "General",
+          options: { fill: bg, align: "center" },
+        },
+        {
+          text: v.arrivalTime || "—",
+          options: { fill: bg, align: "center" },
+        },
+        { text: v.closeTime || "—", options: { fill: bg, align: "center" } },
+      ]);
     });
+    sv.addTable(vrows, {
+      x: 0.3,
+      y: 1.0,
+      w: 9.4,
+      colW: [1.4, 3.8, 1.3, 1.4, 1.5],
+      fontSize: 9,
+      fontFace: "Calibri",
+      border: { color: "CCCCCC", pt: 0.5 },
+    });
+    if (bv.visits.length > 12)
+      sv.addText(
+        "...y " + (bv.visits.length - 12) + " visitas más en Excel",
+        {
+          x: 0.3,
+          y: 6.8,
+          w: 9,
+          h: 0.3,
+          fontSize: 9,
+          color: "888888",
+          fontFace: "Calibri",
+        },
+      );
+  });
 
-    var s3 = pptx.addSlide();
-    s3.addText("Cumplimiento por Visitador", {
+  if (!labId) {
+    var sc = pptx.addSlide();
+    sc.addText("Comparativo por Laboratorio", {
       x: 0.5,
       y: 0.3,
       w: 9,
@@ -2279,18 +2438,18 @@ function openVisitorDetail(vid) {
       color: color,
       fontFace: "Calibri",
     });
-    var tableRows = [
+    var crows = [
       [
         {
-          text: "Visitador",
+          text: "Laboratorio",
+          options: { bold: true, fill: color, color: "FFFFFF" },
+        },
+        {
+          text: "Visitadores",
           options: { bold: true, fill: color, color: "FFFFFF" },
         },
         {
           text: "Completadas",
-          options: { bold: true, fill: color, color: "FFFFFF" },
-        },
-        {
-          text: "Generales",
           options: { bold: true, fill: color, color: "FFFFFF" },
         },
         {
@@ -2299,270 +2458,115 @@ function openVisitorDetail(vid) {
         },
       ],
     ];
-    data.visitors.forEach(function (u, i) {
-      var bv = data.byV[u.id];
-      var bg = i % 2 === 0 ? "F8F9FA" : "FFFFFF";
-      tableRows.push([
-        { text: u.name, options: { fill: bg } },
-        { text: String(bv.completed), options: { fill: bg, align: "center" } },
-        { text: String(bv.general), options: { fill: bg, align: "center" } },
-        { text: String(bv.prof), options: { fill: bg, align: "center" } },
+    LABS.forEach(function (l, i) {
+      var ld = getRptData(l.id);
+      var lprof = Object.values(ld.byV).reduce(function (s, v) {
+        return s + v.prof;
+      }, 0);
+      crows.push([
+        { text: l.name },
+        { text: String(ld.visitors.length), options: { align: "center" } },
+        { text: String(ld.completed.length), options: { align: "center" } },
+        { text: String(lprof), options: { align: "center" } },
       ]);
     });
-    if (tableRows.length === 1)
-      tableRows.push([{ text: "Sin visitadores", options: { colspan: 4 } }]);
-    s3.addTable(tableRows, {
+    sc.addTable(crows, {
       x: 0.5,
       y: 1.0,
       w: 9,
-      colW: [4, 1.8, 1.6, 1.6],
-      fontSize: 11,
+      colW: [3, 2, 2, 2],
+      fontSize: 12,
       fontFace: "Calibri",
       border: { color: "CCCCCC", pt: 0.5 },
     });
-
-    data.visitors.forEach(function (u) {
-      var bv = data.byV[u.id];
-      if (!bv.visits.length) return;
-      var sv = pptx.addSlide();
-      sv.addShape(pptx.ShapeType.rect, {
-        x: 0,
-        y: 0,
-        w: 10,
-        h: 0.9,
-        fill: { color: color },
-      });
-      sv.addText(u.name, {
-        x: 0.3,
-        y: 0.1,
-        w: 9,
-        h: 0.7,
-        fontSize: 20,
-        bold: true,
-        color: "FFFFFF",
-        fontFace: "Calibri",
-      });
-      sv.addText(
-        "Periodo: " + fmtDateShort(rptDesde) + " \u2013 " + fmtDate(rptHasta),
-        {
-          x: 0.3,
-          y: 0.55,
-          w: 9,
-          h: 0.28,
-          fontSize: 10,
-          color: "FFFFFF",
-          fontFace: "Calibri",
-        },
-      );
-      var vrows = [
-        [
-          {
-            text: "Fecha",
-            options: { bold: true, fill: color, color: "FFFFFF" },
-          },
-          {
-            text: "Punto / Profesional",
-            options: { bold: true, fill: color, color: "FFFFFF" },
-          },
-          {
-            text: "Tipo",
-            options: { bold: true, fill: color, color: "FFFFFF" },
-          },
-          {
-            text: "Llegada",
-            options: { bold: true, fill: color, color: "FFFFFF" },
-          },
-          {
-            text: "Cierre",
-            options: { bold: true, fill: color, color: "FFFFFF" },
-          },
-        ],
-      ];
-      bv.visits.slice(0, 12).forEach(function (v, i) {
-        var pt = pointById(v.pointId);
-        var nombre =
-          v.tipoVisita === "profesional"
-            ? v.nombreProfesional || "Profesional"
-            : pt
-              ? pt.name
-              : v.lugar || "—";
-        var bg = i % 2 === 0 ? "F8F9FA" : "FFFFFF";
-        vrows.push([
-          { text: fmtDateShort(v.date), options: { fill: bg } },
-          { text: nombre.substring(0, 30), options: { fill: bg } },
-          {
-            text: v.tipoVisita === "profesional" ? "Prof." : "General",
-            options: { fill: bg, align: "center" },
-          },
-          {
-            text: v.arrivalTime || "—",
-            options: { fill: bg, align: "center" },
-          },
-          { text: v.closeTime || "—", options: { fill: bg, align: "center" } },
-        ]);
-      });
-      sv.addTable(vrows, {
-        x: 0.3,
-        y: 1.0,
-        w: 9.4,
-        colW: [1.4, 3.8, 1.3, 1.4, 1.5],
-        fontSize: 9,
-        fontFace: "Calibri",
-        border: { color: "CCCCCC", pt: 0.5 },
-      });
-      if (bv.visits.length > 12)
-        sv.addText(
-          "...y " + (bv.visits.length - 12) + " visitas más en Excel",
-          {
-            x: 0.3,
-            y: 6.8,
-            w: 9,
-            h: 0.3,
-            fontSize: 9,
-            color: "888888",
-            fontFace: "Calibri",
-          },
-        );
-    });
-
-    if (!labId) {
-      var sc = pptx.addSlide();
-      sc.addText("Comparativo por Laboratorio", {
-        x: 0.5,
-        y: 0.3,
-        w: 9,
-        h: 0.6,
-        fontSize: 22,
-        bold: true,
-        color: color,
-        fontFace: "Calibri",
-      });
-      var crows = [
-        [
-          {
-            text: "Laboratorio",
-            options: { bold: true, fill: color, color: "FFFFFF" },
-          },
-          {
-            text: "Visitadores",
-            options: { bold: true, fill: color, color: "FFFFFF" },
-          },
-          {
-            text: "Completadas",
-            options: { bold: true, fill: color, color: "FFFFFF" },
-          },
-          {
-            text: "Profesionales",
-            options: { bold: true, fill: color, color: "FFFFFF" },
-          },
-        ],
-      ];
-      LABS.forEach(function (l, i) {
-        var ld = getRptData(l.id);
-        var lprof = Object.values(ld.byV).reduce(function (s, v) {
-          return s + v.prof;
-        }, 0);
-        crows.push([
-          { text: l.name },
-          { text: String(ld.visitors.length), options: { align: "center" } },
-          { text: String(ld.completed.length), options: { align: "center" } },
-          { text: String(lprof), options: { align: "center" } },
-        ]);
-      });
-      sc.addTable(crows, {
-        x: 0.5,
-        y: 1.0,
-        w: 9,
-        colW: [3, 2, 2, 2],
-        fontSize: 12,
-        fontFace: "Calibri",
-        border: { color: "CCCCCC", pt: 0.5 },
-      });
-    }
-
-    pptx.writeFile({
-      fileName:
-        "APPMED_" +
-        labName.replace(/\s/g, "_") +
-        "_" +
-        rptDesde +
-        "_" +
-        rptHasta +
-        ".pptx",
-    });
-    toast("PPTX generado");
   }
 
-  // ══════════════════════════════════════════════════════════
-  // MAPA PICKER
-  // ══════════════════════════════════════════════════════════
-  var _leafletMap = null,
-    _leafletMarker = null;
-
-  function abrirMapaPicker() {
-    var lat = parseFloat(document.getElementById("mpLat").value) || 4.711;
-    var lng = parseFloat(document.getElementById("mpLng").value) || -74.0721;
-    openModal("modalMapPicker");
-    setTimeout(function () {
-      var mapDiv = document.getElementById("leafletMap");
-      if (_leafletMap) {
-        _leafletMap.remove();
-        _leafletMap = null;
-        _leafletMarker = null;
-      }
-      _leafletMap = L.map(mapDiv, { zoomControl: true }).setView(
-        [lat, lng],
-        17,
-      );
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OSM",
-        maxZoom: 19,
-      }).addTo(_leafletMap);
-      var crosshair = L.divIcon({
-        html: '<div style="width:40px;height:40px;margin-left:-20px;margin-top:-40px;"><i class="fa-solid fa-location-dot" style="color:#0F766E;font-size:36px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));"></i></div>',
-        className: "",
-        iconSize: [40, 40],
-      });
-      _leafletMarker = L.marker([lat, lng], { icon: crosshair }).addTo(
-        _leafletMap,
-      );
-      _actualizarPinMapa();
-      _leafletMap.on("move", function () {
-        var c = _leafletMap.getCenter();
-        _leafletMarker.setLatLng(c);
-        _actualizarPinMapa();
-      });
-      _leafletMap.on("moveend", function () {
-        var c = _leafletMap.getCenter();
-        _leafletMarker.setLatLng(c);
-        _actualizarPinMapa();
-      });
-      _leafletMap.invalidateSize();
-    }, 300);
-  }
-
-  function _actualizarPinMapa() {
-    var c = _leafletMap.getCenter();
-    document.getElementById("mapPickerCoords").textContent =
-      c.lat.toFixed(6) + ", " + c.lng.toFixed(6);
-  }
-
-  function confirmarMapaPicker() {
-    var c = _leafletMap.getCenter();
-    document.getElementById("mpLat").value = c.lat.toFixed(6);
-    document.getElementById("mpLng").value = c.lng.toFixed(6);
-    document.getElementById("gpsCoordsRow").style.display = "block";
-    document.getElementById("geoStatus").style.display = "flex";
-    document.getElementById("geoStatus").className = "geo-status found";
-    document.getElementById("geoStatus").innerHTML =
-      '<i class="fa-solid fa-check-circle"></i> Ubicacion confirmada en el mapa (' +
-      c.lat.toFixed(4) +
-      ", " +
-      c.lng.toFixed(4) +
-      ")";
-    closeModal("modalMapPicker");
-    toast("Ubicacion guardada del mapa");
-  }
-
-  initFirebase();
+  pptx.writeFile({
+    fileName:
+      "APPMED_" +
+      labName.replace(/\s/g, "_") +
+      "_" +
+      rptDesde +
+      "_" +
+      rptHasta +
+      ".pptx",
+  });
+  toast("PPTX generado");
 }
+
+// ══════════════════════════════════════════════════════════
+// MAPA PICKER
+// ══════════════════════════════════════════════════════════
+var _leafletMap = null,
+  _leafletMarker = null;
+
+function abrirMapaPicker() {
+  var lat = parseFloat(document.getElementById("mpLat").value) || 4.711;
+  var lng = parseFloat(document.getElementById("mpLng").value) || -74.0721;
+  openModal("modalMapPicker");
+  setTimeout(function () {
+    var mapDiv = document.getElementById("leafletMap");
+    if (_leafletMap) {
+      _leafletMap.remove();
+      _leafletMap = null;
+      _leafletMarker = null;
+    }
+    _leafletMap = L.map(mapDiv, { zoomControl: true }).setView(
+      [lat, lng],
+      17,
+    );
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OSM",
+      maxZoom: 19,
+    }).addTo(_leafletMap);
+    var crosshair = L.divIcon({
+      html: '<div style="width:40px;height:40px;margin-left:-20px;margin-top:-40px;"><i class="fa-solid fa-location-dot" style="color:#0F766E;font-size:36px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));"></i></div>',
+      className: "",
+      iconSize: [40, 40],
+    });
+    _leafletMarker = L.marker([lat, lng], { icon: crosshair }).addTo(
+      _leafletMap,
+    );
+    _actualizarPinMapa();
+    _leafletMap.on("move", function () {
+      var c = _leafletMap.getCenter();
+      _leafletMarker.setLatLng(c);
+      _actualizarPinMapa();
+    });
+    _leafletMap.on("moveend", function () {
+      var c = _leafletMap.getCenter();
+      _leafletMarker.setLatLng(c);
+      _actualizarPinMapa();
+    });
+    _leafletMap.invalidateSize();
+  }, 300);
+}
+
+function _actualizarPinMapa() {
+  var c = _leafletMap.getCenter();
+  document.getElementById("mapPickerCoords").textContent =
+    c.lat.toFixed(6) + ", " + c.lng.toFixed(6);
+}
+
+function confirmarMapaPicker() {
+  var c = _leafletMap.getCenter();
+  document.getElementById("mpLat").value = c.lat.toFixed(6);
+  document.getElementById("mpLng").value = c.lng.toFixed(6);
+  document.getElementById("gpsCoordsRow").style.display = "block";
+  document.getElementById("geoStatus").style.display = "flex";
+  document.getElementById("geoStatus").className = "geo-status found";
+  document.getElementById("geoStatus").innerHTML =
+    '<i class="fa-solid fa-check-circle"></i> Ubicacion confirmada en el mapa (' +
+    c.lat.toFixed(4) +
+    ", " +
+    c.lng.toFixed(4) +
+    ")";
+  closeModal("modalMapPicker");
+  toast("Ubicacion guardada del mapa");
+}
+
+// Inicializacion
+document.addEventListener("DOMContentLoaded", function () {
+  initFirebase();
+});
+
