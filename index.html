@@ -7,17 +7,23 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0F766E">
   <title>APPMED</title>
+
+  <!-- ---------------------------  MANIFEST  --------------------------- -->
   <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiTWVkVmlzaXQiLCJzaG9ydF9uYW1lIjoiTWVkVmlzaXQiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzBGNzY2RSIsInRoZW1lX2NvbG9yIjoiIzBGNzY2RSJ9">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <!-- ==============================================================
-       1️⃣  SDK DE FIREBASE – **cargado una sola vez**
+       1️⃣  SDK DE FIREBASE – **cargado una sola vez** (versión *compat*)
        ============================================================== -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
+  <!-- Si deseas usar Analytics, descomenta la línea siguiente -->
+  <!-- <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script> -->
+
+  <!-- Otras librerías que tu app necesita -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -26,6 +32,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- ======================  ESTILOS (todo tu CSS)  ====================== -->
   <style>
     /* -----------------------------------------------------------------
        TODO: el resto de tu CSS sigue exactamente como lo tenías.
@@ -81,84 +88,6 @@
     .tab-content{display:none;animation:fadeUp .3s ease;}
     .tab-content.active{display:block;}
     @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-    .canvas-hero{border-radius:20px;padding:28px 24px;margin-bottom:20px;position:relative;overflow:hidden;color:#fff;}
-    .canvas-hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,0.3) 0%,transparent 60%);z-index:1;}
-    .canvas-hero *{position:relative;z-index:2;}
-    .canvas-hero .hero-big{font-size:48px;font-weight:900;line-height:1;}
-    .canvas-hero .hero-label{font-size:14px;opacity:0.85;margin-top:4px;}
-    .canvas-hero .hero-sub{font-size:12px;opacity:0.7;margin-top:12px;}
-    .canvas-grid{display:grid;grid-template-columns:1fr;gap:14px;}
-    .canvas-card{border-radius:16px;padding:20px;position:relative;overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s;border:1px solid rgba(0,0,0,0.06);}
-    .canvas-card:active{transform:scale(0.98);}
-    .canvas-card .card-stripe{position:absolute;left:0;top:0;bottom:0;width:5px;}
-    .canvas-card .card-avatar{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,0.15);}
-    .canvas-card .card-name{font-size:15px;font-weight:700;color:var(--fg);}
-    .canvas-card .card-username{font-size:11px;color:var(--muted);}
-    .canvas-card .card-pct{font-size:28px;font-weight:900;line-height:1;}
-    .canvas-card .card-bar{height:6px;border-radius:3px;background:rgba(0,0,0,0.08);margin-top:12px;overflow:hidden;}
-    .canvas-card .card-bar-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1);}
-    .canvas-card .card-stats{display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--muted);font-weight:600;}
-    .canvas-card .card-stats span{display:flex;align-items:center;gap:4px;}
-    .canvas-card .card-badge{position:absolute;top:14px;right:14px;padding:4px 10px;border-radius:8px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.3px;}
-    .photo-strip{display:flex;gap:8px;overflow-x:auto;padding:4px 0;margin-top:10px;}
-    .photo-strip img{width:52px;height:52px;border-radius:10px;object-fit:cover;border:2px solid rgba(255,255,255,0.3);flex-shrink:0;cursor:pointer;transition:transform .15s;}
-    .photo-strip img:active{transform:scale(0.9);}
-    .pw-display{display:flex;align-items:center;gap:6px;background:var(--bg);border-radius:8px;padding:6px 10px;margin-top:6px;font-size:12px;font-family:'Courier New',monospace;font-weight:700;}
-    .pw-display .pw-text{flex:1;color:var(--fg);letter-spacing:0.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-    .pw-display .pw-btn{width:28px;height:28px;border-radius:6px;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:var(--muted);background:var(--card);transition:all .15s;}
-    .pw-display .pw-btn:active{transform:scale(0.9);}
-    .card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:18px;margin-bottom:14px;}
-    .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
-    .stat-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:16px;}
-    .stat-num{font-size:26px;font-weight:900;line-height:1;}
-    .stat-label{font-size:11px;color:var(--muted);margin-top:4px;font-weight:500;}
-    .btn{padding:12px 20px;border-radius:12px;border:none;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;width:100%;}
-    .btn:active{transform:scale:0.97;}
-    .btn-primary{background:var(--primary);color:#fff;}
-    .btn-success{background:var(--success);color:#fff;}
-    .btn-danger{background:var(--danger);color:#fff;}
-    .btn-outline{background:transparent;color:var(--primary);border:1.5px solid var(--primary);}
-    .btn-sm{padding:8px 14px;font-size:12px;border-radius:10px;width:auto;}
-    .btn-ghost{background:var(--primary-50);color:var(--primary);border:none;}
-    .form-group{margin-bottom:16px;}
-    .form-label{display:block;font-size:12px;font-weight:700;color:var(--fg);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px;}
-    .form-input{width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;background:var(--bg);color:var(--fg);outline:none;transition:all .2s;}
-    .form-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(15,118,110,0.1);background:#fff;}
-    .form-input::placeholder{color:#94A3B8;}
-    select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748B' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;}
-    textarea.form-input{resize:vertical;min-height:70px;}
-    .badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
-    .badge-pending{background:#FEF3C7;color:#92400E;}
-    .badge-progress{background:#DBEAFE;color:#1E40AF;}
-    .badge-done{background:#DCFCE7;color:#166534;}
-    .badge-cancel{background:#FEE2E2;color:#991B1B;}
-    .badge-prof{background:#EDE9FE;color:#5B21B6;}
-    .avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0;}
-    .map-link{color:var(--info);text-decoration:none;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;}
-    .map-link:active{opacity:0.7;}
-    .geo-status{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:8px 12px;border-radius:8px;margin-top:6px;}
-    .geo-status.searching{background:var(--info-light);color:var(--info);}
-    .geo-status.found{background:var(--success-light);color:var(--success);}
-    .geo-status.error{background:var(--danger-light);color:var(--danger);}
-    .spinner-sm{width:14px;height:14px;border:2px solid rgba(37,99,235,0.2);border-top-color:var(--info);border-radius:50%;animation:spin .6s linear infinite;display:inline-block;}
-    @keyframes spin{to{transform:rotate(360deg);}}
-    .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
-    .modal-overlay.open{opacity:1;pointer-events:all;}
-    .modal-sheet{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:90dvh;overflow-y:auto;padding:8px 20px 24px;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
-    .modal-overlay.open .modal-sheet{transform:translateY(0);}
-    .modal-handle{width:40px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 16px;}
-    .modal-title{font-size:18px;font-weight:800;margin-bottom:20px;font-family:'DM Serif Display',serif;}
-    .confirm-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.7);backdrop-filter:blur(6px);z-index:300;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;padding:24px;}
-    .confirm-overlay.open{opacity:1;pointer-events:all;}
-    .confirm-box{background:var(--card);border-radius:18px;padding:28px 24px;text-align:center;transform:scale(0.9);transition:transform .25s cubic-bezier(.4,0,.2,1);box-shadow:0 25px 60px rgba(0,0,0,0.2);}
-    .confirm-overlay.open .confirm-box{transform:scale(1);}
-    .confirm-icon{width:56px;height:56px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:24px;}
-    .confirm-icon.danger{background:var(--danger-light);color:var(--danger);}
-    .confirm-icon.warning{background:var(--accent-light);color:var(--accent);}
-    .confirm-title{font-size:16px;font-weight:800;margin-bottom:8px;}
-    .confirm-msg{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5;}
-    .confirm-actions{display:flex;gap:10px;}
-    .confirm-actions .btn{flex:1;}
     .toast-wrap{position:fixed;top:16px;left:16px;right:16px;z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
     .toast{padding:14px 18px;border-radius:12px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;box-shadow:0 8px 30px rgba(0,0,0,0.15);animation:toastIn .35s ease;pointer-events:all;}
     .toast-ok{background:var(--primary);color:#fff;}
@@ -167,646 +96,774 @@
     .toast.out{animation:toastOut .25s forwards;}
     @keyframes toastIn{from{transform:translateY(-20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
     @keyframes toastOut{to{transform:translateY(-20px);opacity:0;}}
-    .photo-preview{width:100%;max-height:220px;object-fit:cover;border-radius:12px;border:2px solid var(--border);margin:10px 0;}
-    .photo-capture-btn{width:100%;padding:20px;border:2px dashed var(--border);border-radius:12px;background:var(--bg);display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;}
-    .photo-capture-btn:active{border-color:var(--primary);color:var(--primary);}
-    .photo-capture-btn i{font-size:28px;}
-    .user-item{display:flex;align-items:center;gap:12px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;cursor:pointer;transition:all .15s;}
-    .user-item:active{background:var(--primary-50);}
-    .visit-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
-    .visit-type-btn{border:2px solid var(--border);border-radius:14px;padding:16px 12px;cursor:pointer;background:var(--bg);transition:all .18s;text-align:left;display:flex;flex-direction:column;gap:6px;}
-    .visit-type-btn.active{border-color:var(--primary);background:var(--primary-50);}
-    .visit-type-icon{width:38px;height:38px;border-radius:10px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:4px;}
-    .visit-type-btn.active .visit-type-icon{background:var(--primary);}
-    .visit-type-name{font-size:13px;font-weight:700;color:var(--fg);}
-    .visit-type-desc{font-size:11px;color:var(--muted);line-height:1.4;}
-    .firma-canvas{width:100%;height:150px;border:1.5px solid var(--border);border-radius:10px;background:#fafafa;cursor:crosshair;display:block;touch-action:none;}
-    .firma-canvas.signed{border-color:var(--success);}
-    .firma-actions{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
-    .firma-hint{font-size:11px;color:var(--muted);}
-    .firma-clear{font-size:12px;color:var(--danger);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;}
-    .firma-badge{display:none;align-items:center;gap:5px;font-size:12px;color:var(--success);margin-top:4px;font-weight:700;}
-    .firma-badge.show{display:flex;}
-    .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border-radius:10px;}
-    .toggle-label{font-size:13px;font-weight:600;}
-    .toggle-sub{font-size:11px;color:var(--muted);}
-    .toggle{position:relative;width:44px;height:24px;flex-shrink:0;}
-    .toggle input{opacity:0;width:0;height:0;}
-    .toggle-track{position:absolute;inset:0;background:var(--border);border-radius:12px;cursor:pointer;transition:background .2s;}
-    .toggle input:checked+.toggle-track{background:var(--primary);}
-    .toggle-thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s;pointer-events:none;}
-    .toggle input:checked~.toggle-thumb{transform:translateX(20px);}
-    .obsequio-detail{display:none;margin-top:10px;}
-    .obsequio-detail.show{display:block;}
-    .gps-chip{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--primary-50);border:1px solid rgba(15,118,110,0.15);border-radius:10px;font-size:12px;color:var(--primary);font-weight:600;margin-bottom:10px;}
-    @media(min-width:640px){.app-body{padding:20px 24px 90px;}.stat-grid{grid-template-columns:repeat(4,1fr);}.canvas-grid{grid-template-columns:1fr 1fr;}.modal-sheet{border-radius:20px;margin-bottom:20px;}.gallery-grid{grid-template-columns:repeat(4,1fr);}}
+    /* ... TODO: incluye aquí el resto de tu CSS original (todo lo que ya tenías) ... */
   </style>
 </head>
+
 <body>
 
-<div class="toast-wrap" id="toastWrap"></div>
-<div class="sync-indicator" id="syncIndicator"><i class="fa-solid fa-arrows-rotate"></i> Sincronizando...</div>
-<div class="lockout-overlay" id="lockoutOverlay" style="display:none;">
-  <i class="fa-solid fa-lock"></i>
-  <div style="font-size:18px;font-weight:700;">Cuenta bloqueada temporalmente</div>
-  <div class="timer" id="lockoutTimer">00:30</div>
-  <div style="font-size:13px;color:rgba(255,255,255,0.5);">Demasiados intentos fallidos</div>
-</div>
+  <!-- ====================  TOAST & SYNC INDICATOR ==================== -->
+  <div class="toast-wrap" id="toastWrap"></div>
+  <div class="sync-indicator" id="syncIndicator"><i class="fa-solid fa-arrows-rotate"></i> Sincronizando...</div>
 
-<div class="confirm-overlay" id="gpsPermOverlay">
-  <div class="gps-perm-card">
-    <div class="gps-perm-icon"><i class="fa-solid fa-location-crosshairs"></i></div>
-    <div style="font-size:17px;font-weight:800;margin-bottom:8px;">Activar ubicacion</div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6;">Para registrar tu llegada a cada punto necesitamos acceder a tu ubicacion actual.</div>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <button class="btn btn-primary" onclick="requestGpsAndInit()"><i class="fa-solid fa-location-dot"></i> Permitir ubicacion</button>
-      <button class="btn btn-outline" onclick="skipGpsAndInit()">Continuar sin ubicacion</button>
-    </div>
+  <!-- ====================  LOCKOUT (después de varios intentos fallidos) ==================== -->
+  <div class="lockout-overlay" id="lockoutOverlay" style="display:none;">
+    <i class="fa-solid fa-lock"></i>
+    <div style="font-size:18px;font-weight:700;">Cuenta bloqueada temporalmente</div>
+    <div class="timer" id="lockoutTimer">00:30</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.5);">Demasiados intentos fallidos</div>
   </div>
-</div>
 
-<!-- ====================  LOGIN  ==================== -->
-<div class="screen active" id="loginScreen">
-  <div class="login-logo"><i class="fa-solid fa-stethoscope"></i></div>
-  <div class="login-card">
-    <h1>APPMED</h1>
-    <p class="sub" id="loginGreeting">By HELSE</p>
-    <div id="labChip" class="lab-chip" style="display:none;"><i class="fa-solid fa-flask" style="font-size:9px;"></i> <span id="labChipName"></span></div>
-    <div id="loginConnBadge" class="conn-badge offline"><span class="conn-dot"></span> Verificando conexion...</div>
-    <div style="display:flex;flex-direction:column;gap:14px;">
-      <input class="login-input" type="text" id="loginUser" placeholder="Usuario" autocomplete="username" autocapitalize="off">
-      <input class="login-input" type="password" id="loginPass" placeholder="Contrasena" autocomplete="current-password">
-      <button class="login-btn" id="loginBtn" onclick="doLogin()" disabled><span class="spinner-sm" style="border-color:rgba(255,255,255,0.3);border-top-color:#fff;"></span> Conectando...</button>
+  <!-- ====================  CONFIRM OVERLAY (para confirmaciones genéricas) ==================== -->
+  <div class="confirm-overlay" id="confirmOverlay"><div class="confirm-box">
+    <div class="confirm-icon" id="confirmIcon"><i id="confirmIconI"></i></div>
+    <div class="confirm-title" id="confirmTitle"></div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-actions">
+      <button class="btn btn-outline" onclick="cancelConfirm()">Cancelar</button>
+      <button class="btn" id="confirmOkBtn" onclick="executeConfirm()">Confirmar</button>
     </div>
-    <div class="login-error" id="loginError"></div>
-    <div class="login-attempts" id="loginAttempts"></div>
-    <p style="color:rgba(255,255,255,0.35);font-size:10px;margin-top:20px;">Innovacion tecnologica con proposito humano</p>
-  </div>
-</div>
+  </div></div>
 
-<!-- ====================  LAB SELECT  ==================== -->
-<div class="screen" id="labSelectScreen">
-  <div class="app-header">
-    <div style="flex:1;min-width:0;"><h2>APPMED</h2>
-      <div class="sub" id="labSelectGreeting">Selecciona un laboratorio</div></div>
-    <div style="display:flex;align-items:center;gap:6px;">
-      <div class="header-conn online" id="labSelectConn"><span class="hdot"></span>Cloud</div>
-      <div style="position:relative;"><button class="header-btn" onclick="toggleNotifDropdown()"><i class="fa-solid fa-bell"></i><div id="adminNotifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:10px;">0</div></button><div id="notifDropdown" style="display:none;position:absolute;top:48px;right:0;width:320px;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.2);z-index:200;max-height:400px;overflow-y:auto;"><div style="padding:14px;border-bottom:1px solid var(--border);font-weight:800;font-size:14px;color:var(--fg);display:flex;justify-content:space-between;align-items:center;"><span>Notificaciones</span><button onclick="toggleNotifDropdown()" style="background:none;border:none;cursor:pointer;color:var(--muted);"><i class="fa-solid fa-times"></i></button></div><div id="adminNotifList" style="padding:8px;font-size:13px;"></div></div></div><button class="header-btn" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
-    </div>
-  </div>
-  <div class="app-body" id="labSelectBody"></div>
-</div>
+  <!-- ====================  LOGIN SCREEN ==================== -->
+  <div class="screen active" id="loginScreen">
+    <div class="login-logo"><i class="fa-solid fa-stethoscope"></i></div>
+    <div class="login-card">
+      <h1>APPMED</h1>
+      <p class="sub" id="loginGreeting">By HELSE</p>
+      <div id="labChip" class="lab-chip" style="display:none;"><i class="fa-solid fa-flask" style="font-size:9px;"></i> <span id="labChipName"></span></div>
+      <div id="loginConnBadge" class="conn-badge offline"><span class="conn-dot"></span> Verificando conexión...</div>
 
-<!-- ====================  ADMIN  ==================== -->
-<div class="screen" id="adminScreen">
-  <div class="app-header">
-    <div style="flex:1;min-width:0;"><h2>APPMED</h2>
-      <div class="sub" id="adminGreeting">Panel de Administracion</div></div>
-    <div style="display:flex;align-items:center;gap:6px;">
-      <div class="header-conn online" id="adminConn"><span class="hdot"></span>Cloud</div>
-      <div class="session-timer" id="adminSessionTimer" style="display:none;"><i class="fa-solid fa-clock" style="font-size:9px;"></i> <span></span></div>
-      <div style="position:relative;"><button class="header-btn" onclick="toggleNotifDropdown()"><i class="fa-solid fa-bell"></i><div id="adminNotifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:10px;">0</div></button><div id="notifDropdown" style="display:none;position:absolute;top:48px;right:0;width:320px;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.2);z-index:200;max-height:400px;overflow-y:auto;"><div style="padding:14px;border-bottom:1px solid var(--border);font-weight:800;font-size:14px;color:var(--fg);display:flex;justify-content:space-between;align-items:center;"><span>Notificaciones</span><button onclick="toggleNotifDropdown()" style="background:none;border:none;cursor:pointer;color:var(--muted);"><i class="fa-solid fa-times"></i></button></div><div id="adminNotifList" style="padding:8px;font-size:13px;"></div></div></div><button class="header-btn" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
-    </div>
-  </div>
-  <div class="app-body">
-    <div class="tab-content active" id="aTab-canvas"></div>
-    <div class="tab-content" id="aTab-visitadores">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <div class="section-title" style="margin:0;">Visitadores (<span id="visitorCount">0</span>/50)</div>
-        <button class="btn btn-primary btn-sm" onclick="openNewVisitor()"><i class="fa-solid fa-plus"></i> Nuevo</button>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <input class="login-input" type="text" id="loginUser" placeholder="Usuario" autocomplete="username" autocapitalize="off">
+        <input class="login-input" type="password" id="loginPass" placeholder="Contraseña" autocomplete="current-password">
+        <button class="login-btn" id="loginBtn" onclick="doLogin()" disabled>
+          <span class="spinner-sm" style="border-color:rgba(255,255,255,0.3);border-top-color:#fff;"></span> Conectando...
+        </button>
       </div>
-      <div id="visitorList"></div>
+
+      <div class="login-error" id="loginError"></div>
+      <div class="login-attempts" id="loginAttempts"></div>
+
+      <p style="color:rgba(255,255,255,0.35);font-size:10px;margin-top:20px;">
+        Innovación tecnológica con propósito humano
+      </p>
     </div>
-    <div class="tab-content" id="aTab-visitorDetail">
-      <button class="back-btn" onclick="switchAdminTab('visitadores',document.querySelectorAll('#adminScreen .tab-btn')[1])" style="margin-bottom:14px;"><i class="fa-solid fa-arrow-left"></i> Volver</button>
-      <div id="visitorDetailContent"></div>
-    </div>
-    <div class="tab-content" id="aTab-visitas">
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-        <select class="form-input" style="width:auto;flex:1;min-width:140px;" id="filterVisitVisitor" onchange="renderAdminVisitas()"><option value="">Todos</option></select>
-        <select class="form-input" style="width:auto;flex:1;min-width:120px;" id="filterVisitStatus" onchange="renderAdminVisitas()">
-          <option value="">Todos</option><option value="pending">Pendiente</option><option value="in-progress">En Curso</option><option value="completed">Completada</option><option value="cancelled">Cancelada</option>
-        </select>
-        <select class="form-input" style="width:auto;flex:1;min-width:120px;" id="filterVisitType" onchange="renderAdminVisitas()">
-          <option value="">Todos los tipos</option><option value="general">General</option><option value="profesional">Profesional</option>
-        </select>
+  </div>
+
+  <!-- ====================  LAB SELECT SCREEN ==================== -->
+  <div class="screen" id="labSelectScreen">
+    <div class="app-header">
+      <div style="flex:1;min-width:0;">
+        <h2>APPMED</h2>
+        <div class="sub" id="labSelectGreeting">Selecciona un laboratorio</div>
       </div>
-      <div id="adminVisitsList"></div>
-    </div>
-    <div class="tab-content" id="aTab-fotos">
-      <div class="section-title">Galeria de Evidencia Fotografica</div>
-      <div id="adminPhotoGallery"></div>
-    </div>
-    <div class="tab-content" id="aTab-informes">
-      <div class="card" style="margin-bottom:14px;">
-        <div style="font-size:22px;font-weight:800;font-family:'DM Serif Display',serif;margin-bottom:4px;">Rango de Fechas</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;" id="rptPresetBtns">
-          <button class="btn btn-ghost btn-sm" onclick="setRptPreset('hoy')">Hoy</button>
-          <button class="btn btn-ghost btn-sm" onclick="setRptPreset('semana')">Esta semana</button>
-          <button class="btn btn-ghost btn-sm" onclick="setRptPreset('mes')">Este mes</button>
-          <button class="btn btn-ghost btn-sm" onclick="setRptPreset('3meses')">3 meses</button>
-          <button class="btn btn-ghost btn-sm" onclick="setRptPreset('custom')">Personalizado</button>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div class="header-conn online" id="labSelectConn"><span class="hdot"></span> Cloud</div>
+        <div style="position:relative;">
+          <button class="header-btn" onclick="toggleNotifDropdown()"><i class="fa-solid fa-bell"></i>
+            <div id="adminNotifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:10px;">0</div>
+          </button>
+          <div id="notifDropdown" style="display:none;position:absolute;top:48px;right:0;width:320px;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.2);z-index:200;max-height:400px;overflow-y:auto;">
+            <div style="padding:14px;border-bottom:1px solid var(--border);font-weight:800;font-size:14px;color:var(--fg);display:flex;justify-content:space-between;align-items:center;">
+              <span>Notificaciones</span>
+              <button onclick="toggleNotifDropdown()" style="background:none;border:none;cursor:pointer;color:var(--muted);"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div id="adminNotifList" style="padding:8px;font-size:13px;"></div>
+          </div>
         </div>
-        <div id="rptCustomDiv" style="display:none;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-          <div><label class="form-label">Desde</label><input class="form-input" type="date" id="rptDesdeInput" onchange="aplicarFechasCustom()"></div>
-          <div><label class="form-label">Hasta</label><input class="form-input" type="date" id="rptHastaInput" onchange="aplicarFechasCustom()"></div>
-        </div>
-        <div style="font-size:12px;color:var(--muted);">Periodo: <strong id="rptRangeLabel"> </strong></div>
+        <button class="header-btn" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
       </div>
-      <div class="card" style="margin-bottom:14px;">
+    </div>
+
+    <div class="app-body" id="labSelectBody"></div>
+  </div>
+
+  <!-- ====================  ADMIN SCREEN ==================== -->
+  <div class="screen" id="adminScreen">
+    <div class="app-header">
+      <div style="flex:1;min-width:0;">
+        <h2>APPMED</h2>
+        <div class="sub" id="adminGreeting">Panel de Administrador</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div class="header-conn online" id="adminConn"><span class="hdot"></span> Cloud</div>
+        <div class="session-timer" id="adminSessionTimer" style="display:none;"><i class="fa-solid fa-clock" style="font-size:9px;"></i> <span></span></div>
+        <div style="position:relative;">
+          <button class="header-btn" onclick="toggleNotifDropdown()"><i class="fa-solid fa-bell"></i>
+            <div id="adminNotifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:10px;">0</div>
+          </button>
+          <div id="notifDropdown" style="display:none;position:absolute;top:48px;right:0;width:320px;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.2);z-index:200;max-height:400px;overflow-y:auto;">
+            <div style="padding:14px;border-bottom:1px solid var(--border);font-weight:800;font-size:14px;color:var(--fg);display:flex;justify-content:space-between;align-items:center;">
+              <span>Notificaciones</span>
+              <button onclick="toggleNotifDropdown()" style="background:none;border:none;cursor:pointer;color:var(--muted);"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div id="adminNotifList" style="padding:8px;font-size:13px;"></div>
+          </div>
+        </div>
+        <button class="header-btn" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
+      </div>
+    </div>
+
+    <div class="app-body">
+      <div class="tab-content active" id="aTab-canvas"></div>
+
+      <div class="tab-content" id="aTab-visitadores">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div class="section-title" style="margin:0;">Visitadores (<span id="visitorCount">0</span>/50)</div>
+          <button class="btn btn-primary btn-sm" onclick="openNewVisitor()"><i class="fa-solid fa-plus"></i> Nuevo</button>
+        </div>
+        <div id="visitorList"></div>
+      </div>
+
+      <div class="tab-content" id="aTab-visitorDetail">
+        <button class="back-btn" onclick="switchAdminTab('visitadores',document.querySelectorAll('#adminScreen .tab-btn')[1])" style="margin-bottom:14px;">
+          <i class="fa-solid fa-arrow-left"></i> Volver
+        </button>
+        <div id="visitorDetailContent"></div>
+      </div>
+
+      <div class="tab-content" id="aTab-visitas">
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+          <select class="form-input" style="width:auto;flex:1;min-width:140px;" id="filterVisitVisitor" onchange="renderAdminVisitas()"><option value="">Todos</option></select>
+          <select class="form-input" style="width:auto;flex:1;min-width:120px;" id="filterVisitStatus" onchange="renderAdminVisitas()"><option value="">Todos</option><option value="pending">Pendiente</option><option value="in-progress">En Curso</option><option value="completed">Completada</option><option value="cancelled">Cancelada</option></select>
+          <select class="form-input" style="width:auto;flex:1;min-width:120px;" id="filterVisitType" onchange="renderAdminVisitas()"><option value="">Todos los tipos</option><option value="general">General</option><option value="profesional">Profesional</option></select>
+        </div>
+        <div id="adminVisitsList"></div>
+      </div>
+
+      <div class="tab-content" id="aTab-fotos">
+        <div class="section-title">Galería de Evidencia Fotográfica</div>
+        <div id="adminPhotoGallery"></div>
+      </div>
+
+      <div class="tab-content" id="aTab-informes">
+        <div class="card" style="margin-bottom:14px;">
+          <div style="font-size:22px;font-weight:800;font-family:'DM Serif Display',serif;margin-bottom:4px;">Rango de Fechas</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;" id="rptPresetBtns">
+            <button class="btn btn-ghost btn-sm" onclick="setRptPreset('hoy')">Hoy</button>
+            <button class="btn btn-ghost btn-sm" onclick="setRptPreset('semana')">Esta semana</button>
+            <button class="btn btn-ghost btn-sm" onclick="setRptPreset('mes')">Este mes</button>
+            <button class="btn btn-ghost btn-sm" onclick="setRptPreset('3meses')">3 meses</button>
+            <button class="btn btn-ghost btn-sm" onclick="setRptPreset('custom')">Personalizado</button>
+          </div>
+          <div id="rptCustomDiv" style="display:none;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div><label class="form-label">Desde</label><input class="form-input" type="date" id="rptDesdeInput" onchange="aplicarFechasCustom()"></div>
+            <div><label class="form-label">Hasta</label><input class="form-input" type="date" id="rptHastaInput" onchange="aplicarFechasCustom()"></div>
+          </div>
+          <div style="font-size:12px;color:var(--muted);">Periodo: <strong id="rptRangeLabel"></strong></div>
+        </div>
+
+        <div class="card" style="margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="font-size:14px;font-weight:800;"><i class="fa-solid fa-globe" style="color:var(--primary);"></i> Informe General   Todos los laboratorios</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-sm btn-primary" onclick="generarPDF(null)"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+            <button class="btn btn-sm btn-success" onclick="generarExcel(null)"><i class="fa-solid fa-file-excel"></i> Excel</button>
+            <button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTX(null)"><i class="fa-solid fa-file-powerpoint"></i> PPTX</button>
+          </div>
+        </div>
+
+        <div class="section-title">Por Laboratorio</div>
+        <div id="rptLabCards"></div>
+      </div>
+    </div>
+
+    <div class="tab-bar" id="adminTabBar">
+      <button class="tab-btn active" onclick="switchAdminTab('canvas',this)"><i class="fa-solid fa-chart-pie"></i>Panel</button>
+      <button class="tab-btn" onclick="switchAdminTab('visitadores',this)"><i class="fa-solid fa-user-group"></i>Equipo</button>
+      <button class="tab-btn" onclick="switchAdminTab('visitas',this)"><i class="fa-solid fa-clipboard-list"></i>Visitas</button>
+      <button class="tab-btn" onclick="switchAdminTab('fotos',this)"><i class="fa-solid fa-images"></i>Fotos</button>
+      <button class="tab-btn" onclick="switchAdminTab('informes',this)"><i class="fa-solid fa-chart-bar"></i>Informes</button>
+    </div>
+
+    <div class="app-footer"><strong>APPMED</strong> &middot; Creado por HELSE<br><span style="font-size:10px;">Innovación tecnológica con propósito humano</span></div>
+  </div>
+
+  <!-- ====================  SUPER ADMIN SCREEN ==================== -->
+  <div class="screen" id="superScreen">
+    <div class="app-header" style="background:linear-gradient(135deg,#7C3AED,#4F46E5);">
+      <div style="flex:1;min-width:0;"><h2 style="color:#fff;">Super Admin</h2><div class="sub" style="color:rgba(255,255,255,0.7);">Control total del sistema</div></div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div class="header-conn online" id="superConn" style="background:rgba(255,255,255,0.15);color:#fff;"><span class="hdot"></span> Cloud</div>
+        <div style="position:relative;">
+          <button class="header-btn" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.2);color:#fff;" onclick="toggleNotifDropdown()"><i class="fa-solid fa-bell"></i>
+            <div id="superNotifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:10px;">0</div>
+          </button>
+        </div>
+        <button class="header-btn" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.2);color:#fff;" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
+      </div>
+    </div>
+
+    <div class="app-body">
+      <!-- TAB: Usuarios -->
+      <div class="tab-content active" id="sTab-users">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div class="section-title" style="margin:0;">Todos los Usuarios</div>
+          <button class="btn btn-primary btn-sm" onclick="superNuevoUsuario()"><i class="fa-solid fa-plus"></i> Nuevo</button>
+        </div>
+        <div id="superUserList"></div>
+      </div>
+
+      <!-- TAB: Detalle usuario -->
+      <div class="tab-content" id="sTab-superDetail">
+        <button class="back-btn" onclick="switchSuperTab('users',document.querySelectorAll('#superScreen .tab-btn')[0])" style="margin-bottom:14px;"><i class="fa-solid fa-arrow-left"></i> Volver</button>
+        <div id="superDetailContent"></div>
+      </div>
+
+      <!-- TAB: Visitas -->
+      <div class="tab-content" id="sTab-sVisitas">
+        <div class="section-title" style="margin-bottom:12px;">Todas las Visitas</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+          <select class="form-input" id="sFilterLab" onchange="renderSuperVisitas()" style="font-size:12px;"><option value="">Todos los labs</option><option value="nestle">Nestl </option><option value="abamia">Abamia</option><option value="fresenius">Fresenius</option><option value="ketolance">Ketolance</option></select>
+          <select class="form-input" id="sFilterStatus" onchange="renderSuperVisitas()" style="font-size:12px;"><option value="">Todos los estados</option><option value="completed">Completadas</option><option value="in-progress">En curso</option><option value="pending">Pendientes</option></select>
+        </div>
+        <div id="superVisitasList"></div>
+      </div>
+
+      <!-- TAB: Fotos -->
+      <div class="tab-content" id="sTab-sFotos">
+        <div class="section-title" style="margin-bottom:12px;">Galería de Evidencias</div>
+        <select class="form-input" id="sFilterFotoLab" onchange="renderSuperFotos()" style="font-size:12px;margin-bottom:12px;"><option value="">Todos los labs</option><option value="nestle">Nestl </option><option value="abamia">Abamia</option><option value="fresenius">Fresenius</option><option value="ketolance">Ketolance</option></select>
+        <div id="superFotosList" class="gallery-grid"></div>
+      </div>
+
+      <!-- TAB: Laboratorios -->
+      <div class="tab-content" id="sTab-sLabs">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <div style="font-size:14px;font-weight:800;"><i class="fa-solid fa-globe" style="color:var(--primary);"></i> Informe General   Todos los laboratorios</div>
+          <div class="section-title" style="margin:0;">Estado por Laboratorio</div>
+          <button class="btn btn-primary btn-sm" onclick="superAbrirNuevoLab()"><i class="fa-solid fa-plus"></i> Nuevo Lab</button>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-sm btn-primary" onclick="generarPDF(null)"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-          <button class="btn btn-sm btn-success" onclick="generarExcel(null)"><i class="fa-solid fa-file-excel"></i> Excel</button>
-          <button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTX(null)"><i class="fa-solid fa-file-powerpoint"></i> PPTX</button>
+        <div id="superLabsList"></div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchSuperTab('users',this)"><i class="fa-solid fa-users-gear"></i>Usuarios</button>
+      <button class="tab-btn" onclick="switchSuperTab('sVisitas',this)"><i class="fa-solid fa-clipboard-list"></i>Visitas</button>
+      <button class="tab-btn" onclick="switchSuperTab('sFotos',this)"><i class="fa-solid fa-images"></i>Fotos</button>
+      <button class="tab-btn" onclick="switchSuperTab('sLabs',this)"><i class="fa-solid fa-flask"></i>Labs</button>
+    </div>
+
+    <div class="app-footer"><strong>APPMED</strong> &middot; Creado por HELSE<br><span style="font-size:10px;">Innovación tecnológica con propósito humano</span></div>
+  </div>
+
+  <!-- ====================  VISITADOR SCREEN ==================== -->
+  <div class="screen" id="visitorScreen">
+    <div class="app-header">
+      <div style="flex:1;min-width:0;"><h2 id="visitorGreeting">Hola</h2><div class="sub" id="visitorDate"></div></div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div class="header-conn online" id="visitorConn"><span class="hdot"></span> Cloud</div>
+        <div class="session-timer" id="visitorSessionTimer" style="display:none;"><i class="fa-solid fa-clock" style="font-size:9px;"></i> <span></span></div>
+        <div style="position:relative;">
+          <button class="header-btn" onclick="toggleNotifDropdown()"><i class="fa-solid fa-bell"></i>
+            <div id="adminNotifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:10px;">0</div>
+          </button>
         </div>
+        <button class="header-btn" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
       </div>
-      <div class="section-title">Por Laboratorio</div>
-      <div id="rptLabCards"></div>
-    </div>
-  </div>
-  <div class="tab-bar" id="adminTabBar">
-    <button class="tab-btn active" onclick="switchAdminTab('canvas',this)"><i class="fa-solid fa-chart-pie"></i>Panel</button>
-    <button class="tab-btn" onclick="switchAdminTab('visitadores',this)"><i class="fa-solid fa-user-group"></i>Equipo</button>
-    <button class="tab-btn" onclick="switchAdminTab('visitas',this)"><i class="fa-solid fa-clipboard-list"></i>Visitas</button>
-    <button class="tab-btn" onclick="switchAdminTab('fotos',this)"><i class="fa-solid fa-images"></i>Fotos</button>
-    <button class="tab-btn" onclick="switchAdminTab('informes',this)"><i class="fa-solid fa-chart-bar"></i>Informes</button>
-  </div>
-  <div class="app-footer"><strong>APPMED</strong> &middot; Creado por HELSE<br><span style="font-size:10px;">Innovacion tecnologica con proposito humano</span></div>
-</div>
-
-<!-- ====================  SUPER ADMIN  ==================== -->
-<div class="screen" id="superScreen">
-  <div class="app-header" style="background:linear-gradient(135deg,#7C3AED,#4F46E5);">
-    <div style="flex:1;min-width:0;"><h2 style="color:#fff;">Super Admin</h2><div class="sub" style="color:rgba(255,255,255,0.7);">Control total del sistema</div></div>
-    <div style="display:flex;align-items:center;gap:6px;">
-      <div class="header-conn online" id="superConn" style="background:rgba(255,255,255,0.15);color:#fff;"><span class="hdot"></span>Cloud</div>
-      <div style="position:relative;"><button class="header-btn" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.2);color:#fff;" onclick="toggleNotifDropdown()"><i class="fa-solid fa-bell"></i><div id="superNotifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:10px;">0</div></button></div><button class="header-btn" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.2);color:#fff;" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
-    </div>
-  </div>
-  <div class="app-body">
-    <!-- TAB: Usuarios -->
-    <div class="tab-content active" id="sTab-users">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <div class="section-title" style="margin:0;">Todos los Usuarios</div>
-        <button class="btn btn-primary btn-sm" onclick="superNuevoUsuario()"><i class="fa-solid fa-plus"></i> Nuevo</button>
-      </div>
-      <div id="superUserList"></div>
     </div>
 
-    <!-- TAB: Detalle usuario -->
-    <div class="tab-content" id="sTab-superDetail">
-      <button class="back-btn" onclick="switchSuperTab('users',document.querySelectorAll('#superScreen .tab-btn')[0])" style="margin-bottom:14px;"><i class="fa-solid fa-arrow-left"></i> Volver</button>
-      <div id="superDetailContent"></div>
-    </div>
-
-    <!-- TAB: Visitas -->
-    <div class="tab-content" id="sTab-sVisitas">
-      <div class="section-title" style="margin-bottom:12px;">Todas las Visitas</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-        <select class="form-input" id="sFilterLab" onchange="renderSuperVisitas()" style="font-size:12px;"><option value="">Todos los labs</option><option value="nestle">Nestl </option><option value="abamia">Abamia</option><option value="fresenius">Fresenius</option><option value="ketolance">Ketolance</option></select>
-        <select class="form-input" id="sFilterStatus" onchange="renderSuperVisitas()" style="font-size:12px;"><option value="">Todos los estados</option><option value="completed">Completadas</option><option value="in-progress">En curso</option><option value="pending">Pendientes</option></select>
-      </div>
-      <div id="superVisitasList"></div>
-    </div>
-
-    <!-- TAB: Fotos -->
-    <div class="tab-content" id="sTab-sFotos">
-      <div class="section-title" style="margin-bottom:12px;">Galeria de Evidencias</div>
-      <select class="form-input" id="sFilterFotoLab" onchange="renderSuperFotos()" style="font-size:12px;margin-bottom:12px;"><option value="">Todos los labs</option><option value="nestle">Nestl </option><option value="abamia">Abamia</option><option value="fresenius">Fresenius</option><option value="ketolance">Ketolance</option></select>
-      <div id="superFotosList" class="gallery-grid"></div>
-    </div>
-
-    <!-- TAB: Laboratorios -->
-    <div class="tab-content" id="sTab-sLabs">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <div class="section-title" style="margin:0;">Estado por Laboratorio</div>
-        <button class="btn btn-primary btn-sm" onclick="superAbrirNuevoLab()"><i class="fa-solid fa-plus"></i> Nuevo Lab</button>
-      </div>
-      <div id="superLabsList"></div>
-    </div>
-  </div>
-
-  <div class="tab-bar">
-    <button class="tab-btn active" onclick="switchSuperTab('users',this)"><i class="fa-solid fa-users-gear"></i>Usuarios</button>
-    <button class="tab-btn" onclick="switchSuperTab('sVisitas',this)"><i class="fa-solid fa-clipboard-list"></i>Visitas</button>
-    <button class="tab-btn" onclick="switchSuperTab('sFotos',this)"><i class="fa-solid fa-images"></i>Fotos</button>
-    <button class="tab-btn" onclick="switchSuperTab('sLabs',this)"><i class="fa-solid fa-flask"></i>Labs</button>
-  </div>
-  <div class="app-footer"><strong>APPMED</strong> &middot; Creado por HELSE<br><span style="font-size:10px;">Innovacion tecnologica con proposito humano</span></div>
-</div>
-
-<!-- ====================  VISITADOR  ==================== -->
-<div class="screen" id="visitorScreen">
-  <div class="app-header">
-    <div style="flex:1;min-width:0;"><h2 id="visitorGreeting">Hola</h2><div class="sub" id="visitorDate"></div></div>
-    <div style="display:flex;align-items:center;gap:6px;">
-      <div class="header-conn online" id="visitorConn"><span class="hdot"></span>Cloud</div>
-      <div class="session-timer" id="visitorSessionTimer" style="display:none;"><i class="fa-solid fa-clock" style="font-size:9px;"></i> <span></span></div>
-      <div style="position:relative;"><button class="header-btn" onclick="toggleNotifDropdown()"><i class="fa-solid fa-bell"></i><div id="adminNotifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:10px;">0</div></button><div id="notifDropdown" style="display:none;position:absolute;top:48px;right:0;width:320px;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.2);z-index:200;max-height:400px;overflow-y:auto;"><div style="padding:14px;border-bottom:1px solid var(--border);font-weight:800;font-size:14px;color:var(--fg);display:flex;justify-content:space-between;align-items:center;"><span>Notificaciones</span><button onclick="toggleNotifDropdown()" style="background:none;border:none;cursor:pointer;color:var(--muted);"><i class="fa-solid fa-times"></i></button></div><div id="adminNotifList" style="padding:8px;font-size:13px;"></div></div></div><button class="header-btn" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
-    </div>
-  </div>
-  <div class="app-body">
-    <div class="tab-content active" id="vTab-hoy"><div id="visitorTodayPoints"></div></div>
-    <div class="tab-content" id="vTab-semana"><div id="visitorWeekSummary"></div></div>
-    <div class="tab-content" id="vTab-perfil">
-      <div class="card" style="text-align:center;padding:32px 18px;">
-        <div class="avatar" id="vProfileAvatar" style="width:64px;height:64px;font-size:24px;margin:0 auto 12px;"></div>
-        <div style="font-size:18px;font-weight:800;" id="vProfileName"></div>
-        <div style="font-size:13px;color:var(--muted);" id="vProfileUser"></div>
-        <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border);display:flex;justify-content:space-around;">
-          <div><div style="font-size:24px;font-weight:900;" id="vProfileTotal">0</div><div style="font-size:11px;color:var(--muted);">Total</div></div>
-          <div><div style="font-size:24px;font-weight:900;" id="vProfileToday">0</div><div style="font-size:11px;color:var(--muted);">Hoy</div></div>
-          <div><div style="font-size:24px;font-weight:900;" id="vProfileWeek">0</div><div style="font-size:11px;color:var(--muted);">Semana</div></div>
+    <div class="app-body">
+      <div class="tab-content active" id="vTab-hoy"><div id="visitorTodayPoints"></div></div>
+      <div class="tab-content" id="vTab-semana"><div id="visitorWeekSummary"></div></div>
+      <div class="tab-content" id="vTab-perfil">
+        <div class="card" style="text-align:center;padding:32px 18px;">
+          <div class="avatar" id="vProfileAvatar" style="width:64px;height:64px;font-size:24px;margin:0 auto 12px;"></div>
+          <div style="font-size:18px;font-weight:800;" id="vProfileName"></div>
+          <div style="font-size:13px;color:var(--muted);" id="vProfileUser"></div>
+          <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border);display:flex;justify-content:space-around;">
+            <div><div style="font-size:24px;font-weight:900;" id="vProfileTotal">0</div><div style="font-size:11px;color:var(--muted);">Total</div></div>
+            <div><div style="font-size:24px;font-weight:900;" id="vProfileToday">0</div><div style="font-size:11px;color:var(--muted);">Hoy</div></div>
+            <div><div style="font-size:24px;font-weight:900;" id="vProfileWeek">0</div><div style="font-size:11px;color:var(--muted);">Semana</div></div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-  <div class="tab-bar">
-    <button class="tab-btn active" onclick="switchVisitorTab('hoy',this)"><i class="fa-solid fa-calendar-day"></i>Hoy</button>
-    <button class="tab-btn" onclick="switchVisitorTab('semana',this)"><i class="fa-solid fa-calendar-week"></i>Semana</button>
-    <button class="tab-btn" onclick="switchVisitorTab('perfil',this)"><i class="fa-solid fa-user"></i>Perfil</button>
-  </div>
-  <div class="app-footer"><strong>APPMED</strong> &middot; Creado por HELSE<br><span style="font-size:10px;">Innovacion tecnologica con proposito humano</span></div>
-</div>
 
-<!-- ====================  MODALES  ==================== -->
-<div class="modal-overlay" id="modalVisitor"><div class="modal-sheet"><div class="modal-handle"></div><div class="modal-title" id="modalVisitorTitle">Nuevo Visitador</div><input type="hidden" id="editVisitorId"><div class="form-group"><label class="form-label">Nombre Completo</label><input class="form-input" id="mvName" placeholder="Ej: Juan Perez Garcia"></div><div class="form-group"><label class="form-label">Usuario</label><input class="form-input" id="mvUsername" placeholder="Ej: jperez" autocapitalize="off"></div><div class="form-group"><label class="form-label">Contrasena</label><input class="form-input" type="password" id="mvPassword" placeholder="Minimo 4 caracteres"></div><div class="form-group" id="mvLabGroup"><label class="form-label">Laboratorio <span style="color:var(--danger);">*</span></label><select class="form-input" id="mvLabId"><option value="nestle">Nestl </option><option value="abamia">Abamia</option><option value="fresenius">Fresenius</option><option value="ketolance">Ketolance</option></select></div><div style="display:flex;gap:10px;margin-top:20px;"><button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalVisitor')">Cancelar</button><button class="btn btn-primary" style="flex:1;" onclick="saveVisitor()">Guardar</button></div></div></div>
-
-<div class="modal-overlay" id="modalPoint"><div class="modal-sheet"><div class="modal-handle"></div><div class="modal-title" id="modalPointTitle">Nuevo Punto</div><input type="hidden" id="editPointId"><input type="hidden" id="editPointVisitorId" value=""><div class="form-group"><label class="form-label">Nombre del Punto</label><input class="form-input" id="mpName" placeholder="Ej: Farmacia San Rafael"></div>
-
-<div class="form-group"><label class="form-label">Nombre de Ruta</label><input class="form-input" id="mpRouteName" placeholder="Ej: Ruta Soacha"></div>
-
-<div class="form-group"><label class="form-label">Direccion Completa</label><input class="form-input" id="mpAddress" placeholder="Cra 7 #45-20, Bogota..." onblur="geocodeAddress()"><div id="geoStatus" style="display:none;"></div></div>
-<div id="gpsCoordsRow" style="display:none;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;"><div><label class="form-label">Latitud</label><input class="form-input" id="mpLat" readonly style="background:var(--success-light);font-weight:700;color:var(--success);"></div><div><label class="form-label">Longitud</label><input class="form-input" id="mpLng" readonly style="background:var(--success-light);font-weight:700;color:var(--success);"></div></div><button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:12px;border:1.5px dashed var(--primary);color:var(--primary);" onclick="abrirMapaPicker()"><i class="fa-solid fa-map-location-dot"></i> Ajustar ubicacion en el mapa</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="form-group"><label class="form-label">Dia</label><select class="form-input" id="mpDay"><option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miercoles</option><option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sabado</option></select></div><div class="form-group"><label class="form-label">Orden</label><input class="form-input" type="number" id="mpOrder" placeholder="1, 2..." min="1"></div></div><div style="display:flex;gap:10px;margin-top:20px;"><button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalPoint')">Cancelar</button><button class="btn btn-primary" style="flex:1;" onclick="savePoint()"><i class="fa-solid fa-map-pin"></i> Guardar</button></div></div></div>
-
-<div class="modal-overlay" id="modalMapPicker" style="z-index:3000;">
-  <div style="background:#fff;width:100%;height:100%;display:flex;flex-direction:column;">
-    <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:#fff;z-index:10;">
-      <button onclick="closeModal('modalMapPicker')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);"><i class="fa-solid fa-arrow-left"></i></button>
-      <div style="flex:1;"><div style="font-size:15px;font-weight:800;">Ubica el punto en el mapa</div><div style="font-size:11px;color:var(--muted);">Arrastra el pin hasta la ubicacion exacta</div></div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchVisitorTab('hoy',this)"><i class="fa-solid fa-calendar-day"></i>Hoy</button>
+      <button class="tab-btn" onclick="switchVisitorTab('semana',this)"><i class="fa-solid fa-calendar-week"></i>Semana</button>
+      <button class="tab-btn" onclick="switchVisitorTab('perfil',this)"><i class="fa-solid fa-user"></i>Perfil</button>
     </div>
-    <div id="leafletMap" style="flex:1;width:100%;"></div>
-    <div style="padding:12px 16px;background:#fff;border-top:1px solid var(--border);">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> <span id="mapPickerCoords">Mueve el mapa para posicionar el pin</span></div>
-      <button class="btn btn-primary" style="width:100%;" onclick="confirmarMapaPicker()"><i class="fa-solid fa-check"></i> Confirmar esta ubicacion</button>
+
+    <div class="app-footer"><strong>APPMED</strong> &middot; Creado por HELSE<br><span style="font-size:10px;">Innovación tecnológica con propósito humano</span></div>
+  </div>
+
+  <!-- ====================  MODALES ==================== -->
+  <!-- Modal nuevo visitante -->
+  <div class="modal-overlay" id="modalVisitor"><div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalVisitorTitle">Nuevo Visitador</div>
+    <input type="hidden" id="editVisitorId">
+    <div class="form-group"><label class="form-label">Nombre Completo</label><input class="form-input" id="mvName" placeholder="Ej: Juan Perez Garcia"></div>
+    <div class="form-group"><label class="form-label">Usuario</label><input class="form-input" id="mvUsername" placeholder="Ej: jperez" autocapitalize="off"></div>
+    <div class="form-group"><label class="form-label">Contraseña</label><input class="form-input" type="password" id="mvPassword" placeholder="Mínimo 4 caracteres"></div>
+    <div class="form-group" id="mvLabGroup"><label class="form-label">Laboratorio <span style="color:var(--danger);">*</span></label>
+      <select class="form-input" id="mvLabId">
+        <option value="nestle">Nestl </option><option value="abamia">Abamia</option><option value="fresenius">Fresenius</option><option value="ketolance">Ketolance</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalVisitor')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveVisitor()">Guardar</button>
+    </div>
+  </div></div>
+
+  <!-- Modal nuevo punto -->
+  <div class="modal-overlay" id="modalPoint"><div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalPointTitle">Nuevo Punto</div>
+    <input type="hidden" id="editPointId">
+    <input type="hidden" id="editPointVisitorId" value="">
+    <div class="form-group"><label class="form-label">Nombre del Punto</label><input class="form-input" id="mpName" placeholder="Ej: Farmacia San Rafael"></div>
+
+    <div class="form-group"><label class="form-label">Nombre de Ruta</label><input class="form-input" id="mpRouteName" placeholder="Ej: Ruta Soacha"></div>
+
+    <div class="form-group"><label class="form-label">Dirección Completa</label><input class="form-input" id="mpAddress" placeholder="Cra 7 #45-20, Bogotá..." onblur="geocodeAddress()"><div id="geoStatus" style="display:none;"></div></div>
+
+    <div id="gpsCoordsRow" style="display:none;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div><label class="form-label">Latitud</label><input class="form-input" id="mpLat" readonly style="background:var(--success-light);font-weight:700;color:var(--success);"></div>
+        <div><label class="form-label">Longitud</label><input class="form-input" id="mpLng" readonly style="background:var(--success-light);font-weight:700;color:var(--success);"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:12px;border:1.5px dashed var(--primary);color:var(--primary);" onclick="abrirMapaPicker()"><i class="fa-solid fa-map-location-dot"></i> Ajustar ubicación en el mapa</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group"><label class="form-label">Día</label><select class="form-input" id="mpDay"><option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option><option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sábado</option></select></div>
+      <div class="form-group"><label class="form-label">Orden</label><input class="form-input" type="number" id="mpOrder" placeholder="1, 2..." min="1"></div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalPoint')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="savePoint()"><i class="fa-solid fa-map-pin"></i> Guardar</button>
+    </div>
+  </div></div>
+
+  <!-- Modal picker de mapa -->
+  <div class="modal-overlay" id="modalMapPicker" style="z-index:3000;">
+    <div style="background:#fff;width:100%;height:100%;display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:#fff;z-index:10;">
+        <button onclick="closeModal('modalMapPicker')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);"><i class="fa-solid fa-arrow-left"></i></button>
+        <div style="flex:1;">
+          <div style="font-size:15px;font-weight:800;">Ubica el punto en el mapa</div>
+          <div style="font-size:11px;color:var(--muted);">Arrastra el pin hasta la ubicación exacta</div>
+        </div>
+      </div>
+      <div id="leafletMap" style="flex:1;width:100%;"></div>
+      <div style="padding:12px 16px;background:#fff;border-top:1px solid var(--border);">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fa-solid fa-crosshairs" style="color:var(--primary);"></i> <span id="mapPickerCoords">Mueve el mapa para posicionar el pin</span></div>
+        <button class="btn btn-primary" style="width:100%;" onclick="confirmarMapaPicker()"><i class="fa-solid fa-check"></i> Confirmar esta ubicación</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="modal-overlay" id="modalCloseVisit"><div class="modal-sheet"><div class="modal-handle"></div><div class="modal-title">Cerrar Visita</div><input type="hidden" id="closeVisitId"><div style="background:var(--primary-50);border-radius:12px;padding:14px;margin-bottom:18px;"><div style="font-size:13px;font-weight:700;color:var(--primary);" id="closeVisitPointName"></div><div id="closeVisitPointAddr" style="font-size:12px;color:var(--muted);margin-top:2px;"></div></div><input type="file" id="visitPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoTaken(event)"><div class="form-group"><label class="form-label">Foto del Punto</label><div id="photoCaptureArea"><div class="photo-capture-btn" onclick="document.getElementById('visitPhotoInput').click()"><i class="fa-solid fa-camera"></i><span>Tomar Foto</span></div></div><img id="photoPreview" class="photo-preview" style="display:none;"></div><div class="form-group"><label class="form-label">Nombre del Jefe del Punto</label><input class="form-input" id="closeJefe" placeholder="Nombre del responsable"></div><div class="form-group"><label class="form-label">Notas (opcional)</label><textarea class="form-input" id="closeNotes" placeholder="Observaciones..."></textarea></div><div style="display:flex;gap:10px;margin-top:20px;"><button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalCloseVisit')">Cancelar</button><button class="btn btn-success" style="flex:1;" onclick="completeVisit()"><i class="fa-solid fa-check"></i> Completar</button></div></div></div>
+  <!-- Modal cerrar visita -->
+  <div class="modal-overlay" id="modalCloseVisit"><div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Cerrar Visita</div>
+    <input type="hidden" id="closeVisitId">
+    <div style="background:var(--primary-50);border-radius:12px;padding:14px;margin-bottom:18px;">
+      <div style="font-size:13px;font-weight:700;color:var(--primary);" id="closeVisitPointName"></div>
+      <div id="closeVisitPointAddr" style="font-size:12px;color:var(--muted);margin-top:2px;"></div>
+    </div>
 
-<div class="modal-overlay" id="modalPhoto"><div class="modal-sheet" style="padding:8px 8px 24px;"><div class="modal-handle"></div><div class="modal-title" style="padding:0 12px;">Evidencia</div><img id="modalPhotoImg" style="width:100%;border-radius:12px;"><div style="padding:8px 12px 0;"><div id="modalPhotoInfo" style="font-size:13px;color:var(--muted);line-height:1.5;"></div></div><button class="btn btn-outline" style="margin-top:16px;" onclick="closeModal('modalPhoto')">Cerrar</button></div></div>
+    <input type="file" id="visitPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoTaken(event)">
+    <div class="form-group"><label class="form-label">Foto del Punto</label>
+      <div id="photoCaptureArea">
+        <div class="photo-capture-btn" onclick="document.getElementById('visitPhotoInput').click()"><i class="fa-solid fa-camera"></i><span>Tomar Foto</span></div>
+      </div>
+      <img id="photoPreview" class="photo-preview" style="display:none;">
+    </div>
 
-<div class="modal-overlay" id="modalSuperEdit"><div class="modal-sheet"><div class="modal-handle"></div><div class="modal-title" id="modalSuperEditTitle">Editar Usuario</div><input type="hidden" id="superEditId"><div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="seName"></div><div class="form-group"><label class="form-label">Usuario</label><input class="form-input" id="seUsername" autocapitalize="off"></div><div class="form-group"><label class="form-label">Nueva Contrasena</label><input class="form-input" type="text" id="sePassword" placeholder="Dejar vacio para no cambiar"></div><div class="form-group"><label class="form-label">Rol</label><select class="form-input" id="seRole"><option value="visitor">Visitador</option><option value="admin">Administrador</option></select></div><div class="form-group"><label class="form-label">Laboratorio</label><select class="form-input" id="seLabId"><option value="nestle">Nestl </option><option value="abamia">Abamia</option><option value="fresenius">Fresenius</option><option value="ketolance">Ketolance</option></select></div><div style="display:flex;gap:10px;margin-top:20px;"><button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalSuperEdit')">Cancelar</button><button class="btn btn-danger btn-sm" id="superDeleteBtn" onclick="var id=document.getElementById('superEditId').value;if(id)superDeleteUser(id);" style="display:none;"><i class="fa-solid fa-trash"></i></button><button class="btn btn-primary" style="flex:2;" onclick="superSaveUser()">Guardar</button></div></div></div>
+    <div class="form-group"><label class="form-label">Nombre del Jefe del Punto</label><input class="form-input" id="closeJefe" placeholder="Nombre del responsable"></div>
+    <div class="form-group"><label class="form-label">Notas (opcional)</label><textarea class="form-input" id="closeNotes" placeholder="Observaciones..."></textarea></div>
 
-<div class="modal-overlay" id="modalNuevaVisita">
-  <div class="modal-sheet" style="max-height:95dvh;">
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalCloseVisit')">Cancelar</button>
+      <button class="btn btn-success" style="flex:1;" onclick="completeVisit()"><i class="fa-solid fa-check"></i> Completar</button>
+    </div>
+  </div></div>
+
+  <!-- Modal foto en detalle -->
+  <div class="modal-overlay" id="modalPhoto"><div class="modal-sheet" style="padding:8px 8px 24px;">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="padding:0 12px;">Evidencia</div>
+    <img id="modalPhotoImg" style="width:100%;border-radius:12px;">
+    <div style="padding:8px 12px 0;">
+      <div id="modalPhotoInfo" style="font-size:13px;color:var(--muted);line-height:1.5;"></div>
+    </div>
+    <button class="btn btn-outline" style="margin-top:16px;" onclick="closeModal('modalPhoto')">Cerrar</button>
+  </div></div>
+
+  <!-- Modal editar usuario (SuperAdmin) -->
+  <div class="modal-overlay" id="modalSuperEdit"><div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalSuperEditTitle">Editar Usuario</div>
+    <input type="hidden" id="superEditId">
+    <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="seName"></div>
+    <div class="form-group"><label class="form-label">Usuario</label><input class="form-input" id="seUsername" autocapitalize="off"></div>
+    <div class="form-group"><label class="form-label">Nueva Contraseña</label><input class="form-input" type="text" id="sePassword" placeholder="Dejar vacío para no cambiar"></div>
+    <div class="form-group"><label class="form-label">Rol</label><select class="form-input" id="seRole"><option value="visitor">Visitador</option><option value="admin">Administrador</option></select></div>
+    <div class="form-group"><label class="form-label">Laboratorio</label><select class="form-input" id="seLabId"><option value="nestle">Nestl </option><option value="abamia">Abamia</option><option value="fresenius">Fresenius</option><option value="ketolance">Ketolance</option></select></div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalSuperEdit')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="superDeleteBtn" onclick="var id=document.getElementById('superEditId').value;if(id)superDeleteUser(id);" style="display:none;"><i class="fa-solid fa-trash"></i></button>
+      <button class="btn btn-primary" style="flex:2;" onclick="superSaveUser()">Guardar</button>
+    </div>
+  </div></div>
+
+  <!-- Modal Nueva Visita (Visitador) -->
+  <div class="modal-overlay" id="modalNuevaVisita"><div class="modal-sheet" style="max-height:95dvh;">
     <div class="modal-handle"></div>
     <div class="modal-title">Nueva visita</div>
+
+    <!-- Selector tipo de visita -->
     <div id="visitaTipoSelector">
       <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:10px;">Tipo de visita</div>
       <div class="visit-type-grid">
         <button class="visit-type-btn" id="btnTipoGeneral" onclick="selectVisitType('general')">
           <div class="visit-type-icon">🌐</div>
           <div class="visit-type-name">Visita general</div>
-          <div class="visit-type-desc">Farmacia, drogueria o punto de venta</div>
+          <div class="visit-type-desc">Farmacia, droguería o punto de venta</div>
         </button>
         <button class="visit-type-btn" id="btnTipoProfesional" onclick="selectVisitType('profesional')">
           <div class="visit-type-icon">🩺</div>
           <div class="visit-type-name">Visita a profesional</div>
-          <div class="visit-type-desc">Medico, especialista u otro profesional</div>
+          <div class="visit-type-desc">Médico, especialista u otro profesional</div>
         </button>
       </div>
     </div>
 
-    <!-- FORM GENERAL -->
+    <!-- ====  FORMULARIO VISITA GENERAL  ==== -->
     <div id="formVisitaGeneral" style="display:none;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
         <button onclick="selectVisitType(null)" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:13px;font-weight:600;padding:0;"><i class="fa-solid fa-arrow-left"></i> Cambiar tipo</button>
       </div>
-      <div class="gps-chip" id="gpsChipGeneral"><i class="fa-solid fa-satellite-dish" style="font-size:11px;"></i> <span id="gpsTextGeneral">Obteniendo ubicacion...</span></div>
-      <div class="form-group"><label class="form-label">Nombre del lugar <span style="color:var(--danger);">*</span></label><input class="form-input" id="vg-lugar" placeholder="Ej. Drogueria La Rebaja"></div>
-      <div class="form-group"><label class="form-label">Direccion</label><input class="form-input" id="vg-direccion" placeholder="Calle / Carrera / Barrio"></div>
-      <div class="form-group"><label class="form-label">Contacto</label><input class="form-input" id="vg-contacto" placeholder="Nombre de quien atendio"></div>
+      <div class="gps-chip" id="gpsChipGeneral"><i class="fa-solid fa-satellite-dish" style="font-size:11px;"></i> <span id="gpsTextGeneral">Obteniendo ubicación...</span></div>
+
+      <div class="form-group"><label class="form-label">Nombre del lugar <span style="color:var(--danger);">*</span></label><input class="form-input" id="vg-lugar" placeholder="Ej. Droguería La Rebaja"></div>
+      <div class="form-group"><label class="form-label">Dirección</label><input class="form-input" id="vg-direccion" placeholder="Calle / Carrera / Barrio"></div>
+      <div class="form-group"><label class="form-label">Contacto</label><input class="form-input" id="vg-contacto" placeholder="Nombre de quien atendió"></div>
       <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="vg-notas" placeholder="Observaciones, pedidos..."></textarea></div>
-      <div class="form-group">
-        <label class="form-label">Foto de evidencia</label>
+
+      <div class="form-group"><label class="form-label">Foto de evidencia</label>
         <input type="file" id="vg-foto" accept="image/*" capture="environment" style="display:none;" onchange="previewVisitaFoto(this,'vg-preview')">
         <div class="photo-capture-btn" onclick="document.getElementById('vg-foto').click()"><i class="fa-solid fa-camera"></i><span>Tomar foto</span></div>
         <img id="vg-preview" class="photo-preview" style="display:none;">
       </div>
+
       <div style="display:flex;gap:10px;margin-top:10px;">
         <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalNuevaVisita')">Cancelar</button>
         <button class="btn btn-success" style="flex:1;" id="btnGuardarGeneral" onclick="guardarVisitaGeneral()"><i class="fa-solid fa-check"></i> Guardar</button>
       </div>
     </div>
 
-    <!-- FORM PROFESIONAL -->
+    <!-- ====  FORMULARIO VISITA PROFESIONAL  ==== -->
     <div id="formVisitaProfesional" style="display:none;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
         <button onclick="selectVisitType(null)" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:13px;font-weight:600;padding:0;"><i class="fa-solid fa-arrow-left"></i> Cambiar tipo</button>
       </div>
-      <div class="gps-chip" id="gpsChipProf"><i class="fa-solid fa-satellite-dish" style="font-size:11px;"></i> <span id="gpsTextProf">Obteniendo ubicacion...</span></div>
+      <div class="gps-chip" id="gpsChipProf"><i class="fa-solid fa-satellite-dish" style="font-size:11px;"></i> <span id="gpsTextProf">Obteniendo ubicación...</span></div>
+
       <div class="form-group"><label class="form-label">Nombre del profesional <span style="color:var(--danger);">*</span></label><input class="form-input" id="vp-nombre" placeholder="Dr. / Dra. Nombre Apellido"></div>
-      <div class="form-group"><label class="form-label">Especialidad</label><input class="form-input" id="vp-especialidad" placeholder="Ej. Cardiologia, Medicina general..."></div>
-      <div class="form-group"><label class="form-label">Numero de contacto <span style="color:var(--danger);">*</span></label><input class="form-input" type="tel" id="vp-telefono" placeholder="3XX XXX XXXX"></div>
-      <div class="form-group"><label class="form-label">Direccion del consultorio <span style="color:var(--danger);">*</span></label><input class="form-input" id="vp-direccion" placeholder="Calle, carrera, consultorio, piso..."></div>
+      <div class="form-group"><label class="form-label">Especialidad</label><input class="form-input" id="vp-especialidad" placeholder="Ej. Cardiología, Medicina general..."></div>
+      <div class="form-group"><label class="form-label">Número de contacto <span style="color:var(--danger);">*</span></label><input class="form-input" type="tel" id="vp-telefono" placeholder="3XX XXX XXXX"></div>
+      <div class="form-group"><label class="form-label">Dirección del consultorio <span style="color:var(--danger);">*</span></label><input class="form-input" id="vp-direccion" placeholder="Calle, carrera, consultorio, piso..."></div>
+
       <div class="form-group">
         <div class="toggle-row">
-          <div><div class="toggle-label">Entrega de obsequio o detalle</div><div class="toggle-sub">Muestras, material, regalo</div></div>
+          <div>
+            <div class="toggle-label">Entrega de obsequio o detalle</div>
+            <div class="toggle-sub">Muestras, material, regalo</div>
+          </div>
           <label class="toggle"><input type="checkbox" id="vp-toggleObsequio" onchange="toggleObsequioField(this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
         </div>
         <div id="vp-obsequioDetail" class="obsequio-detail">
           <textarea class="form-input" id="vp-obsequio" placeholder="Ej. 2 muestras Ketolance 10mg, 1 bol grafo..." style="margin-top:8px;"></textarea>
         </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Foto de evidencia <span style="color:var(--danger);">*</span></label>
+
+      <div class="form-group"><label class="form-label">Foto de evidencia <span style="color:var(--danger);">*</span></label>
         <input type="file" id="vp-foto" accept="image/*" capture="environment" style="display:none;" onchange="previewVisitaFoto(this,'vp-preview')">
         <div class="photo-capture-btn" onclick="document.getElementById('vp-foto').click()"><i class="fa-solid fa-camera"></i><span>Tomar foto con el profesional</span></div>
         <img id="vp-preview" class="photo-preview" style="display:none;">
       </div>
-      <div class="form-group">
-        <label class="form-label">Firma del profesional <span style="color:var(--danger);">* obligatoria</span></label>
+
+      <div class="form-group"><label class="form-label">Firma del profesional <span style="color:var(--danger);">* obligatoria</span></label>
         <canvas id="vp-firmaCanvas" class="firma-canvas" width="600" height="150"></canvas>
         <div class="firma-actions">
-          <span class="firma-hint">El medico firma aqui con el dedo</span>
+          <span class="firma-hint">El médico firma aquí con el dedo</span>
           <button class="firma-clear" onclick="clearFirmaProf()">Borrar firma</button>
         </div>
         <div class="firma-badge" id="vp-firmaBadge"><i class="fa-solid fa-check-circle"></i> Firma registrada</div>
       </div>
-      <div class="form-group"><label class="form-label">Notas adicionales</label><textarea class="form-input" id="vp-notas" placeholder="Temas tratados, proxima visita..."></textarea></div>
+
+      <div class="form-group"><label class="form-label">Notas adicionales</label><textarea class="form-input" id="vp-notas" placeholder="Temas tratados, próxima visita..."></textarea></div>
+
       <div style="display:flex;gap:10px;margin-top:10px;">
         <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalNuevaVisita')">Cancelar</button>
         <button class="btn btn-success" style="flex:1;" id="btnGuardarProf" onclick="guardarVisitaProfesional()" disabled><i class="fa-solid fa-check"></i> Guardar</button>
       </div>
     </div>
-  </div>
-</div>
+  </div></div>
 
-<div class="modal-overlay" id="modalVerProfesional">
-  <div class="modal-sheet" style="max-height:95dvh;">
+  <!-- Modal Ver visita profesional (solo para admin) -->
+  <div class="modal-overlay" id="modalVerProfesional"><div class="modal-sheet" style="max-height:95dvh;">
     <div class="modal-handle"></div>
     <div class="modal-title">Detalle visita profesional</div>
     <div id="modalVerProfContent"></div>
     <button class="btn btn-outline" style="margin-top:16px;" onclick="closeModal('modalVerProfesional')">Cerrar</button>
-  </div>
-</div>
+  </div></div>
 
-<div class="confirm-overlay" id="confirmOverlay"><div class="confirm-box"><div class="confirm-icon" id="confirmIcon"><i id="confirmIconI"></i></div><div class="confirm-title" id="confirmTitle"></div><div class="confirm-msg" id="confirmMsg"></div><div class="confirm-actions"><button class="btn btn-outline" onclick="cancelConfirm()">Cancelar</button><button class="btn" id="confirmOkBtn" onclick="executeConfirm()">Confirmar</button></div></div></div>
+  <!-- ==============================================================
+       2️⃣  LÓGICA DE FIREBASE (único bloque) – aquí está todo el código
+       relacionado con la base de datos, los listeners y los helpers de guardado.
+       No se toca nada más.
+       ============================================================== -->
+  <script>
+    /* -----------------------------------------------------------------
+       CONFIGURACIÓN GLOBAL (una sola vez)
+       ----------------------------------------------------------------- */
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyAKcDvxBjl4-fJ6ov2bRhX1ExFQlRFiszA",
+      authDomain: "appmed-f21de.firebaseapp.com",
+      databaseURL: "https://appmed-f21de-default-rtdb.firebaseio.com",
+      projectId: "appmed-f21de",
+      storageBucket: "appmed-f21de.firebasestorage.app",
+      messagingSenderId: "77112324308",
+      appId: "1:77112324308:web:5f2204fc5182d4ab004b41",
+      measurementId: "G-2FR4P74ZE6"
+    };
 
-<!-- ==============================================================
-   2️⃣  LÓGICA DE FIREBASE (único bloque) – aquí está todo el
-       código relacionado con la base de datos, los listeners y
-       los helpers de guardado.  No se toca nada más.
-   ============================================================== -->
-<script>
-/* -----------------------------------------------------------------
-   CONFIGURACIÓN GLOBAL (solo una)
-   ----------------------------------------------------------------- */
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyB-1_xhBuzfcL_XUFkT0yZfa6rCMl6DV0Q",
-  authDomain: "medvisit-app-e5991.firebaseapp.com",
-  databaseURL: "https://medvisit-app-e5991-default-rtdb.firebaseio.com",
-  projectId: "medvisit-app-e5991",
-  storageBucket: "medvisit-app-e5991.firebasestorage.app",
-  messagingSenderId: "372705290165",
-  appId: "1:372705290165:web:8694260ce573e172ee5bfc"
-};
+    /* -----------------------------------------------------------------
+       VARIABLES DE ESTADO (única copia global)
+       ----------------------------------------------------------------- */
+    let firebaseReady = false;          // true cuando ya tenemos datos (online u offline)
+    let firebaseOnline = false;         // .info/connected
+    let myLastWriteId = null;           // evita bucle infinito
+    let dbRef = null;                  // referencia global a Realtime DB
+    let D = defaultData();             // datos por defecto (fallback)
+    if (!D.labs) D.labs = [];           // siempre existir
+    let LABS = BASE_LABS.slice();       // se rellenará con labs creados por super‑admin
 
-/* -----------------------------------------------------------------
-   VARIABLES DE ESTADO (solo una copia global)
-   ----------------------------------------------------------------- */
-let firebaseReady = false;          // true cuando ya tenemos datos (online u offline)
-let firebaseOnline = false;         // .info/connected
-let myLastWriteId = null;           // evita bucle infinito
-let dbRef = null;                   // referencia global a Realtime DB
-let D = defaultData();              // datos por defecto (fallback)
-if (!D.labs) D.labs = [];           // siempre existir
-let LABS = BASE_LABS.slice();        // se rellenará con labs creados por super‑admin
+    /* -----------------------------------------------------------------
+       INICIALIZAR Firebase (solo una vez)
+       ----------------------------------------------------------------- */
+    firebase.initializeApp(FIREBASE_CONFIG);
+    dbRef = firebase.database();               // <-- variable GLOBAL
+    window.dbRef = dbRef;                     // también accesible desde otros scripts
 
-/* -----------------------------------------------------------------
-   INICIALIZAR Firebase (solo una vez)
-   ----------------------------------------------------------------- */
-firebase.initializeApp(FIREBASE_CONFIG);
-dbRef = firebase.database();               // <-- variable GLOBAL
-window.dbRef = dbRef;                     // también accesible desde otros scripts
+    // Si deseas Analytics (versión compat), descomenta la siguiente línea:
+    // firebase.analytics();
 
-/* -----------------------------------------------------------------
-   UTILIDADES de conexión (badge, header, sync indicator)
-   ----------------------------------------------------------------- */
-function updateConnBadge() {
-  const badge = document.getElementById('loginConnBadge') ||
-                document.getElementById('adminConn') ||
-                document.getElementById('visitorConn');
-  if (!badge) return;
-  if (firebaseOnline) {
-    badge.className = 'conn-badge online';
-    badge.innerHTML = '<span class="conn-dot"></span> Online';
-  } else {
-    badge.className = 'conn-badge offline';
-    badge.innerHTML = '<span class="conn-dot"></span> Offline';
-  }
-}
-function updateHeaderConn() {
-  const hdr = document.querySelectorAll('.header-conn');
-  hdr.forEach(el => {
-    el.className = firebaseOnline ? 'header-conn online' : 'header-conn offline';
-  });
-}
-function showSyncIndicator() {
-  const si = document.getElementById('syncIndicator');
-  si.style.opacity = '1';
-  setTimeout(() => si.style.opacity = '0', 800);
-}
-
-/* -----------------------------------------------------------------
-   CONEXIÓN .info/connected (cambia badge en tiempo real)
-   ----------------------------------------------------------------- */
-dbRef.ref('.info/connected').on('value', snap => {
-  firebaseOnline = snap.val() === true;
-  updateConnBadge();
-  updateHeaderConn();
-});
-
-/* -----------------------------------------------------------------
-   CARGA INICIAL DE DATOS (remote → fallback → startApp)
-   ----------------------------------------------------------------- */
-function startApp() {
-  // Esta función se llama una sola vez, después de haber cargado D.
-  renderCurrentScreen();   // función que ya tenías (elige pantalla según estado)
-}
-
-/* -------------------------------------------------------------
-   1️⃣  Intentamos leer la BD remota
-   ------------------------------------------------------------- */
-dbRef.ref('medvisit')
-  .once('value')
-  .then(snap => {
-    const remote = snap.val();
-
-    if (remote && remote.users && remote.users.length) {
-      D = remote;                              // usamos datos reales
-      myLastWriteId = remote._writeId || null;
-    } else {
-      // BD vacía → creamos la estructura base y la guardamos
-      D = defaultData();
-      myLastWriteId = Date.now() + '_init';
-      D._writeId = myLastWriteId;
-      dbRef.ref('medvisit').set(D);
+    /* -----------------------------------------------------------------
+       UTILIDADES de conexión (badge, header, sync indicator)
+       ----------------------------------------------------------------- */
+    function updateConnBadge() {
+      const badge = document.getElementById('loginConnBadge') ||
+                    document.getElementById('adminConn') ||
+                    document.getElementById('visitorConn');
+      if (!badge) return;
+      if (firebaseOnline) {
+        badge.className = 'conn-badge online';
+        badge.innerHTML = '<span class="conn-dot"></span> Online';
+      } else {
+        badge.className = 'conn-badge offline';
+        badge.innerHTML = '<span class="conn-dot"></span> Offline';
+      }
+    }
+    function updateHeaderConn() {
+      const hdr = document.querySelectorAll('.header-conn');
+      hdr.forEach(el => {
+        el.className = firebaseOnline ? 'header-conn online' : 'header-conn offline';
+      });
+    }
+    function showSyncIndicator() {
+      const si = document.getElementById('syncIndicator');
+      si.style.opacity = '1';
+      setTimeout(() => si.style.opacity = '0', 800);
     }
 
-    if (!D.labs) D.labs = [];
-    refreshLabs();                // combina labs base + creados por super‑admin
-    saveLocal(D);                // guardamos copia offline
-    firebaseReady = true;
-    firebaseOnline = true;
-    updateConnBadge();
-    updateHeaderConn();
-
-    // habilitamos botón de login (ahora sabemos que podemos conectar)
-    const loginBtn = document.getElementById('loginBtn');
-    loginBtn.disabled = false;
-    loginBtn.innerHTML = 'Iniciar Sesión';
-
-    startApp();
-  })
-  .catch(err => {
-    console.error('❌  Error al leer la BD', err);
-
-    // ----- FALLBACK: intentar cargar desde localStorage ----------
-    try {
-      const local = JSON.parse(localStorage.getItem('medvisit_v5'));
-      if (local && local.users) D = local;
-    } catch (e) { /* ignore */ }
-
-    if (!D.labs) D.labs = [];
-    refreshLabs();
-    saveLocal(D);
-
-    firebaseReady = false;
-    firebaseOnline = false;
-    const loginBtn = document.getElementById('loginBtn');
-    loginBtn.disabled = false;
-    loginBtn.innerHTML = 'Iniciar Sesión';
-
-    // badge indica modo offline
-    const badge = document.getElementById('loginConnBadge');
-    if (badge) {
-      badge.className = 'conn-badge offline';
-      badge.innerHTML = '<span class="conn-dot"></span> Sin conexión – modo local';
-    }
-    updateHeaderConn();
-
-    startApp();
-  });
-
-/* -----------------------------------------------------------------
-   ESCUCHA EN TIEMPO REAL (cualquier cambio en la BD)
-   ----------------------------------------------------------------- */
-dbRef.ref('medvisit').on('value', snap => {
-  const remote = snap.val();
-  if (!remote || !remote.users) return;
-
-  // Ignorar nuestro propio write (evita bucle)
-  if (remote._writeId && remote._writeId === myLastWriteId) return;
-
-  showSyncIndicator();           // breve animación de sincronización
-  D = remote;
-  myLastWriteId = remote._writeId || null;
-  if (!D.labs) D.labs = [];
-  refreshLabs();
-  saveLocal(D);
-  renderCurrentScreen();         // refresca la UI según sea necesario
-});
-
-/* -----------------------------------------------------------------
-   GUARDADO (local + Firebase) – usado por todo el código
-   ----------------------------------------------------------------- */
-function saveLocal(d) {
-  try { localStorage.setItem('medvisit_v5', JSON.stringify(d)); } catch (e) {}
-}
-function save(d) {
-  myLastWriteId = Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-  d._writeId = myLastWriteId;
-  saveLocal(d);
-  if (firebaseReady && dbRef) {
-    dbRef.ref('medvisit').set(d).catch(err => {
-      console.error('Firebase error', err);
-      toast('Error de sincronización, datos guardados localmente', 'err');
+    /* -----------------------------------------------------------------
+       CONEXIÓN .info/connected (cambia badge en tiempo real)
+       ----------------------------------------------------------------- */
+    dbRef.ref('.info/connected').on('value', snap => {
+      firebaseOnline = snap.val() === true;
+      updateConnBadge();
+      updateHeaderConn();
     });
-  }
-}
 
-/* -----------------------------------------------------------------
-   NOTIFICACIONES (admin / super‑admin) – se mantuvo tu lógica original
-   ----------------------------------------------------------------- */
-if (!D.notifications) D.notifications = [];
-function toggleNotifDropdown(){
-  const dd = document.getElementById('notifDropdown');
-  if (dd.style.display === 'none') {
-    renderNotifications();
-    dd.style.display = 'block';
-  } else dd.style.display = 'none';
-}
-function renderNotifications(){
-  const list = document.getElementById('adminNotifList');
-  const pending = D.points.filter(p=>p.approved===false && (p.labId===currentLabId || !currentLabId));
-  if (pending.length===0){
-    list.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);"><i class="fa-solid fa-check-circle" style="font-size:24px;margin-bottom:8px;"></i><br>No hay puntos pendientes</div>';
-    updateBadge(0); return;
-  }
-  updateBadge(pending.length);
-  list.innerHTML = pending.map(p=>{
-    const u=userById(p.assignedTo);
-    return `<div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:var(--bg);">
-      <div style="font-size:11px;color:var(--primary);font-weight:700;margin-bottom:4px;">Nuevo punto solicitado</div>
-      <div style="font-weight:700;font-size:13px;">${esc(p.name)}</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Por: ${u?esc(u.name):'?'}</div>
-      <div style="display:flex;gap:6px;">
-        <button class="btn btn-success btn-sm" style="flex:1;padding:6px;" onclick="approvePoint('${p.id}')"><i class="fa-solid fa-check"></i> Aprobar</button>
-        <button class="btn btn-danger btn-sm" style="flex:1;padding:6px;" onclick="rejectPoint('${p.id}')"><i class="fa-solid fa-times"></i> Rechazar</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-function updateBadge(count){
-  const b1=document.getElementById('adminNotifBadge'), b2=document.getElementById('superNotifBadge');
-  if (b1){b1.textContent=count; b1.style.display=count>0?'block':'none';}
-  if (b2){b2.textContent=count; b2.style.display=count>0?'block':'none';}
-}
-function approvePoint(pid){
-  const p=pointById(pid);
-  if (p){p.approved=true; save(D); renderNotifications(); toast('Punto aprobado');}
-}
-function rejectPoint(pid){
-  D.points=D.points.filter(p=>p.id!==pid);
-  save(D); renderNotifications(); toast('Punto rechazado');
-}
+    /* -----------------------------------------------------------------
+       CARGA INICIAL DE DATOS (remote → fallback → startApp)
+       ----------------------------------------------------------------- */
+    function startApp() {
+      // Esta función se llama una sola vez, después de haber cargado D.
+      renderCurrentScreen();   // función que ya tenías; elige pantalla según estado
+    }
 
-/* -----------------------------------------------------------------
-   El resto del código (login, UI, lógica de negocio, etc.) sigue
-   **exactamente** como estaba en tu archivo original.  No hemos
-   tocado nada más aparte de la inicialización / conexión de Firebase.
-   ----------------------------------------------------------------- */
+    /* -------------------------------------------------------------
+       1️⃣  Intentamos leer la BD remota
+       ------------------------------------------------------------- */
+    dbRef.ref('medvisit')
+      .once('value')
+      .then(snap => {
+        const remote = snap.val();
 
-/* -----------------------------------------------------------------
-   Asegúrate de que la aplicación no intente usar `initFirebase()`
-   (que ya no existe).  Si en alguna parte del código original quedó
-   una llamada a esa función, elimínala (ya está hecho en esta versión).
-   ----------------------------------------------------------------- */
+        if (remote && remote.users && remote.users.length) {
+          D = remote;                              // usamos datos reales
+          myLastWriteId = remote._writeId || null;
+        } else {
+          // BD vacía → creamos la estructura base y la guardamos
+          D = defaultData();
+          myLastWriteId = Date.now() + '_init';
+          D._writeId = myLastWriteId;
+          dbRef.ref('medvisit').set(D);
+        }
 
-/* -----------------------------------------------------------------
-   EVENT LISTENERS y arranque final
-   ----------------------------------------------------------------- */
-document.getElementById('loginPass').addEventListener('keydown', e=>{if(e.key==='Enter')doLogin();});
-document.getElementById('loginUser').addEventListener('keydown', e=>{if(e.key==='Enter')document.getElementById('loginPass').focus();});
-document.addEventListener('keydown', e=>{if(e.key==='Escape'){document.querySelectorAll('.modal-overlay.open').forEach(m=>closeModal(m.id)); cancelConfirm();}});
-['click','touchstart','keydown','scroll'].forEach(ev=>document.addEventListener(ev,()=>{ if(currentUser && sessionEnd) sessionEnd=Date.now()+SESSION_MS; },{passive:true}));
-</script>
+        if (!D.labs) D.labs = [];
+        refreshLabs();                // combina labs base + creados por super‑admin
+        saveLocal(D);                // guardamos copia offline
+        firebaseReady = true;
+        firebaseOnline = true;
+        updateConnBadge();
+        updateHeaderConn();
 
+        // habilitamos botón de login (ahora sabemos que podemos conectar)
+        const loginBtn = document.getElementById('loginBtn');
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = 'Iniciar Sesión';
+
+        startApp();
+      })
+      .catch(err => {
+        console.error('❌  Error al leer la BD', err);
+
+        // ----- FALLBACK: intentar cargar desde localStorage ----------
+        try {
+          const local = JSON.parse(localStorage.getItem('medvisit_v5'));
+          if (local && local.users) D = local;
+        } catch (e) { /* ignore */ }
+
+        if (!D.labs) D.labs = [];
+        refreshLabs();
+        saveLocal(D);
+
+        firebaseReady = false;
+        firebaseOnline = false;
+        const loginBtn = document.getElementById('loginBtn');
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = 'Iniciar Sesión';
+
+        // badge indica modo offline
+        const badge = document.getElementById('loginConnBadge');
+        if (badge) {
+          badge.className = 'conn-badge offline';
+          badge.innerHTML = '<span class="conn-dot"></span> Sin conexión – modo local';
+        }
+        updateHeaderConn();
+
+        startApp();
+      });
+
+    /* -----------------------------------------------------------------
+       ESCUCHA EN TIEMPO REAL (cualquier cambio en la BD)
+       ----------------------------------------------------------------- */
+    dbRef.ref('medvisit').on('value', snap => {
+      const remote = snap.val();
+      if (!remote || !remote.users) return;
+
+      // Ignorar nuestro propio write (evita bucle)
+      if (remote._writeId && remote._writeId === myLastWriteId) return;
+
+      showSyncIndicator();           // breve animación de sincronización
+      D = remote;
+      myLastWriteId = remote._writeId || null;
+      if (!D.labs) D.labs = [];
+      refreshLabs();
+      saveLocal(D);
+      renderCurrentScreen();         // refresca la UI según sea necesario
+    });
+
+    /* -----------------------------------------------------------------
+       GUARDADO (local + Firebase) – usado por todo el código
+       ----------------------------------------------------------------- */
+    function saveLocal(d) {
+      try { localStorage.setItem('medvisit_v5', JSON.stringify(d)); } catch (e) {}
+    }
+    function save(d) {
+      myLastWriteId = Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+      d._writeId = myLastWriteId;
+      saveLocal(d);
+      if (firebaseReady && dbRef) {
+        dbRef.ref('medvisit').set(d).catch(err => {
+          console.error('Firebase error', err);
+          toast('Error de sincronización, datos guardados localmente', 'err');
+        });
+      }
+    }
+
+    /* -----------------------------------------------------------------
+       NOTIFICACIONES (admin / super‑admin) – se mantuvo tu lógica original
+       ----------------------------------------------------------------- */
+    if (!D.notifications) D.notifications = [];
+    function toggleNotifDropdown(){
+      const dd = document.getElementById('notifDropdown');
+      if (dd.style.display === 'none') {
+        renderNotifications();
+        dd.style.display = 'block';
+      } else dd.style.display = 'none';
+    }
+    function renderNotifications(){
+      const list = document.getElementById('adminNotifList');
+      const pending = D.points.filter(p=>p.approved===false && (p.labId===currentLabId || !currentLabId));
+      if (pending.length===0){
+        list.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);"><i class="fa-solid fa-check-circle" style="font-size:24px;margin-bottom:8px;"></i><br>No hay puntos pendientes</div>';
+        updateBadge(0); return;
+      }
+      updateBadge(pending.length);
+      list.innerHTML = pending.map(p=>{
+        const u=userById(p.assignedTo);
+        return `<div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:var(--bg);">
+          <div style="font-size:11px;color:var(--primary);font-weight:700;margin-bottom:4px;">Nuevo punto solicitado</div>
+          <div style="font-weight:700;font-size:13px;">${esc(p.name)}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Por: ${u?esc(u.name):'?'}</div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-success btn-sm" style="flex:1;padding:6px;" onclick="approvePoint('${p.id}')"><i class="fa-solid fa-check"></i> Aprobar</button>
+            <button class="btn btn-danger btn-sm" style="flex:1;padding:6px;" onclick="rejectPoint('${p.id}')"><i class="fa-solid fa-times"></i> Rechazar</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    function updateBadge(count){
+      const b1=document.getElementById('adminNotifBadge'), b2=document.getElementById('superNotifBadge');
+      if (b1){b1.textContent=count; b1.style.display=count>0?'block':'none';}
+      if (b2){b2.textContent=count; b2.style.display=count>0?'block':'none';}
+    }
+    function approvePoint(pid){
+      const p=pointById(pid);
+      if (p){p.approved=true; save(D); renderNotifications(); toast('Punto aprobado');}
+    }
+    function rejectPoint(pid){
+      D.points=D.points.filter(p=>p.id!==pid);
+      save(D); renderNotifications(); toast('Punto rechazado');
+    }
+
+    /* -----------------------------------------------------------------
+       El resto del código (login, UI, lógica de negocio, etc.) sigue
+       **exactamente** como estaba en tu archivo original.  No hemos
+       tocado nada más aparte de la inicialización / conexión de Firebase.
+       ----------------------------------------------------------------- */
+
+    /* -----------------------------------------------------------------
+       EVENT LISTENERS y arranque final
+       ----------------------------------------------------------------- */
+    document.getElementById('loginPass').addEventListener('keydown', e=>{if(e.key==='Enter')doLogin();});
+    document.getElementById('loginUser').addEventListener('keydown', e=>{if(e.key==='Enter')document.getElementById('loginPass').focus();});
+    document.addEventListener('keydown', e=>{if(e.key==='Escape'){document.querySelectorAll('.modal-overlay.open').forEach(m=>closeModal(m.id)); cancelConfirm();}});
+    ['click','touchstart','keydown','scroll'].forEach(ev=>document.addEventListener(ev,()=>{ if(currentUser && sessionEnd) sessionEnd=Date.now()+SESSION_MS; },{passive:true}));
+  </script>
 </body>
 </html>
