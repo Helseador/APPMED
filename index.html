@@ -989,38 +989,110 @@ function superGuardarLab(){
   }
 }
 
-/* ------------------------------------------------------------------
-   INICIALIZACIÓN DE FIREBASE Y ARRANQUE
-   ------------------------------------------------------------------ */
-function initFirebase(){
-  var loginBtn=document.getElementById('loginBtn'), connBadge=document.getElementById('loginConnBadge');
-  try{
-    firebase.initializeApp(FIREBASE_CONFIG);
-    dbRef=firebase.database();
-    dbRef.ref('.info/connected').on('value',snap=>{firebaseOnline=snap.val()===true; updateConnBadge(); updateHeaderConn();});
-    dbRef.ref('medvisit').once('value').then(snap=>{
-      var r=snap.val();
-      if(r && r.users && r.users.length>0){ D=r; myLastWriteId=r._writeId||null;}
-      else{ D=defaultData(); myLastWriteId=Date.now()+'_init'; D._writeId=myLastWriteId;}
-      if(!D.labs) D.labs=[];
-      refreshLabs(); saveLocal(D); firebaseReady=true; firebaseOnline=true; loginBtn.disabled=false; loginBtn.innerHTML='Iniciar Sesión'; updateConnBadge(); updateHeaderConn();
-    }).catch(err=>{
-      console.error('Error Firebase:',err);
-      try{ var l=JSON.parse(localStorage.getItem('medvisit_v5')); if(l && l.users) D=l; }catch(e){}
-      if(!D.labs) D.labs=[]; refreshLabs(); saveLocal(D); firebaseReady=false; firebaseOnline=false; loginBtn.disabled=false; loginBtn.innerHTML='Iniciar Sesión'; connBadge.className='conn-badge offline'; connBadge.innerHTML='<span class="conn-dot"></span> Sin conexion   modo local'; updateHeaderConn();
+<!-- ==== FIREBASE SDKs ==== -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+<!-- ==== INICIA FIREBASE CON TU CONFIG ==== -->
+<script>
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyB-1_xhBuzfcL_XUFkT0yZfa6rCMl6DV0Q",
+    authDomain: "medvisit-app-e5991.firebaseapp.com",
+    databaseURL: "https://medvisit-app-e5991-default-rtdb.firebaseio.com",
+    projectId: "medvisit-app-e5991",
+    storageBucket: "medvisit-app-e5991.firebasestorage.app",
+    messagingSenderId: "372705290165",
+    appId: "1:372705290165:web:8694260ce573e172ee5bfc"
+  };
+
+  /* --------------------------------------------------------------
+     1️⃣  INICIALIZACIÓN DE FIREBASE
+     -------------------------------------------------------------- */
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const dbRef = firebase.database();   // referencia a Realtime Database
+
+  /* --------------------------------------------------------------
+     2️⃣  VARIABLES DE ESTADO Y FALLBACK LOCAL
+     -------------------------------------------------------------- */
+  let firebaseReady = false;
+  let firebaseOnline = false;
+  let myLastWriteId = null;
+  let D = defaultData();                // datos por defecto (fallback)
+  if (!D.labs) D.labs = [];
+
+  /* --------------------------------------------------------------
+     3️⃣  ESTADO DE CONEXIÓN (online / offline)
+     -------------------------------------------------------------- */
+  dbRef.ref('.info/connected').on('value', snap => {
+    firebaseOnline = snap.val() === true;
+    updateConnBadge();      // UI: badge de conexión
+    updateHeaderConn();     // UI: header del admin/visitador
+  });
+
+  /* --------------------------------------------------------------
+     4️⃣  CARGA INICIAL DE LA BD
+     -------------------------------------------------------------- */
+  dbRef.ref('medvisit').once('value')
+    .then(snap => {
+      const remote = snap.val();
+      if (remote && remote.users && remote.users.length) {
+        D = remote;                           // usamos datos de la nube
+        myLastWriteId = remote._writeId || null;
+      } else {
+        // No hay datos → usamos la estructura base y la guardamos
+        D = defaultData();
+        myLastWriteId = Date.now() + '_init';
+        D._writeId = myLastWriteId;
+        dbRef.ref('medvisit').set(D);
+      }
+      if (!D.labs) D.labs = [];
+      refreshLabs();               // combina labs base + creados por super‑admin
+      saveLocal(D);                // copia en localStorage (fallback offline)
+      firebaseReady = true;
+      firebaseOnline = true;
+      document.getElementById('loginBtn').disabled = false;
+      document.getElementById('loginBtn').innerHTML = 'Iniciar Sesión';
+      updateConnBadge();
+      updateHeaderConn();
+    })
+    .catch(err => {
+      console.error('❌  Error al leer la BD', err);
+      // FALLBACK: intenta cargar de localStorage
+      try {
+        const local = JSON.parse(localStorage.getItem('medvisit_v5'));
+        if (local && local.users) D = local;
+      } catch (e) { /* ignore */ }
+      if (!D.labs) D.labs = [];
+      refreshLabs();
+      saveLocal(D);
+      firebaseReady = false;
+      firebaseOnline = false;
+      document.getElementById('loginBtn').disabled = false;
+      document.getElementById('loginBtn').innerHTML = 'Iniciar Sesión';
+      const badge = document.getElementById('loginConnBadge');
+      badge.className = 'conn-badge offline';
+      badge.innerHTML = '<span class="conn-dot"></span> Sin conexión – modo local';
+      updateHeaderConn();
     });
-    dbRef.ref('medvisit').on('value',snap=>{
-      var n=snap.val();
-      if(!n||!n.users) return;
-      if(n._writeId && n._writeId===myLastWriteId) return;
-      showSyncIndicator(); D=n; myLastWriteId=n._writeId||null; if(!D.labs) D.labs=[]; refreshLabs(); saveLocal(D); renderCurrentScreen();
-    });
-  }catch(e){
-    console.error('Error init Firebase:',e);
-    try{ var l=JSON.parse(localStorage.getItem('medvisit_v5')); if(l && l.users) D=l; }catch(ex){}
-    saveLocal(D); firebaseReady=false; loginBtn.disabled=false; loginBtn.innerHTML='Iniciar Sesión'; connBadge.className='conn-badge offline'; connBadge.innerHTML='<span class="conn-dot"></span> Error de conexion'; updateHeaderConn();
-  }
-}
+
+  /* --------------------------------------------------------------
+     5️⃣  ESCUCHA EN TIEMPO REAL (cambios de cualquier usuario)
+     -------------------------------------------------------------- */
+  dbRef.ref('medvisit').on('value', snap => {
+    const remote = snap.val();
+    if (!remote || !remote.users) return;
+    // Ignoramos nuestro propio write para evitar bucle infinito
+    if (remote._writeId && remote._writeId === myLastWriteId) return;
+
+    showSyncIndicator();          // animación breve de sincronización
+    D = remote;
+    myLastWriteId = remote._writeId || null;
+    if (!D.labs) D.labs = [];
+    refreshLabs();
+    saveLocal(D);
+    renderCurrentScreen();        // refresca la UI (admin, visitador, etc.)
+  });
+</script>
 
 /* ------------------------------------------------------------------
    EVENT LISTENERS Y ARRANQUE
