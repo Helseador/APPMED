@@ -714,6 +714,47 @@ function save(d){
 }
 
 /* ------------------------------------------------------------------
+   CONEXIÓN – badges de estado
+   ------------------------------------------------------------------ */
+function updateConnBadge(){
+  var badge=document.getElementById('loginConnBadge');
+  if(!badge) return;
+  if(firebaseOnline){
+    badge.className='conn-badge online';
+    badge.innerHTML='<span class="conn-dot"></span> Conectado';
+  }else{
+    badge.className='conn-badge offline';
+    badge.innerHTML='<span class="conn-dot"></span> Sin conexión – modo local';
+  }
+}
+function updateHeaderConn(){
+  var ids=['adminConn','visitorConn','superConn','labSelectConn'];
+  ids.forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el) return;
+    if(firebaseOnline){
+      el.className='header-conn online';
+      el.innerHTML='<span class="hdot"></span>Cloud';
+    }else{
+      el.className='header-conn offline';
+      el.innerHTML='<span class="hdot"></span>Local';
+    }
+  });
+}
+function showSyncIndicator(){
+  var el=document.getElementById('syncIndicator');
+  if(!el) return;
+  el.style.display='flex';
+  setTimeout(function(){el.style.display='none';},2000);
+}
+function renderCurrentScreen(){
+  if(!currentUser) return;
+  if(currentUser.role==='super') renderSuperAdmin();
+  else if(currentUser.role==='admin') renderAdmin();
+  else renderVisitor();
+}
+
+/* ------------------------------------------------------------------
    TOAST / MODALES
    ------------------------------------------------------------------ */
 function toast(msg,type){type=type||'ok';var w=document.getElementById('toastWrap'),t=document.createElement('div');t.className='toast toast-'+type;var icon=type==='ok'?'fa-circle-check':type==='err'?'fa-circle-xmark':'fa-circle-info';t.innerHTML='<i class="fa-solid '+icon+'"></i><span>'+esc(msg)+'</span>';w.appendChild(t);setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),250);},3000);}
