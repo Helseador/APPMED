@@ -590,11 +590,83 @@ var BASE_LABS=[
 var LABS=BASE_LABS.slice();   // se rellenará con laboratorios creados por super‑admin
 
 /* CONFIG FIREBASE (debes reemplazar por los tuyos) */
-var FIREBASE_CONFIG={apiKey:"AIzaSyB-1_xhBuzfcL_XUFkT0yZfa6rCMl6DV0Q",authDomain:"medvisit-app-e5991.firebaseapp.com",databaseURL:"https://medvisit-app-e5991-default-rtdb.firebaseio.com",projectId:"medvisit-app-e5991",storageBucket:"medvisit-app-e5991.firebasestorage.app",messagingSenderId:"372705290165",appId:"1:372705290165:web:8694260ce573e172ee5bfc"};
+var FIREBASE_CONFIG={apiKey:"AIzaSyAKcDvxBjl4-fJ6ov2bRhX1ExFQlRFiszA",authDomain:"appmed-f21de.firebaseapp.com",databaseURL:"https://appmed-f21de-default-rtdb.firebaseio.com",projectId:"appmed-f21de",storageBucket:"appmed-f21de.firebasestorage.app",messagingSenderId:"77112324308",appId:"1:77112324308:web:5f2204fc5182d4ab004b41",measurementId:"G-2FR4P74ZE6"};
 var SUPER_ADMIN_KEY='TesJua2024!';
 var MAX_LOGIN_ATTEMPTS=5, LOCKOUT_SECONDS=30, SESSION_MINUTES=30;
 var AV_COLORS=['#0F766E','#D97706','#DC2626','#7C3AED','#2563EB','#DB2777','#059669','#EA580C','#4F46E5','#0891B2'];
 var MIN_PER_PUNTO=15;
+
+/* ------------------------------------------------------------------
+   DATOS POR DEFECTO
+   ------------------------------------------------------------------ */
+function defaultData(){
+  return {users:[],visits:[],points:[],labs:[],notifications:[]};
+}
+
+/* ------------------------------------------------------------------
+   INICIALIZACIÓN FIREBASE
+   ------------------------------------------------------------------ */
+function initFirebase(){
+  firebase.initializeApp(FIREBASE_CONFIG);
+  dbRef = firebase.database();
+
+  dbRef.ref('.info/connected').on('value',function(snap){
+    firebaseOnline=snap.val()===true;
+    updateConnBadge();
+    updateHeaderConn();
+  });
+
+  dbRef.ref('medvisit').once('value')
+    .then(function(snap){
+      var remote=snap.val();
+      if(remote && remote.users && remote.users.length){
+        D=remote;
+        myLastWriteId=remote._writeId||null;
+      }else{
+        D=defaultData();
+        myLastWriteId=Date.now()+'_init';
+        D._writeId=myLastWriteId;
+        dbRef.ref('medvisit').set(D);
+      }
+      if(!D.labs) D.labs=[];
+      refreshLabs();
+      saveLocal(D);
+      firebaseReady=true;
+      firebaseOnline=true;
+      document.getElementById('loginBtn').disabled=false;
+      document.getElementById('loginBtn').innerHTML='Iniciar Sesión';
+      updateConnBadge();
+      updateHeaderConn();
+    })
+    .catch(function(err){
+      console.error('Error al leer la BD',err);
+      try{var local=JSON.parse(localStorage.getItem('medvisit_v5'));if(local && local.users)D=local;}catch(e){}
+      if(!D.labs) D.labs=[];
+      refreshLabs();
+      saveLocal(D);
+      firebaseReady=false;
+      firebaseOnline=false;
+      document.getElementById('loginBtn').disabled=false;
+      document.getElementById('loginBtn').innerHTML='Iniciar Sesión';
+      var badge=document.getElementById('loginConnBadge');
+      badge.className='conn-badge offline';
+      badge.innerHTML='<span class="conn-dot"></span> Sin conexión – modo local';
+      updateHeaderConn();
+    });
+
+  dbRef.ref('medvisit').on('value',function(snap){
+    var remote=snap.val();
+    if(!remote||!remote.users) return;
+    if(remote._writeId && remote._writeId===myLastWriteId) return;
+    showSyncIndicator();
+    D=remote;
+    myLastWriteId=remote._writeId||null;
+    if(!D.labs) D.labs=[];
+    refreshLabs();
+    saveLocal(D);
+    renderCurrentScreen();
+  });
+}
 
 /* ------------------------------------------------------------------
    VARIABLES DE ESTADO
@@ -993,8 +1065,15 @@ function superGuardarLab(){
   }
 }
 
-<!-- ==== FIREBASE SDKs ==== -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+/* ------------------------------------------------------------------
+   EVENT LISTENERS Y ARRANQUE
+   ------------------------------------------------------------------ */
+document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('loginUser').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginPass').focus();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.modal-overlay.open').forEach(m=>closeModal(m.id)); cancelConfirm();}});
+['click','touchstart','keydown','scroll'].forEach(ev=>document.addEventListener(ev,()=>{ if(currentUser && sessionEnd) sessionEnd=Date.now()+SESSION_MINUTES*60*1000; },{passive:true}));
+initFirebase();
+</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
 <!-- ==== INICIA FIREBASE CON TU CONFIG ==== -->
