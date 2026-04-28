@@ -1107,6 +1107,832 @@ function superGuardarLab(){
 }
 
 /* ------------------------------------------------------------------
+   CONSTANTES GLOBALES FALTANTES
+   ------------------------------------------------------------------ */
+var DOW_NAME={1:'Lunes',2:'Martes',3:'Miercoles',4:'Jueves',5:'Viernes',6:'Sabado',0:'Domingo'};
+var gpsPermission='unknown';
+var _superBackTo=null;
+var rptDesde=null, rptHasta=null;
+
+/* ------------------------------------------------------------------
+   NAVEGACIÓN – PANTALLAS
+   ------------------------------------------------------------------ */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  var el=document.getElementById(id);
+  if(el) el.classList.add('active');
+}
+
+/* ------------------------------------------------------------------
+   LOCKOUT / GPS PERMISSION OVERLAY
+   ------------------------------------------------------------------ */
+function showLockout(){
+  var overlay=document.getElementById('lockoutOverlay');
+  overlay.style.display='flex';
+  var seconds=LOCKOUT_SECONDS;
+  if(lockoutInterval) clearInterval(lockoutInterval);
+  lockoutInterval=setInterval(function(){
+    seconds--;
+    var el=document.getElementById('lockoutTimer');
+    if(el) el.textContent='00:'+seconds.toString().padStart(2,'0');
+    if(seconds<=0){
+      clearInterval(lockoutInterval); lockoutInterval=null;
+      overlay.style.display='none';
+      lockoutEnd=0;
+    }
+  },1000);
+}
+function showGpsPermOverlay(){
+  document.getElementById('gpsPermOverlay').classList.add('open');
+}
+function requestGpsAndInit(){
+  document.getElementById('gpsPermOverlay').classList.remove('open');
+  navigator.geolocation.getCurrentPosition(
+    function(){gpsPermission='granted'; showScreen('visitorScreen'); renderVisitor();},
+    function(){gpsPermission='denied'; showScreen('visitorScreen'); renderVisitor();}
+  );
+}
+function skipGpsAndInit(){
+  document.getElementById('gpsPermOverlay').classList.remove('open');
+  gpsPermission='denied';
+  showScreen('visitorScreen');
+  renderVisitor();
+}
+
+/* ------------------------------------------------------------------
+   UTILIDADES
+   ------------------------------------------------------------------ */
+function getGreeting(){
+  var h=new Date().getHours();
+  return h<12?'Buenos días':h<18?'Buenas tardes':'Buenas noches';
+}
+function todayDow(){
+  var d=new Date().getDay(); return d===0?7:d;
+}
+function todayForDow(dow){return today();}
+function userById(id){return D.users.find(u=>u.id===id);}
+function pointById(id){return D.points.find(p=>p.id===id);}
+function visitById(id){return D.visits.find(v=>v.id===id);}
+function mapsLink(lat,lng,addr){
+  if(lat&&lng) return 'https://www.google.com/maps?q='+lat+','+lng;
+  return 'https://www.google.com/maps/search/'+encodeURIComponent(addr||'');
+}
+function addrHTML(addr,lat,lng){
+  return '<a href="'+mapsLink(lat,lng,addr)+'" target="_blank" class="map-link"><i class="fa-solid fa-location-dot"></i>'+esc(addr||'Sin dirección')+'</a>';
+}
+function buildMapsRouteUrl(pts){
+  var valid=pts.filter(p=>p.lat&&p.lng);
+  if(!valid.length) return '';
+  if(valid.length===1) return mapsLink(valid[0].lat,valid[0].lng,valid[0].address);
+  var origin=valid[0].lat+','+valid[0].lng;
+  var dest=valid[valid.length-1].lat+','+valid[valid.length-1].lng;
+  var waypoints=valid.slice(1,-1).map(p=>p.lat+','+p.lng).join('|');
+  return 'https://www.google.com/maps/dir/?api=1&origin='+origin+'&destination='+dest+(waypoints?'&waypoints='+waypoints:'');
+}
+
+/* ------------------------------------------------------------------
+   CONFIRMAR LOGOUT / ACCIONES
+   ------------------------------------------------------------------ */
+var _confirmCb=null;
+function confirmLogout(){
+  showConfirm('Cerrar sesión','¿Seguro que quieres salir?','danger','fa-right-from-bracket',function(){doLogout();},'danger');
+}
+function showConfirm(title,msg,type,icon,cb,btnClass){
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmMsg').textContent=msg;
+  document.getElementById('confirmIcon').className='confirm-icon '+(type||'warning');
+  document.getElementById('confirmIconI').className='fa-solid '+(icon||'fa-question');
+  var btn=document.getElementById('confirmOkBtn');
+  btn.className='btn btn-'+(btnClass||'primary');
+  _confirmCb=cb;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function executeConfirm(){
+  document.getElementById('confirmOverlay').classList.remove('open');
+  if(_confirmCb){_confirmCb(); _confirmCb=null;}
+}
+function cancelConfirm(){
+  document.getElementById('confirmOverlay').classList.remove('open');
+  _confirmCb=null;
+}
+
+/* ------------------------------------------------------------------
+   TAB SWITCHING
+   ------------------------------------------------------------------ */
+function switchAdminTab(tab,btn){
+  currentAdminTab=tab;
+  document.querySelectorAll('#adminScreen .tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#adminScreen .tab-btn').forEach(b=>b.classList.remove('active'));
+  var el=document.getElementById('aTab-'+tab);
+  if(el) el.classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(tab==='canvas') renderCanvasDashboard();
+  else if(tab==='visitadores') renderVisitorList();
+  else if(tab==='visitas') renderAdminVisitas();
+  else if(tab==='fotos') renderAdminFotos();
+  else if(tab==='informes') renderInformes();
+}
+function switchVisitorTab(tab,btn){
+  currentVisitorTab=tab;
+  document.querySelectorAll('#visitorScreen .tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#visitorScreen .tab-btn').forEach(b=>b.classList.remove('active'));
+  var el=document.getElementById('vTab-'+tab);
+  if(el) el.classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(tab==='semana') renderVisitorSemana();
+  else if(tab==='perfil') renderVisitorPerfil();
+}
+function switchSuperTab(tab,btn){
+  currentSuperTab=tab;
+  document.querySelectorAll('#superScreen .tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#superScreen .tab-btn').forEach(b=>b.classList.remove('active'));
+  var el=document.getElementById('sTab-'+tab);
+  if(el) el.classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(tab==='users') renderSuperUsers();
+  else if(tab==='sVisitas') renderSuperVisitas();
+  else if(tab==='sFotos') renderSuperFotos();
+  else if(tab==='sLabs') renderSuperLabs();
+}
+
+/* ------------------------------------------------------------------
+   SUPER ADMIN – RENDER
+   ------------------------------------------------------------------ */
+function renderSuperAdmin(){
+  renderSuperUsers();
+  renderSuperVisitas();
+  renderSuperFotos();
+  renderSuperLabs();
+}
+function renderSuperUsers(){
+  var el=document.getElementById('superUserList');
+  if(!el) return;
+  if(!D.users.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-users"></i><p>No hay usuarios</p></div>';return;}
+  el.innerHTML=D.users.map(u=>{
+    var lab=LABS.find(l=>l.id===u.labId);
+    var col=avatarColor(u.id);
+    return `<div class="user-item" onclick="openSuperDetail('${u.id}')">
+      <div class="avatar" style="background:${col};">${initials(u.name)}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:14px;">${esc(u.name)}</div>
+        <div style="font-size:12px;color:var(--muted);">@${esc(u.username)} · ${u.role==='admin'?'Admin':'Visitador'} · ${lab?esc(lab.name):'Sin lab'}</div>
+      </div>
+      <span class="badge ${u.active?'badge-done':'badge-cancel'}">${u.active?'Activo':'Inactivo'}</span>
+    </div>`;
+  }).join('');
+}
+function openSuperDetail(uid){
+  var u=userById(uid);
+  if(!u) return;
+  lastSuperDetailId=uid;
+  switchSuperTab('superDetail',null);
+  var el=document.getElementById('superDetailContent');
+  var lab=LABS.find(l=>l.id===u.labId);
+  var col=avatarColor(u.id);
+  var pts=D.points.filter(p=>p.assignedTo===uid);
+  var visits=D.visits.filter(v=>v.visitorId===uid);
+  el.innerHTML=`
+    <div style="text-align:center;padding:20px 0 16px;">
+      <div class="avatar" style="width:64px;height:64px;font-size:24px;margin:0 auto 10px;background:${col};">${initials(u.name)}</div>
+      <div style="font-size:18px;font-weight:800;">${esc(u.name)}</div>
+      <div style="font-size:13px;color:var(--muted);">@${esc(u.username)} · ${lab?esc(lab.name):'Sin lab'}</div>
+      <span class="badge ${u.active?'badge-done':'badge-cancel'}" style="margin-top:8px;">${u.active?'Activo':'Inactivo'}</span>
+    </div>
+    <div class="pw-display"><span class="pw-text" id="pwText_${u.id}">••••••••</span>
+      <button class="pw-btn" onclick="togglePw('${u.id}','${esc(u.password)}')"><i class="fa-solid fa-eye"></i></button>
+      <button class="pw-btn" onclick="copyPw('${esc(u.password)}')"><i class="fa-solid fa-copy"></i></button>
+    </div>
+    <div class="stat-grid" style="margin-top:16px;">
+      <div class="stat-card"><div class="stat-num">${visits.length}</div><div class="stat-label">Visitas totales</div></div>
+      <div class="stat-card"><div class="stat-num">${pts.length}</div><div class="stat-label">Puntos asignados</div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn btn-primary" style="flex:1;" onclick="openSuperEdit('${u.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
+      <button class="btn ${u.active?'btn-danger':'btn-success'}" style="flex:1;" onclick="toggleUserActive('${u.id}')">${u.active?'Desactivar':'Activar'}</button>
+    </div>
+    <div style="margin-top:16px;"><div class="section-title">Puntos asignados</div>
+      ${pts.length?pts.map(p=>`<div class="card" style="margin-bottom:8px;padding:12px;">
+        <div style="font-weight:700;">${esc(p.name)}</div>
+        <div style="font-size:12px;color:var(--muted);">${esc(p.address||'')}</div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <button class="btn btn-ghost btn-sm" onclick="_superBackTo='${u.id}';openPointEdit('${p.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="deletePoint('${p.id}','${u.id}')"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>`).join(''):'<div class="empty-state" style="padding:20px;"><i class="fa-solid fa-map-pin"></i><p>Sin puntos</p></div>'}
+      <button class="btn btn-ghost" style="margin-top:8px;" onclick="openNewPoint('${u.id}')"><i class="fa-solid fa-plus"></i> Nuevo punto</button>
+    </div>`;
+}
+function superNuevoUsuario(){
+  document.getElementById('superEditId').value='';
+  document.getElementById('modalSuperEditTitle').textContent='Nuevo Usuario';
+  document.getElementById('seName').value='';
+  document.getElementById('seUsername').value='';
+  document.getElementById('sePassword').value='';
+  document.getElementById('seRole').value='visitor';
+  document.getElementById('seLabId').value=LABS[0]?LABS[0].id:'nestle';
+  document.getElementById('superDeleteBtn').style.display='none';
+  openModal('modalSuperEdit');
+}
+function openSuperEdit(uid){
+  var u=userById(uid);
+  if(!u) return;
+  document.getElementById('superEditId').value=u.id;
+  document.getElementById('modalSuperEditTitle').textContent='Editar Usuario';
+  document.getElementById('seName').value=u.name;
+  document.getElementById('seUsername').value=u.username;
+  document.getElementById('sePassword').value='';
+  document.getElementById('seRole').value=u.role;
+  document.getElementById('seLabId').value=u.labId||'';
+  document.getElementById('superDeleteBtn').style.display='inline-flex';
+  openModal('modalSuperEdit');
+}
+function superSaveUser(){
+  var id=document.getElementById('superEditId').value;
+  var name=document.getElementById('seName').value.trim();
+  var username=document.getElementById('seUsername').value.trim();
+  var password=document.getElementById('sePassword').value;
+  var role=document.getElementById('seRole').value;
+  var labId=document.getElementById('seLabId').value;
+  if(!name||!username){toast('Nombre y usuario obligatorios','err');return;}
+  if(id){
+    var u=userById(id);
+    if(u){u.name=name;u.username=username;u.role=role;u.labId=labId;if(password)u.password=password;}
+  }else{
+    if(!password){toast('Contraseña obligatoria','err');return;}
+    if(D.users.find(u=>u.username===username)){toast('Usuario ya existe','err');return;}
+    D.users.push({id:uid(),name,username,password,role,labId,active:true});
+  }
+  save(D); closeModal('modalSuperEdit'); renderSuperUsers(); toast(id?'Usuario actualizado':'Usuario creado');
+}
+function superDeleteUser(uid){
+  D.users=D.users.filter(u=>u.id!==uid);
+  save(D); closeModal('modalSuperEdit'); renderSuperUsers(); toast('Usuario eliminado');
+}
+function toggleUserActive(uid){
+  var u=userById(uid);
+  if(u){u.active=!u.active; save(D); openSuperDetail(uid); toast(u.active?'Usuario activado':'Usuario desactivado');}
+}
+function togglePw(uid,pw){
+  var el=document.getElementById('pwText_'+uid);
+  if(el) el.textContent=el.textContent==='••••••••'?pw:'••••••••';
+}
+function copyPw(pw){
+  navigator.clipboard.writeText(pw).then(()=>toast('Contraseña copiada')).catch(()=>toast('No se pudo copiar','err'));
+}
+function renderSuperVisitas(){
+  var el=document.getElementById('superVisitasList');
+  if(!el) return;
+  var labF=document.getElementById('sFilterLab')?document.getElementById('sFilterLab').value:'';
+  var stF=document.getElementById('sFilterStatus')?document.getElementById('sFilterStatus').value:'';
+  var list=D.visits.filter(v=>(labF?v.labId===labF:true)&&(stF?v.status===stF:true));
+  list.sort((a,b)=>b.date>a.date?1:-1);
+  if(!list.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>Sin visitas</p></div>';return;}
+  el.innerHTML=list.map(v=>{
+    var u=userById(v.visitorId); var p=pointById(v.pointId);
+    var lab=LABS.find(l=>l.id===v.labId);
+    var bc=v.status==='completed'?'badge-done':v.status==='in-progress'?'badge-progress':v.status==='cancelled'?'badge-cancel':'badge-pending';
+    var bl=v.status==='completed'?'Completada':v.status==='in-progress'?'En Curso':v.status==='cancelled'?'Cancelada':'Pendiente';
+    return `<div class="card" style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span class="badge ${bc}">${bl}</span>
+        <span style="font-size:11px;color:var(--muted);">${fmtDate(v.date)}</span>
+      </div>
+      <div style="font-weight:700;">${p?esc(p.name):esc(v.placeName||'Visita')}</div>
+      <div style="font-size:12px;color:var(--muted);">${u?esc(u.name):'?'} · ${lab?esc(lab.name):''}</div>
+      ${v.photo?`<img src="${v.photo}" class="visit-photo-thumb" style="margin-top:8px;" onclick="viewVisitPhoto('${v.id}')">`:''}</div>`;
+  }).join('');
+}
+function renderSuperFotos(){
+  var el=document.getElementById('superFotosList');
+  if(!el) return;
+  var labF=document.getElementById('sFilterFotoLab')?document.getElementById('sFilterFotoLab').value:'';
+  var photos=D.visits.filter(v=>v.photo&&(labF?v.labId===labF:true));
+  if(!photos.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-images"></i><p>Sin fotos</p></div>';return;}
+  el.innerHTML=photos.map(v=>`<img src="${v.photo}" class="gallery-img" onclick="viewVisitPhoto('${v.id}')" style="width:100%;border-radius:10px;cursor:pointer;">`).join('');
+}
+function renderSuperLabs(){
+  var el=document.getElementById('superLabsList');
+  if(!el) return;
+  el.innerHTML=LABS.map(lab=>{
+    var members=D.users.filter(u=>u.labId===lab.id).length;
+    var visits=D.visits.filter(v=>v.labId===lab.id&&v.status==='completed').length;
+    return `<div class="card" style="margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:${lab.color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;flex-shrink:0;">
+          ${lab.logoData?`<img src="${lab.logoData}" style="max-width:85%;max-height:85%;object-fit:contain;">`:lab.logo?`<img src="${lab.logo}" style="max-width:85%;max-height:85%;object-fit:contain;">`:`<i class="fa-solid ${lab.icon}"></i>`}
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:800;">${esc(lab.name)}</div>
+          <div style="font-size:12px;color:var(--muted);">${members} usuarios · ${visits} visitas completadas</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ------------------------------------------------------------------
+   ADMIN – CANVAS DASHBOARD
+   ------------------------------------------------------------------ */
+function renderCanvasDashboard(){
+  var el=document.getElementById('aTab-canvas');
+  if(!el) return;
+  var lab=LABS.find(l=>l.id===currentLabId);
+  var labColor=lab?lab.color:'var(--primary)';
+  var labColorLight=lab?lab.colorLight:'var(--primary-50)';
+  var myUsers=D.users.filter(u=>u.labId===currentLabId&&u.role==='visitor'&&u.active);
+  var todayVisits=D.visits.filter(v=>v.labId===currentLabId&&v.date===today());
+  var completed=todayVisits.filter(v=>v.status==='completed').length;
+  var totalPts=D.points.filter(p=>myUsers.some(u=>u.id===p.assignedTo)).length;
+  var pct=totalPts?Math.round(completed/totalPts*100):0;
+  el.innerHTML=`
+    <div class="canvas-hero" style="background:linear-gradient(135deg,${labColor},${labColor}99);">
+      <div class="hero-big">${pct}%</div>
+      <div class="hero-label">Cumplimiento hoy</div>
+      <div class="hero-sub">${completed} de ${totalPts} puntos completados</div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num">${myUsers.length}</div><div class="stat-label">Visitadores</div></div>
+      <div class="stat-card"><div class="stat-num">${completed}</div><div class="stat-label">Visitas hoy</div></div>
+      <div class="stat-card"><div class="stat-num">${D.visits.filter(v=>v.labId===currentLabId&&v.status==='completed').length}</div><div class="stat-label">Total visitas</div></div>
+      <div class="stat-card"><div class="stat-num">${totalPts}</div><div class="stat-label">Puntos totales</div></div>
+    </div>
+    <div class="section-title">Equipo</div>
+    <div class="canvas-grid">${myUsers.map(u=>{
+      var uPts=D.points.filter(p=>p.assignedTo===u.id);
+      var uDone=D.visits.filter(v=>v.visitorId===u.id&&v.date===today()&&v.status==='completed').length;
+      var uPct=uPts.length?Math.round(uDone/uPts.length*100):0;
+      var col=avatarColor(u.id);
+      return `<div class="canvas-card" onclick="switchAdminTab('visitadores',document.querySelectorAll('#adminScreen .tab-btn')[1]);openVisitorDetail('${u.id}')">
+        <div class="card-stripe" style="background:${col};"></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div class="card-avatar" style="background:${col};">${initials(u.name)}</div>
+          <div><div class="card-name">${esc(u.name)}</div><div class="card-username">@${esc(u.username)}</div></div>
+        </div>
+        <div class="card-pct" style="color:${col};">${uPct}%</div>
+        <div class="card-bar"><div class="card-bar-fill" style="width:${uPct}%;background:${col};"></div></div>
+        <div class="card-stats"><span><i class="fa-solid fa-check"></i>${uDone}</span><span><i class="fa-solid fa-map-pin"></i>${uPts.length}</span></div>
+      </div>`;
+    }).join('')}</div>`;
+}
+function renderVisitorList(){
+  var el=document.getElementById('visitorList');
+  if(!el) return;
+  var myUsers=D.users.filter(u=>u.labId===currentLabId&&u.role==='visitor');
+  document.getElementById('visitorCount').textContent=myUsers.length;
+  if(!myUsers.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-users"></i><p>Sin visitadores</p></div>';return;}
+  el.innerHTML=myUsers.map(u=>{
+    var col=avatarColor(u.id);
+    var pts=D.points.filter(p=>p.assignedTo===u.id).length;
+    return `<div class="user-item" onclick="openVisitorDetail('${u.id}')">
+      <div class="avatar" style="background:${col};">${initials(u.name)}</div>
+      <div style="flex:1;"><div style="font-weight:700;">${esc(u.name)}</div><div style="font-size:12px;color:var(--muted);">@${esc(u.username)} · ${pts} puntos</div></div>
+      <span class="badge ${u.active?'badge-done':'badge-cancel'}">${u.active?'Activo':'Inactivo'}</span>
+    </div>`;
+  }).join('');
+}
+function openVisitorDetail(uid){
+  var u=userById(uid);
+  if(!u) return;
+  lastVisitorDetailId=uid;
+  switchAdminTab('visitorDetail',null);
+  var el=document.getElementById('visitorDetailContent');
+  var col=avatarColor(u.id);
+  var pts=D.points.filter(p=>p.assignedTo===uid);
+  var visits=D.visits.filter(v=>v.visitorId===uid);
+  var todayDone=visits.filter(v=>v.date===today()&&v.status==='completed').length;
+  el.innerHTML=`
+    <div style="text-align:center;padding:16px 0;">
+      <div class="avatar" style="width:64px;height:64px;font-size:24px;margin:0 auto 10px;background:${col};">${initials(u.name)}</div>
+      <div style="font-size:18px;font-weight:800;">${esc(u.name)}</div>
+      <div style="font-size:13px;color:var(--muted);">@${esc(u.username)}</div>
+    </div>
+    <div class="pw-display"><span class="pw-text" id="pwText_${u.id}">••••••••</span>
+      <button class="pw-btn" onclick="togglePw('${u.id}','${esc(u.password)}')"><i class="fa-solid fa-eye"></i></button>
+      <button class="pw-btn" onclick="copyPw('${esc(u.password)}')"><i class="fa-solid fa-copy"></i></button>
+    </div>
+    <div class="stat-grid" style="margin-top:12px;">
+      <div class="stat-card"><div class="stat-num">${todayDone}</div><div class="stat-label">Hoy</div></div>
+      <div class="stat-card"><div class="stat-num">${visits.filter(v=>v.status==='completed').length}</div><div class="stat-label">Total</div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button class="btn btn-primary" style="flex:1;" onclick="openEditVisitor('${u.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
+      <button class="btn ${u.active?'btn-danger':'btn-success'}" style="flex:1;" onclick="toggleVisitorActive('${u.id}')">${u.active?'Desactivar':'Activar'}</button>
+    </div>
+    <div class="section-title">Puntos</div>
+    ${pts.map(p=>`<div class="card" style="margin-bottom:8px;padding:12px;">
+      <div style="font-weight:700;">${esc(p.name)}</div>
+      <div style="font-size:12px;color:var(--muted);">${esc(p.address||'')}</div>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="openPointEdit('${p.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePoint('${p.id}','${uid}')"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>`).join('')}
+    <button class="btn btn-ghost" onclick="openNewPoint('${uid}')"><i class="fa-solid fa-plus"></i> Nuevo punto</button>`;
+}
+function openNewVisitor(){
+  document.getElementById('editVisitorId').value='';
+  document.getElementById('modalVisitorTitle').textContent='Nuevo Visitador';
+  document.getElementById('mvName').value='';
+  document.getElementById('mvUsername').value='';
+  document.getElementById('mvPassword').value='';
+  document.getElementById('mvLabId').value=currentLabId||'';
+  openModal('modalVisitor');
+}
+function openEditVisitor(uid){
+  var u=userById(uid);
+  if(!u) return;
+  document.getElementById('editVisitorId').value=u.id;
+  document.getElementById('modalVisitorTitle').textContent='Editar Visitador';
+  document.getElementById('mvName').value=u.name;
+  document.getElementById('mvUsername').value=u.username;
+  document.getElementById('mvPassword').value='';
+  document.getElementById('mvLabId').value=u.labId||currentLabId||'';
+  openModal('modalVisitor');
+}
+function saveVisitor(){
+  var id=document.getElementById('editVisitorId').value;
+  var name=document.getElementById('mvName').value.trim();
+  var username=document.getElementById('mvUsername').value.trim();
+  var password=document.getElementById('mvPassword').value;
+  var labId=document.getElementById('mvLabId').value||currentLabId;
+  if(!name||!username){toast('Nombre y usuario obligatorios','err');return;}
+  if(id){
+    var u=userById(id);
+    if(u){u.name=name;u.username=username;u.labId=labId;if(password)u.password=password;}
+  }else{
+    if(!password){toast('Contraseña obligatoria','err');return;}
+    if(D.users.find(u=>u.username===username)){toast('Usuario ya existe','err');return;}
+    D.users.push({id:uid(),name,username,password,role:'visitor',labId,active:true});
+  }
+  save(D); closeModal('modalVisitor'); renderVisitorList(); toast(id?'Visitador actualizado':'Visitador creado');
+}
+function toggleVisitorActive(uid){
+  var u=userById(uid);
+  if(u){u.active=!u.active; save(D); openVisitorDetail(uid);}
+}
+function openNewPoint(vid){
+  document.getElementById('editPointId').value='';
+  document.getElementById('editPointVisitorId').value=vid;
+  document.getElementById('modalPointTitle').textContent='Nuevo Punto';
+  document.getElementById('mpName').value='';
+  document.getElementById('mpAddress').value='';
+  document.getElementById('mpRouteName').value='';
+  document.getElementById('mpLat').value='';
+  document.getElementById('mpLng').value='';
+  document.getElementById('mpOrder').value='1';
+  document.getElementById('gpsCoordsRow').style.display='none';
+  document.getElementById('geoStatus').style.display='none';
+  openModal('modalPoint');
+}
+function openPointEdit(pid){
+  var p=pointById(pid);
+  if(!p) return;
+  document.getElementById('editPointId').value=p.id;
+  document.getElementById('editPointVisitorId').value=p.assignedTo;
+  document.getElementById('modalPointTitle').textContent='Editar Punto';
+  document.getElementById('mpName').value=p.name;
+  document.getElementById('mpAddress').value=p.address||'';
+  document.getElementById('mpRouteName').value=p.routeName||'';
+  document.getElementById('mpLat').value=p.lat||'';
+  document.getElementById('mpLng').value=p.lng||'';
+  document.getElementById('mpDay').value=p.dayOfWeek||1;
+  document.getElementById('mpOrder').value=p.order||1;
+  if(p.lat&&p.lng) document.getElementById('gpsCoordsRow').style.display='block';
+  openModal('modalPoint');
+}
+function deletePoint(pid,vid){
+  D.points=D.points.filter(p=>p.id!==pid);
+  save(D);
+  if(vid) openVisitorDetail(vid);
+  toast('Punto eliminado');
+}
+function populateVisitFilter(){
+  var sel=document.getElementById('filterVisitVisitor');
+  if(!sel) return;
+  var myUsers=D.users.filter(u=>u.labId===currentLabId&&u.role==='visitor');
+  sel.innerHTML='<option value="">Todos</option>'+myUsers.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('');
+}
+function renderAdminVisitas(){
+  var el=document.getElementById('adminVisitsList');
+  if(!el) return;
+  var vf=document.getElementById('filterVisitVisitor')?document.getElementById('filterVisitVisitor').value:'';
+  var sf=document.getElementById('filterVisitStatus')?document.getElementById('filterVisitStatus').value:'';
+  var tf=document.getElementById('filterVisitType')?document.getElementById('filterVisitType').value:'';
+  var list=D.visits.filter(v=>v.labId===currentLabId&&(vf?v.visitorId===vf:true)&&(sf?v.status===sf:true)&&(tf?v.type===tf:true));
+  list.sort((a,b)=>b.date>a.date?1:-1);
+  if(!list.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>Sin visitas</p></div>';return;}
+  el.innerHTML=list.map(v=>{
+    var u=userById(v.visitorId); var p=pointById(v.pointId);
+    var bc=v.status==='completed'?'badge-done':v.status==='in-progress'?'badge-progress':v.status==='cancelled'?'badge-cancel':'badge-pending';
+    var bl=v.status==='completed'?'Completada':v.status==='in-progress'?'En Curso':v.status==='cancelled'?'Cancelada':'Pendiente';
+    return `<div class="card" style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span class="badge ${bc}">${bl}</span><span style="font-size:11px;color:var(--muted);">${fmtDate(v.date)}</span>
+      </div>
+      <div style="font-weight:700;">${p?esc(p.name):esc(v.placeName||'Visita libre')}</div>
+      <div style="font-size:12px;color:var(--muted);">${u?esc(u.name):'?'}</div>
+      ${v.photo?`<img src="${v.photo}" class="visit-photo-thumb" style="margin-top:8px;" onclick="viewVisitPhoto('${v.id}')">`:''}</div>`;
+  }).join('');
+}
+function renderAdminFotos(){
+  var el=document.getElementById('adminPhotoGallery');
+  if(!el) return;
+  var photos=D.visits.filter(v=>v.photo&&v.labId===currentLabId);
+  if(!photos.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-images"></i><p>Sin fotos</p></div>';return;}
+  el.innerHTML='<div class="gallery-grid">'+photos.map(v=>`<img src="${v.photo}" style="width:100%;border-radius:10px;cursor:pointer;" onclick="viewVisitPhoto('${v.id}')">`).join('')+'</div>';
+}
+
+/* ------------------------------------------------------------------
+   VISITAS – LLEGADA, CIERRE
+   ------------------------------------------------------------------ */
+function arriveToPoint(pid){
+  var p=pointById(pid);
+  if(!p) return;
+  var existing=D.visits.find(v=>v.pointId===pid&&v.visitorId===currentUser.id&&v.date===today());
+  if(existing) return;
+  var v={id:uid(),pointId:pid,visitorId:currentUser.id,labId:p.labId||currentUser.labId,date:today(),status:'in-progress',arrivedAt:new Date().toISOString(),type:'general'};
+  if(visitaGpsCoords){v.lat=visitaGpsCoords.lat;v.lng=visitaGpsCoords.lng;}
+  D.visits.push(v);
+  save(D); renderVisitorToday(); toast('Llegada registrada');
+}
+function openCloseVisit(vid,pid){
+  var p=pointById(pid);
+  document.getElementById('closeVisitId').value=vid;
+  document.getElementById('closeVisitPointName').textContent=p?p.name:'';
+  document.getElementById('closeVisitPointAddr').textContent=p?p.address||'':'';
+  document.getElementById('closeJefe').value='';
+  document.getElementById('closeNotes').value='';
+  document.getElementById('photoPreview').style.display='none';
+  document.getElementById('photoPreview').src='';
+  document.getElementById('visitPhotoInput').value='';
+  var area=document.getElementById('photoCaptureArea');
+  area.innerHTML='<div class="photo-capture-btn" onclick="document.getElementById(\'visitPhotoInput\').click()"><i class="fa-solid fa-camera"></i><span>Tomar Foto</span></div>';
+  openModal('modalCloseVisit');
+}
+function handlePhotoTaken(e){
+  var file=e.target.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var preview=document.getElementById('photoPreview');
+    preview.src=ev.target.result; preview.style.display='block';
+    document.getElementById('photoCaptureArea').innerHTML='';
+  };
+  reader.readAsDataURL(file);
+}
+function completeVisit(){
+  var vid=document.getElementById('closeVisitId').value;
+  var v=visitById(vid); if(!v) return;
+  var photo=document.getElementById('photoPreview').src;
+  var jefe=document.getElementById('closeJefe').value.trim();
+  var notes=document.getElementById('closeNotes').value.trim();
+  v.status='completed';
+  v.completedAt=new Date().toISOString();
+  if(photo&&photo.startsWith('data:')) v.photo=photo;
+  if(jefe) v.jefe=jefe;
+  if(notes) v.notes=notes;
+  save(D); closeModal('modalCloseVisit'); renderVisitorToday(); toast('Visita completada ✓');
+}
+function viewVisitPhoto(vid){
+  var v=visitById(vid); if(!v||!v.photo) return;
+  document.getElementById('modalPhotoImg').src=v.photo;
+  var u=userById(v.visitorId); var p=pointById(v.pointId);
+  document.getElementById('modalPhotoInfo').innerHTML=`<strong>${p?esc(p.name):'Visita'}</strong><br>${u?esc(u.name):''} · ${fmtDate(v.date)}`;
+  openModal('modalPhoto');
+}
+
+/* ------------------------------------------------------------------
+   VISITAS LIBRES (GENERAL / PROFESIONAL)
+   ------------------------------------------------------------------ */
+function previewVisitaFoto(input,previewId){
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img=document.getElementById(previewId);
+    img.src=e.target.result; img.style.display='block';
+    if(previewId==='vg-preview') visitaFotoDataGeneral=e.target.result;
+    else visitaFotoDataProf=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function toggleObsequioField(checked){
+  document.getElementById('vp-obsequioDetail').classList.toggle('show',checked);
+}
+function initFirmaProf(){
+  profFirmaCanvas=document.getElementById('vp-firmaCanvas');
+  profFirmaCtx=profFirmaCanvas.getContext('2d');
+  var drawing=false;
+  function getPos(e){
+    var r=profFirmaCanvas.getBoundingClientRect();
+    var src=e.touches?e.touches[0]:e;
+    return {x:(src.clientX-r.left)*(profFirmaCanvas.width/r.width),y:(src.clientY-r.top)*(profFirmaCanvas.height/r.height)};
+  }
+  profFirmaCanvas.addEventListener('mousedown',function(e){drawing=true;var p=getPos(e);profFirmaCtx.beginPath();profFirmaCtx.moveTo(p.x,p.y);});
+  profFirmaCanvas.addEventListener('mousemove',function(e){if(!drawing)return;var p=getPos(e);profFirmaCtx.lineTo(p.x,p.y);profFirmaCtx.strokeStyle='#0F172A';profFirmaCtx.lineWidth=2;profFirmaCtx.lineCap='round';profFirmaCtx.stroke();profFirmaActiva=true;profFirmaCanvas.classList.add('signed');document.getElementById('vp-firmaBadge').classList.add('show');document.getElementById('btnGuardarProf').disabled=false;});
+  profFirmaCanvas.addEventListener('mouseup',function(){drawing=false;});
+  profFirmaCanvas.addEventListener('touchstart',function(e){e.preventDefault();drawing=true;var p=getPos(e);profFirmaCtx.beginPath();profFirmaCtx.moveTo(p.x,p.y);},{passive:false});
+  profFirmaCanvas.addEventListener('touchmove',function(e){e.preventDefault();if(!drawing)return;var p=getPos(e);profFirmaCtx.lineTo(p.x,p.y);profFirmaCtx.strokeStyle='#0F172A';profFirmaCtx.lineWidth=2;profFirmaCtx.lineCap='round';profFirmaCtx.stroke();profFirmaActiva=true;profFirmaCanvas.classList.add('signed');document.getElementById('vp-firmaBadge').classList.add('show');document.getElementById('btnGuardarProf').disabled=false;},{passive:false});
+  profFirmaCanvas.addEventListener('touchend',function(){drawing=false;});
+}
+function clearFirmaProf(){
+  if(profFirmaCtx) profFirmaCtx.clearRect(0,0,profFirmaCanvas.width,profFirmaCanvas.height);
+  profFirmaActiva=false;
+  if(profFirmaCanvas) profFirmaCanvas.classList.remove('signed');
+  document.getElementById('vp-firmaBadge').classList.remove('show');
+  document.getElementById('btnGuardarProf').disabled=true;
+}
+function guardarVisitaGeneral(){
+  var lugar=document.getElementById('vg-lugar').value.trim();
+  if(!lugar){toast('Nombre del lugar obligatorio','err');return;}
+  var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentLabId,date:today(),status:'completed',completedAt:new Date().toISOString(),type:'general',placeName:lugar,address:document.getElementById('vg-direccion').value.trim(),contact:document.getElementById('vg-contacto').value.trim(),notes:document.getElementById('vg-notas').value.trim()};
+  if(visitaFotoDataGeneral) v.photo=visitaFotoDataGeneral;
+  if(visitaGpsCoords){v.lat=visitaGpsCoords.lat;v.lng=visitaGpsCoords.lng;}
+  D.visits.push(v); save(D); closeModal('modalNuevaVisita'); renderVisitorToday(); toast('Visita guardada ✓');
+}
+function guardarVisitaProfesional(){
+  var nombre=document.getElementById('vp-nombre').value.trim();
+  var tel=document.getElementById('vp-telefono').value.trim();
+  var dir=document.getElementById('vp-direccion').value.trim();
+  if(!nombre||!tel||!dir){toast('Completa los campos obligatorios','err');return;}
+  if(!profFirmaActiva){toast('La firma del profesional es obligatoria','err');return;}
+  if(!visitaFotoDataProf){toast('La foto de evidencia es obligatoria','err');return;}
+  var firma=profFirmaCanvas?profFirmaCanvas.toDataURL('image/png'):null;
+  var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentLabId,date:today(),status:'completed',completedAt:new Date().toISOString(),type:'profesional',placeName:nombre,speciality:document.getElementById('vp-especialidad').value.trim(),phone:tel,address:dir,gift:document.getElementById('vp-toggleObsequio').checked?document.getElementById('vp-obsequio').value.trim():'',notes:document.getElementById('vp-notas').value.trim(),photo:visitaFotoDataProf,firma:firma};
+  if(visitaGpsCoords){v.lat=visitaGpsCoords.lat;v.lng=visitaGpsCoords.lng;}
+  D.visits.push(v); save(D); closeModal('modalNuevaVisita'); renderVisitorToday(); toast('Visita profesional guardada ✓');
+}
+
+/* ------------------------------------------------------------------
+   VISITADOR – SEMANA / PERFIL
+   ------------------------------------------------------------------ */
+function renderVisitorSemana(){
+  var el=document.getElementById('visitorWeekSummary');
+  if(!el) return;
+  var now=new Date(); var weekStart=new Date(now);
+  weekStart.setDate(now.getDate()-now.getDay()+1);
+  var days=[];
+  for(var i=0;i<6;i++){var d=new Date(weekStart);d.setDate(weekStart.getDate()+i);days.push(d.toISOString().slice(0,10));}
+  el.innerHTML=days.map(function(dateStr){
+    var label=fmtDate(dateStr);
+    var myPts=D.points.filter(p=>p.assignedTo===currentUser.id&&p.dayOfWeek===(new Date(dateStr+'T12:00:00').getDay()||7));
+    var done=D.visits.filter(v=>v.visitorId===currentUser.id&&v.date===dateStr&&v.status==='completed').length;
+    var pct=myPts.length?Math.round(done/myPts.length*100):0;
+    return `<div class="card" style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-weight:700;">${label}</div>
+        <span style="font-weight:900;color:var(--primary);">${pct}%</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;">${done}/${myPts.length} puntos</div>
+      <div class="card-bar" style="margin-top:8px;"><div class="card-bar-fill" style="width:${pct}%;background:var(--primary);"></div></div>
+    </div>`;
+  }).join('');
+}
+function renderVisitorPerfil(){
+  var el=document.getElementById('vProfileAvatar');
+  if(el){el.style.background=avatarColor(currentUser.id);el.textContent=initials(currentUser.name);}
+  var nameEl=document.getElementById('vProfileName'); if(nameEl) nameEl.textContent=currentUser.name;
+  var userEl=document.getElementById('vProfileUser'); if(userEl) userEl.textContent='@'+currentUser.username;
+  var total=D.visits.filter(v=>v.visitorId===currentUser.id&&v.status==='completed').length;
+  var todayV=D.visits.filter(v=>v.visitorId===currentUser.id&&v.date===today()&&v.status==='completed').length;
+  var now=new Date(); var weekStart=new Date(now); weekStart.setDate(now.getDate()-now.getDay()+1);
+  var weekV=D.visits.filter(v=>v.visitorId===currentUser.id&&v.status==='completed'&&v.date>=weekStart.toISOString().slice(0,10)).length;
+  var t=document.getElementById('vProfileTotal'); if(t) t.textContent=total;
+  var td=document.getElementById('vProfileToday'); if(td) td.textContent=todayV;
+  var wk=document.getElementById('vProfileWeek'); if(wk) wk.textContent=weekV;
+}
+
+/* ------------------------------------------------------------------
+   GEOCODIFICACIÓN / MAPA PICKER
+   ------------------------------------------------------------------ */
+var _leafletMap=null, _leafletMarker=null;
+function geocodeAddress(){
+  var addr=document.getElementById('mpAddress').value.trim();
+  if(!addr) return;
+  var status=document.getElementById('geoStatus');
+  status.style.display='flex'; status.className='geo-status searching';
+  status.innerHTML='<div class="spinner-sm"></div> Buscando...';
+  fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(addr+', Colombia')+'&limit=1')
+    .then(r=>r.json()).then(data=>{
+      if(data&&data[0]){
+        var lat=parseFloat(data[0].lat),lng=parseFloat(data[0].lon);
+        document.getElementById('mpLat').value=lat.toFixed(6);
+        document.getElementById('mpLng').value=lng.toFixed(6);
+        document.getElementById('gpsCoordsRow').style.display='block';
+        status.className='geo-status found'; status.innerHTML='<i class="fa-solid fa-check-circle"></i> Ubicación encontrada';
+      }else{
+        status.className='geo-status error'; status.innerHTML='<i class="fa-solid fa-times-circle"></i> No encontrada';
+      }
+    }).catch(()=>{status.className='geo-status error'; status.innerHTML='<i class="fa-solid fa-times-circle"></i> Error de red';});
+}
+function abrirMapaPicker(){
+  openModal('modalMapPicker');
+  setTimeout(function(){
+    var lat=parseFloat(document.getElementById('mpLat').value)||4.6097;
+    var lng=parseFloat(document.getElementById('mpLng').value)||-74.0817;
+    if(!_leafletMap){
+      _leafletMap=L.map('leafletMap').setView([lat,lng],15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'OSM'}).addTo(_leafletMap);
+      _leafletMarker=L.marker([lat,lng],{draggable:true}).addTo(_leafletMap);
+      _leafletMap.on('move',function(){var c=_leafletMap.getCenter();_leafletMarker.setLatLng(c);document.getElementById('mapPickerCoords').textContent=c.lat.toFixed(5)+', '+c.lng.toFixed(5);});
+    }else{
+      _leafletMap.setView([lat,lng],15); _leafletMarker.setLatLng([lat,lng]);
+      setTimeout(function(){_leafletMap.invalidateSize();},200);
+    }
+  },300);
+}
+function confirmarMapaPicker(){
+  var c=_leafletMap.getCenter();
+  document.getElementById('mpLat').value=c.lat.toFixed(6);
+  document.getElementById('mpLng').value=c.lng.toFixed(6);
+  document.getElementById('gpsCoordsRow').style.display='block';
+  closeModal('modalMapPicker');
+}
+
+/* ------------------------------------------------------------------
+   PREVISUALIZAR RUTA
+   ------------------------------------------------------------------ */
+function openRoutePreview(dow){
+  var myPts=D.points.filter(p=>p.assignedTo===currentUser.id&&p.dayOfWeek==dow).sort((a,b)=>a.order-b.order);
+  var dayName=DOW_NAME[dow]||'';
+  var mapsUrl=buildMapsRouteUrl(myPts);
+  var html=`<div class="preview-header">
+    <div class="preview-day">${dayName}</div>
+    <div class="preview-sub">${myPts.length} puntos · estimado ${Math.round(myPts.length*MIN_PER_PUNTO/60*10)/10}h</div>
+    <div class="preview-stats"><span><i class="fa-solid fa-map-pin"></i>${myPts.length} paradas</span></div>
+  </div>`;
+  myPts.forEach(function(p,i){
+    var arrH=8+Math.floor(i*MIN_PER_PUNTO/60), arrM=(i*MIN_PER_PUNTO)%60;
+    html+=`<div class="preview-stop">
+      ${i<myPts.length-1?'<div class="preview-stop-line"></div>':''}
+      <div class="preview-stop-num" style="background:var(--primary);">${i+1}</div>
+      <div class="preview-stop-body">
+        <div class="preview-stop-name">${esc(p.name)}</div>
+        <div class="preview-stop-addr">${esc(p.address||'')}</div>
+        <div class="preview-stop-bottom">
+          <div class="preview-stop-time"><i class="fa-solid fa-clock"></i>${fmt(arrH,arrM)}</div>
+          <a href="${mapsLink(p.lat,p.lng,p.address)}" target="_blank" class="preview-stop-map-btn"><i class="fa-solid fa-map"></i> Mapa</a>
+        </div>
+      </div>
+    </div>`;
+  });
+  if(mapsUrl) html+=`<a href="${mapsUrl}" target="_blank" class="preview-nav-btn"><i class="fa-solid fa-diamond-turn-right"></i> Navegar ruta completa</a>`;
+  var modal=document.getElementById('modalRoutePreview');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='modalRoutePreview';
+    modal.className='modal-overlay';
+    modal.innerHTML='<div class="modal-sheet"><div class="modal-handle"></div><div class="modal-title">Vista previa de ruta</div><div id="routePreviewBody"></div><button class="btn btn-outline" style="margin-top:16px;" onclick="closeModal(\'modalRoutePreview\')">Cerrar</button></div>';
+    document.body.appendChild(modal);
+  }
+  document.getElementById('routePreviewBody').innerHTML=html;
+  openModal('modalRoutePreview');
+}
+
+/* ------------------------------------------------------------------
+   INFORMES (stubs básicos)
+   ------------------------------------------------------------------ */
+var _rptPreset='hoy';
+function setRptPreset(preset){
+  _rptPreset=preset;
+  var custom=document.getElementById('rptCustomDiv');
+  if(custom) custom.style.display=preset==='custom'?'grid':'none';
+  var now=new Date(); var label='';
+  if(preset==='hoy'){rptDesde=rptHasta=today();label='Hoy';}
+  else if(preset==='semana'){var s=new Date(now);s.setDate(now.getDate()-now.getDay()+1);rptDesde=s.toISOString().slice(0,10);rptHasta=today();label='Esta semana';}
+  else if(preset==='mes'){rptDesde=today().slice(0,7)+'-01';rptHasta=today();label='Este mes';}
+  else if(preset==='3meses'){var s3=new Date(now);s3.setMonth(now.getMonth()-3);rptDesde=s3.toISOString().slice(0,10);rptHasta=today();label='Últimos 3 meses';}
+  else{label='Personalizado';}
+  var lbl=document.getElementById('rptRangeLabel'); if(lbl) lbl.textContent=label;
+  renderInformes();
+}
+function aplicarFechasCustom(){
+  rptDesde=document.getElementById('rptDesdeInput').value;
+  rptHasta=document.getElementById('rptHastaInput').value;
+  renderInformes();
+}
+function renderInformes(){
+  var el=document.getElementById('rptLabCards'); if(!el) return;
+  el.innerHTML=LABS.map(lab=>{
+    var visits=D.visits.filter(v=>v.labId===lab.id&&(!rptDesde||v.date>=rptDesde)&&(!rptHasta||v.date<=rptHasta));
+    var done=visits.filter(v=>v.status==='completed').length;
+    return `<div class="card" style="margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:${lab.color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;"><i class="fa-solid ${lab.icon}"></i></div>
+        <div style="font-weight:800;">${esc(lab.name)}</div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);">${done} visitas completadas en el periodo</div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button class="btn btn-sm btn-primary" onclick="generarPDF('${lab.id}')"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+        <button class="btn btn-sm btn-success" onclick="generarExcel('${lab.id}')"><i class="fa-solid fa-file-excel"></i> Excel</button>
+        <button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTX('${lab.id}')"><i class="fa-solid fa-file-powerpoint"></i> PPTX</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function generarPDF(labId){toast('Generando PDF...','info');}
+function generarExcel(labId){toast('Generando Excel...','info');}
+function generarPPTX(labId){toast('Generando PPTX...','info');}
+
+/* ------------------------------------------------------------------
    EVENT LISTENERS Y ARRANQUE
    ------------------------------------------------------------------ */
 document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
