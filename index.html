@@ -454,7 +454,7 @@
 <div class="form-group"><label class="form-label">Nombre de Ruta</label><input class="form-input" id="mpRouteName" placeholder="Ej: Ruta Soacha"></div>
 
 <div class="form-group"><label class="form-label">Direccion Completa</label><input class="form-input" id="mpAddress" placeholder="Cra 7 #45-20, Bogota..." onblur="geocodeAddress()"><div id="geoStatus" style="display:none;"></div></div>
-<div id="gpsCoordsRow" style="display:none;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;"><div><label class="form-label">Latitud</label><input class="form-input" id="mpLat" readonly style="background:var(--success-light);font-weight:700;color:var(--success);"></div><div><label class="form-label">Longitud</label><input class="form-input" id="mpLng" readonly style="background:var(--success-light);font-weight:700;color:var(--success);"></div></div><button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:12px;border:1.5px dashed var(--primary);color:var(--primary);" onclick="abrirMapaPicker()"><i class="fa-solid fa-map-location-dot"></i> Ajustar ubicacion en el mapa</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="form-group"><label class="form-label">Dia</label><select class="form-input" id="mpDay"><option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miercoles</option><option value="4">Jueves</option><option value="5">Viernes</option><option value="6">Sabado</option></select></div><div class="form-group"><label class="form-label">Orden</label><input class="form-input" type="number" id="mpOrder" placeholder="1, 2..." min="1"></div></div><div style="display:flex;gap:10px;margin-top:20px;"><button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalPoint')">Cancelar</button><button class="btn btn-primary" style="flex:1;" onclick="savePoint()"><i class="fa-solid fa-map-pin"></i> Guardar</button></div></div></div>
+<div id="gpsCoordsRow" style="display:none;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;"><div><label class="form-label">Latitud</label><input class="form-input" id="mpLat" readonly style="background:var(--success-light);font-weight:700;color:var(--success);"></div><div><label class="form-label">Longitud</label><input class="form-input" id="mpLng" readonly style="background:var(--success-light);font-weight:700;color:var(--success);"></div></div><button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:12px;border:1.5px dashed var(--primary);color:var(--primary);" onclick="abrirMapaPicker()"><i class="fa-solid fa-map-location-dot"></i> Ajustar ubicacion en el mapa</button></div><div class="form-group"><label class="form-label">Orden en la ruta</label><input class="form-input" type="number" id="mpOrder" placeholder="1, 2..." min="1"><input type="hidden" id="mpDay" value="1"></div><div style="display:flex;gap:10px;margin-top:20px;"><button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalPoint')">Cancelar</button><button class="btn btn-primary" style="flex:1;" onclick="savePoint()"><i class="fa-solid fa-map-pin"></i> Guardar</button></div></div></div>
 
 <!-- MODAL MAPA PICKER -->
 <div class="modal-overlay" id="modalMapPicker" style="z-index:3000;">
@@ -1829,20 +1829,47 @@ function geocodeAddress(){
   var addr=document.getElementById('mpAddress').value.trim();
   if(!addr) return;
   var status=document.getElementById('geoStatus');
-  status.style.display='flex'; status.className='geo-status searching';
-  status.innerHTML='<div class="spinner-sm"></div> Buscando...';
-  fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(addr+', Colombia')+'&limit=1')
-    .then(r=>r.json()).then(data=>{
-      if(data&&data[0]){
-        var lat=parseFloat(data[0].lat),lng=parseFloat(data[0].lon);
+  status.style.display='block';
+  status.className='geo-status loading';
+  status.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Buscando coordenadas...';
+  document.getElementById('gpsCoordsRow').style.display='none';
+
+  // Intentar con múltiples variantes de la dirección
+  var queries=[
+    encodeURIComponent(addr+', Bogotá, Colombia'),
+    encodeURIComponent(addr+', Colombia'),
+    encodeURIComponent(addr)
+  ];
+  
+  function tryQuery(index){
+    if(index >= queries.length){
+      status.className='geo-status error';
+      status.innerHTML='<i class="fa-solid fa-times-circle"></i> No encontrada — ajusta en el mapa';
+      // Poner coordenadas de Bogotá como fallback para poder guardar
+      document.getElementById('mpLat').value='4.710989';
+      document.getElementById('mpLng').value='-74.072092';
+      document.getElementById('gpsCoordsRow').style.display='block';
+      return;
+    }
+    fetch('https://nominatim.openstreetmap.org/search?format=json&q='+queries[index]+'&limit=1&countrycodes=co',{
+      headers:{'Accept-Language':'es','User-Agent':'AppMed/1.0'}
+    })
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(data && data.length>0){
+        var lat=parseFloat(data[0].lat), lng=parseFloat(data[0].lon);
         document.getElementById('mpLat').value=lat.toFixed(6);
         document.getElementById('mpLng').value=lng.toFixed(6);
         document.getElementById('gpsCoordsRow').style.display='block';
-        status.className='geo-status found'; status.innerHTML='<i class="fa-solid fa-check-circle"></i> Ubicación encontrada';
-      }else{
-        status.className='geo-status error'; status.innerHTML='<i class="fa-solid fa-times-circle"></i> No encontrada';
+        status.className='geo-status ok';
+        status.innerHTML='<i class="fa-solid fa-check-circle"></i> '+data[0].display_name.split(',').slice(0,3).join(',');
+      } else {
+        tryQuery(index+1);
       }
-    }).catch(()=>{status.className='geo-status error'; status.innerHTML='<i class="fa-solid fa-times-circle"></i> Error de red';});
+    })
+    .catch(function(){tryQuery(index+1);});
+  }
+  tryQuery(0);
 }
 function abrirMapaPicker(){
   openModal('modalMapPicker');
