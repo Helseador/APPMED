@@ -440,7 +440,7 @@
   </div>
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchVisitorTab('hoy',this)"><i class="fa-solid fa-calendar-day"></i>Hoy</button>
-    <button class="tab-btn" onclick="switchVisitorTab('semana',this)"><i class="fa-solid fa-calendar-week"></i>Semana</button>
+    <button class="tab-btn" onclick="switchVisitorTab('semana',this)"><i class="fa-solid fa-route"></i>Mis Rutas</button>
     <button class="tab-btn" onclick="switchVisitorTab('perfil',this)"><i class="fa-solid fa-user"></i>Perfil</button>
   </div>
   <div class="app-footer"><strong>APPMED</strong> &middot; Creado por HELSE<br><span style="font-size:10px;">Innovacion tecnologica con proposito humano</span></div>
@@ -964,7 +964,7 @@ function renderVisitorToday(){
   // -------- Filtrar puntos de la ruta ----------
   var myPts=allMyPts.filter(p=> (p.routeName||('Ruta '+DOW_NAME[p.dayOfWeek]))===_visitRoute ).sort((a,b)=>a.order-b.order);
   // -------- Información de progreso ---------
-  var isToday = (myPts[0] && myPts[0].dayOfWeek===todayDow());
+  var isToday = true; // Sin restricción de día
   var startH=8,startM=0;
   var totalMin=myPts.length*MIN_PER_PUNTO;
   var endTotalMin=startH*60+startM+totalMin;
@@ -1008,8 +1008,8 @@ function renderVisitorToday(){
       action=`<button class="btn btn-success btn-sm" onclick="openCloseVisit('${visit.id}','${p.id}')" style="margin-top:10px;width:100%;"><i class="fa-solid fa-camera"></i> Cerrar Visita</button>`;
     }else if(st==='completed' && visit.photo){
       action=`<img src="${visit.photo}" class="visit-photo-thumb" style="margin-top:10px;" onclick="viewVisitPhoto('${visit.id}')">`;
-    }else if(!isToday && st==='pending'){
-      action=`<div style="margin-top:8px;font-size:11px;color:var(--muted);"><i class="fa-solid fa-info-circle"></i> Registro disponible sólo el día asignado</div>`;
+    }else if(false && st==='pending'){
+      action=`<div style="margin-top:8px;font-size:11px;color:var(--muted);"><i class="fa-solid fa-info-circle"></i> </div>`;
     }
     return `<div class="card"><div class="point-card-inner" style="border:none;padding:0;">
       <div class="point-num">${p.order}</div>
@@ -1788,24 +1788,32 @@ function guardarVisitaProfesional(){
 function renderVisitorSemana(){
   var el=document.getElementById('visitorWeekSummary');
   if(!el) return;
-  var now=new Date(); var weekStart=new Date(now);
-  weekStart.setDate(now.getDate()-now.getDay()+1);
-  var days=[];
-  for(var i=0;i<6;i++){var d=new Date(weekStart);d.setDate(weekStart.getDate()+i);days.push(d.toISOString().slice(0,10));}
-  el.innerHTML=days.map(function(dateStr){
-    var label=fmtDate(dateStr);
-    var myPts=(D.points||[]).filter(p=>p.assignedTo===currentUser.id&&p.dayOfWeek===(new Date(dateStr+'T12:00:00').getDay()||7));
-    var done=(D.visits||[]).filter(v=>v.visitorId===currentUser.id&&v.date===dateStr&&v.status==='completed').length;
-    var pct=myPts.length?Math.round(done/myPts.length*100):0;
-    return `<div class="card" style="margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div style="font-weight:700;">${label}</div>
-        <span style="font-weight:900;color:var(--primary);">${pct}%</span>
-      </div>
-      <div style="font-size:12px;color:var(--muted);margin-top:4px;">${done}/${myPts.length} puntos</div>
-      <div class="card-bar" style="margin-top:8px;"><div class="card-bar-fill" style="width:${pct}%;background:var(--primary);"></div></div>
-    </div>`;
-  }).join('');
+  var allMyPts=(D.points||[]).filter(function(p){return p.assignedTo===currentUser.id;});
+  // Agrupar por routeName
+  var routeNames=[];
+  allMyPts.forEach(function(p){
+    var rn=p.routeName||'Sin nombre';
+    if(routeNames.indexOf(rn)<0) routeNames.push(rn);
+  });
+  routeNames.sort();
+  if(!routeNames.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);">No tienes rutas asignadas aún.</div>';
+    return;
+  }
+  var html='';
+  routeNames.forEach(function(rn){
+    var pts=allMyPts.filter(function(p){return (p.routeName||'Sin nombre')===rn;}).sort(function(a,b){return a.order-b.order;});
+    var done=(D.visits||[]).filter(function(v){return v.userId===currentUser.id && pts.some(function(p){return p.id===v.pointId;}) && v.status==='completed';}).length;
+    var pct=pts.length?Math.round(done/pts.length*100):0;
+    html+='<div style="background:var(--surface);border-radius:14px;padding:18px 20px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow);" onclick="setVisitRoute(''+rn.replace(/'/g,"\'")+'')">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;">';
+    html+='<div style="font-weight:700;font-size:15px;">'+rn+'</div>';
+    html+='<div style="font-weight:700;color:'+(pct===100?'var(--success)':'var(--primary)')+';">'+pct+'%</div>';
+    html+='</div>';
+    html+='<div style="font-size:13px;color:var(--muted);margin-top:4px;">'+done+'/'+pts.length+' puntos completados</div>';
+    html+='</div>';
+  });
+  el.innerHTML=html;
 }
 function renderVisitorPerfil(){
   var el=document.getElementById('vProfileAvatar');
