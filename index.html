@@ -625,7 +625,7 @@ function initFirebase(){
     updateHeaderConn();
   });
 
-  dbRef.ref('appmed').once('value')
+  dbRef.ref('medvisit').once('value')
     .then(function(snap){
       var remote=snap.val();
       if(remote && remote.users && remote.users.length){
@@ -635,7 +635,7 @@ function initFirebase(){
         D=defaultData();
         myLastWriteId=Date.now()+'_init';
         D._writeId=myLastWriteId;
-        dbRef.ref('appmed').set(D);
+        dbRef.ref('medvisit').set(D);
       }
       if(!D.labs) D.labs=[];
       refreshLabs();
@@ -663,7 +663,7 @@ function initFirebase(){
       updateHeaderConn();
     });
 
-  dbRef.ref('appmed').on('value',function(snap){
+  dbRef.ref('medvisit').on('value',function(snap){
     var remote=snap.val();
     if(!remote||!remote.users) return;
     if(remote._writeId && remote._writeId===myLastWriteId) return;
@@ -730,7 +730,7 @@ function save(d){
   d._writeId=myLastWriteId;
   saveLocal(d);
   if(firebaseReady && dbRef){
-    dbRef.ref('appmed').set(d).catch(err=>{console.error('Firebase error',err);toast('Error de sincronizacion, datos guardados localmente','err');});
+    dbRef.ref('medvisit').set(d).catch(err=>{console.error('Firebase error',err);toast('Error de sincronizacion, datos guardados localmente','err');});
   }
 }
 
