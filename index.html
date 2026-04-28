@@ -947,7 +947,7 @@ function renderVisitorToday(){
   var el=document.getElementById('visitorTodayPoints');
   // ------- 1) Agrupar puntos por ruta (nuevo) -------
   var allMyPts=(D.points||[]).filter(p=>p.assignedTo===currentUser.id);
-  var routes=Array.from(new Set(allMyPts.map(p=>p.routeName||('Ruta '+DOW_NAME[p.dayOfWeek]||'Sin ruta'))));
+  var routes=Array.from(new Set(allMyPts.map(p=>p.routeName||'Sin ruta')));
   if(!routes.length){
     el.innerHTML='<div class="empty-state"><i class="fa-solid fa-couch"></i><p>No tienes puntos asignados</p></div>';
     return;
@@ -962,7 +962,7 @@ function renderVisitorToday(){
   });
   selector+='</div>';
   // -------- Filtrar puntos de la ruta ----------
-  var myPts=allMyPts.filter(p=> (p.routeName||('Ruta '+DOW_NAME[p.dayOfWeek]))===_visitRoute ).sort((a,b)=>a.order-b.order);
+  var myPts=allMyPts.filter(p=> (p.routeName||'Sin ruta')===_visitRoute ).sort((a,b)=>a.order-b.order);
   // -------- Información de progreso ---------
   var isToday = true; // Sin restricción de día
   var startH=8,startM=0;
@@ -1792,7 +1792,7 @@ function renderVisitorSemana(){
   // Agrupar por routeName
   var routeNames=[];
   allMyPts.forEach(function(p){
-    var rn=p.routeName||'Sin nombre';
+    var rn=p.routeName||'Sin ruta';
     if(routeNames.indexOf(rn)<0) routeNames.push(rn);
   });
   routeNames.sort();
@@ -1802,7 +1802,7 @@ function renderVisitorSemana(){
   }
   var html='';
   routeNames.forEach(function(rn){
-    var pts=allMyPts.filter(function(p){return (p.routeName||'Sin nombre')===rn;}).sort(function(a,b){return a.order-b.order;});
+    var pts=allMyPts.filter(function(p){return (p.routeName||'Sin ruta')===rn;}).sort(function(a,b){return a.order-b.order;});
     var done=(D.visits||[]).filter(function(v){return v.userId===currentUser.id && pts.some(function(p){return p.id===v.pointId;}) && v.status==='completed';}).length;
     var pct=pts.length?Math.round(done/pts.length*100):0;
     html+='<div style="background:var(--surface);border-radius:14px;padding:18px 20px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow);" onclick="setVisitRoute(''+rn.replace(/'/g,"\'")+'')">';
