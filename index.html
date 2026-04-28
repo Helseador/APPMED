@@ -625,7 +625,7 @@ function initFirebase(){
     updateHeaderConn();
   });
 
-  dbRef.ref('medvisit').once('value')
+  dbRef.ref('appmed').once('value')
     .then(function(snap){
       var remote=snap.val();
       if(remote && remote.users && remote.users.length){
@@ -635,7 +635,7 @@ function initFirebase(){
         D=defaultData();
         myLastWriteId=Date.now()+'_init';
         D._writeId=myLastWriteId;
-        dbRef.ref('medvisit').set(D);
+        dbRef.ref('appmed').set(D);
       }
       if(!D.labs) D.labs=[];
       refreshLabs();
@@ -663,7 +663,7 @@ function initFirebase(){
       updateHeaderConn();
     });
 
-  dbRef.ref('medvisit').on('value',function(snap){
+  dbRef.ref('appmed').on('value',function(snap){
     var remote=snap.val();
     if(!remote||!remote.users) return;
     if(remote._writeId && remote._writeId===myLastWriteId) return;
@@ -730,7 +730,7 @@ function save(d){
   d._writeId=myLastWriteId;
   saveLocal(d);
   if(firebaseReady && dbRef){
-    dbRef.ref('medvisit').set(d).catch(err=>{console.error('Firebase error',err);toast('Error de sincronizacion, datos guardados localmente','err');});
+    dbRef.ref('appmed').set(d).catch(err=>{console.error('Firebase error',err);toast('Error de sincronizacion, datos guardados localmente','err');});
   }
 }
 
@@ -1006,10 +1006,9 @@ function renderVisitorToday(){
       </div>`;
     }else if(isToday && st==='in-progress'){
       action=`<button class="btn btn-success btn-sm" onclick="openCloseVisit('${visit.id}','${p.id}')" style="margin-top:10px;width:100%;"><i class="fa-solid fa-camera"></i> Cerrar Visita</button>`;
-    }else if(st==='completed' && visit.photo){
-      action=`<img src="${visit.photo}" class="visit-photo-thumb" style="margin-top:10px;" onclick="viewVisitPhoto('${visit.id}')">`;
-    }else if(false && st==='pending'){
-      action=`<div style="margin-top:8px;font-size:11px;color:var(--muted);"><i class="fa-solid fa-info-circle"></i> </div>`;
+    }else if(st==='completed'){
+      action=visit&&visit.photo?`<img src="${visit.photo}" class="visit-photo-thumb" style="margin-top:10px;" onclick="viewVisitPhoto('${visit.id}')">`:
+        `<div style="margin-top:8px;font-size:11px;color:var(--success);"><i class="fa-solid fa-circle-check"></i> Visita completada</div>`;
     }
     return `<div class="card"><div class="point-card-inner" style="border:none;padding:0;">
       <div class="point-num">${p.order}</div>
