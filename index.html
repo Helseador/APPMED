@@ -602,6 +602,15 @@ var MIN_PER_PUNTO=15;
 function defaultData(){
   return {users:[],visits:[],points:[],labs:[],notifications:[]};
 }
+function ensureData(d){
+  if(!d) d=defaultData();
+  if(!d.users) d.users=[];
+  if(!d.visits) d.visits=[];
+  if(!d.points) d.points=[];
+  if(!d.labs) d.labs=[];
+  if(!d.notifications) d.notifications=[];
+  return d;
+}
 
 /* ------------------------------------------------------------------
    INICIALIZACIÓN FIREBASE
@@ -620,7 +629,7 @@ function initFirebase(){
     .then(function(snap){
       var remote=snap.val();
       if(remote && remote.users && remote.users.length){
-        D=remote;
+        D=ensureData(remote);
         myLastWriteId=remote._writeId||null;
       }else{
         D=defaultData();
@@ -640,7 +649,7 @@ function initFirebase(){
     })
     .catch(function(err){
       console.error('Error al leer la BD',err);
-      try{var local=JSON.parse(localStorage.getItem('medvisit_v5'));if(local && local.users)D=local;}catch(e){}
+      try{var local=JSON.parse(localStorage.getItem('medvisit_v5'));if(local && local.users)D=ensureData(local);}catch(e){}
       if(!D.labs) D.labs=[];
       refreshLabs();
       saveLocal(D);
@@ -659,9 +668,8 @@ function initFirebase(){
     if(!remote||!remote.users) return;
     if(remote._writeId && remote._writeId===myLastWriteId) return;
     showSyncIndicator();
-    D=remote;
+    D=ensureData(remote);
     myLastWriteId=remote._writeId||null;
-    if(!D.labs) D.labs=[];
     refreshLabs();
     saveLocal(D);
     renderCurrentScreen();
@@ -693,7 +701,7 @@ function fmt(h,m){return h.toString().padStart(2,'0')+':'+m.toString().padStart(
 function esc(s){if(!s)return'';var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function avatarColor(id){var h=0;for(var i=0;i<(id||'').length;i++)h=id.charCodeAt(i)+((h<<5)-h);return AV_COLORS[Math.abs(h)%AV_COLORS.length];}
 function initials(n){if(!n)return'??';var p=n.trim().split(/\s+/);return p.length>=2?(p[0][0]+p[1][0]).toUpperCase():n.substring(0,2).toUpperCase();}
-function getUserLabId(uid){var u=D.users.find(u=>u.id===uid);return u?u.labId:null;}
+function getUserLabId(uid){var u=(D.users||[]).find(u=>u.id===uid);return u?u.labId:null;}
 function refreshLabs() {
   LABS = BASE_LABS.slice().concat(
     (D.labs || []).filter(l => !BASE_LABS.some(b => b.id === l.id))
@@ -777,7 +785,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');doc
 /* ------------------------------------------------------------------
    NOTIFICACIONES (ADMIN / SUPER)
    ------------------------------------------------------------------ */
-if(!D.notifications) D.notifications=[];
+D=ensureData(D);
 function toggleNotifDropdown(){
   var dd=document.getElementById('notifDropdown');
   if(dd.style.display==='none'){
@@ -786,7 +794,7 @@ function toggleNotifDropdown(){
 }
 function renderNotifications(){
   var list=document.getElementById('adminNotifList');
-  var pending=D.points.filter(p=>p.approved===false && (p.labId===currentLabId || !currentLabId));
+  var pending=(D.points||[]).filter(p=>p.approved===false && (p.labId===currentLabId || !currentLabId));
   if(pending.length===0){
     list.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);"><i class="fa-solid fa-check-circle" style="font-size:24px;margin-bottom:8px;"></i><br>No hay puntos pendientes</div>';
     updateBadge(0);return;
@@ -815,7 +823,7 @@ function approvePoint(pid){
   if(p){p.approved=true; save(D); renderNotifications(); toast('Punto aprobado');}
 }
 function rejectPoint(pid){
-  D.points=D.points.filter(p=>p.id!==pid);
+  D.points=(D.points||[]).filter(p=>p.id!==pid);
   save(D); renderNotifications(); toast('Punto rechazado');
 }
 
@@ -833,7 +841,7 @@ function doLogin(){
     currentUser={id:'__super__',username:'superadmin',role:'super',name:'Super Administrador'};
     err.textContent=''; loginAttempts=0; att.style.display='none'; resetSession(); showScreen('superScreen'); renderSuperAdmin(); toast('Modo Super Admin'); return;
   }
-  var user=D.users.find(x=>x.username===u && x.password===p && x.active);
+  var user=(D.users||[]).find(x=>x.username===u && x.password===p && x.active);
   if(!user){
     loginAttempts++; var rem=MAX_LOGIN_ATTEMPTS-loginAttempts;
     if(rem<=0){loginAttempts=0; lockoutEnd=Date.now()+LOCKOUT_SECONDS*1000; showLockout(); err.textContent=''; att.style.display='none'; return;}
@@ -906,11 +914,11 @@ function renderLabSelect(){
         </div>
         <div style="flex:1;">
           <div style="font-size:16px;font-weight:800;color:var(--fg);">${esc(lab.name)}</div>
-          <div style="font-size:12px;color:var(--muted);">Visitadores: ${D.users.filter(u=>u.labId===lab.id && u.role==='visitor').length}</div>
+          <div style="font-size:12px;color:var(--muted);">Visitadores: ${(D.users||[]).filter(u=>u.labId===lab.id && u.role==='visitor').length}</div>
         </div>
         <i class="fa-solid fa-chevron-right" style="color:${lab.color};"></i>
       </div>
-      <div style="font-size:12px;color:var(--muted);">Hoy: <strong style="color:${lab.color};">${D.visits.filter(v=>v.labId===lab.id && v.date===today() && v.status==='completed').length}</strong> completadas</div>
+      <div style="font-size:12px;color:var(--muted);">Hoy: <strong style="color:${lab.color};">${(D.visits||[]).filter(v=>v.labId===lab.id && v.date===today() && v.status==='completed').length}</strong> completadas</div>
     </div>`).join('')+'</div>';
 }
 function selectLab(id){
@@ -938,7 +946,7 @@ function renderVisitor(){ var h=new Date().getHours(); var sal=h<12?'Buenos dias
 function renderVisitorToday(){
   var el=document.getElementById('visitorTodayPoints');
   // ------- 1) Agrupar puntos por ruta (nuevo) -------
-  var allMyPts=D.points.filter(p=>p.assignedTo===currentUser.id);
+  var allMyPts=(D.points||[]).filter(p=>p.assignedTo===currentUser.id);
   var routes=Array.from(new Set(allMyPts.map(p=>p.routeName||('Ruta '+DOW_NAME[p.dayOfWeek]||'Sin ruta'))));
   if(!routes.length){
     el.innerHTML='<div class="empty-state"><i class="fa-solid fa-couch"></i><p>No tienes puntos asignados</p></div>';
@@ -961,7 +969,7 @@ function renderVisitorToday(){
   var totalMin=myPts.length*MIN_PER_PUNTO;
   var endTotalMin=startH*60+startM+totalMin;
   var endH=Math.floor(endTotalMin/60)%24,endMM=endTotalMin%60;
-  var doneCt=D.visits.filter(v=>v.visitorId===currentUser.id && v.date===todayForDow(_visitRoute===undefined?todayDow():null) && v.status==='completed').length; // simplificado
+  var doneCt=(D.visits||[]).filter(v=>v.visitorId===currentUser.id && v.date===todayForDow(_visitRoute===undefined?todayDow():null) && v.status==='completed').length; // simplificado
   var allDone=doneCt===myPts.length;
   var gpsOk=gpsPermission==='granted';
   var mapsUrl=buildMapsRouteUrl(myPts);
@@ -986,7 +994,7 @@ function renderVisitorToday(){
   </div>`;
   // -------- Lista de puntos ----------
   var pointsHtml=myPts.map(p=>{
-    var visit=D.visits.find(v=>v.pointId===p.id && v.visitorId===currentUser.id && v.date===today());
+    var visit=(D.visits||[]).find(v=>v.pointId===p.id && v.visitorId===currentUser.id && v.date===today());
     var st=visit?visit.status:'pending';
     var badgeClass=st==='completed'?'badge-done':st==='in-progress'?'badge-progress':'badge-pending';
     var badgeLabel=st==='completed'?'Completada':st==='in-progress'?'En Curso':'Pendiente';
@@ -1183,9 +1191,9 @@ function todayDow(){
   var d=new Date().getDay(); return d===0?7:d;
 }
 function todayForDow(dow){return today();}
-function userById(id){return D.users.find(u=>u.id===id);}
-function pointById(id){return D.points.find(p=>p.id===id);}
-function visitById(id){return D.visits.find(v=>v.id===id);}
+function userById(id){return (D.users||[]).find(u=>u.id===id);}
+function pointById(id){return (D.points||[]).find(p=>p.id===id);}
+function visitById(id){return (D.visits||[]).find(v=>v.id===id);}
 function mapsLink(lat,lng,addr){
   if(lat&&lng) return 'https://www.google.com/maps?q='+lat+','+lng;
   return 'https://www.google.com/maps/search/'+encodeURIComponent(addr||'');
@@ -1280,8 +1288,8 @@ function renderSuperAdmin(){
 function renderSuperUsers(){
   var el=document.getElementById('superUserList');
   if(!el) return;
-  if(!D.users.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-users"></i><p>No hay usuarios</p></div>';return;}
-  el.innerHTML=D.users.map(u=>{
+  if(!(D.users||[]).length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-users"></i><p>No hay usuarios</p></div>';return;}
+  el.innerHTML=(D.users||[]).map(u=>{
     var lab=LABS.find(l=>l.id===u.labId);
     var col=avatarColor(u.id);
     return `<div class="user-item" onclick="openSuperDetail('${u.id}')">
@@ -1302,8 +1310,8 @@ function openSuperDetail(uid){
   var el=document.getElementById('superDetailContent');
   var lab=LABS.find(l=>l.id===u.labId);
   var col=avatarColor(u.id);
-  var pts=D.points.filter(p=>p.assignedTo===uid);
-  var visits=D.visits.filter(v=>v.visitorId===uid);
+  var pts=(D.points||[]).filter(p=>p.assignedTo===uid);
+  var visits=(D.visits||[]).filter(v=>v.visitorId===uid);
   el.innerHTML=`
     <div style="text-align:center;padding:20px 0 16px;">
       <div class="avatar" style="width:64px;height:64px;font-size:24px;margin:0 auto 10px;background:${col};">${initials(u.name)}</div>
@@ -1372,13 +1380,13 @@ function superSaveUser(){
     if(u){u.name=name;u.username=username;u.role=role;u.labId=labId;if(password)u.password=password;}
   }else{
     if(!password){toast('Contraseña obligatoria','err');return;}
-    if(D.users.find(u=>u.username===username)){toast('Usuario ya existe','err');return;}
+    if((D.users||[]).find(u=>u.username===username)){toast('Usuario ya existe','err');return;}
     D.users.push({id:uid(),name,username,password,role,labId,active:true});
   }
   save(D); closeModal('modalSuperEdit'); renderSuperUsers(); toast(id?'Usuario actualizado':'Usuario creado');
 }
 function superDeleteUser(uid){
-  D.users=D.users.filter(u=>u.id!==uid);
+  D.users=(D.users||[]).filter(u=>u.id!==uid);
   save(D); closeModal('modalSuperEdit'); renderSuperUsers(); toast('Usuario eliminado');
 }
 function toggleUserActive(uid){
@@ -1397,7 +1405,7 @@ function renderSuperVisitas(){
   if(!el) return;
   var labF=document.getElementById('sFilterLab')?document.getElementById('sFilterLab').value:'';
   var stF=document.getElementById('sFilterStatus')?document.getElementById('sFilterStatus').value:'';
-  var list=D.visits.filter(v=>(labF?v.labId===labF:true)&&(stF?v.status===stF:true));
+  var list=(D.visits||[]).filter(v=>(labF?v.labId===labF:true)&&(stF?v.status===stF:true));
   list.sort((a,b)=>b.date>a.date?1:-1);
   if(!list.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>Sin visitas</p></div>';return;}
   el.innerHTML=list.map(v=>{
@@ -1419,7 +1427,7 @@ function renderSuperFotos(){
   var el=document.getElementById('superFotosList');
   if(!el) return;
   var labF=document.getElementById('sFilterFotoLab')?document.getElementById('sFilterFotoLab').value:'';
-  var photos=D.visits.filter(v=>v.photo&&(labF?v.labId===labF:true));
+  var photos=(D.visits||[]).filter(v=>v.photo&&(labF?v.labId===labF:true));
   if(!photos.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-images"></i><p>Sin fotos</p></div>';return;}
   el.innerHTML=photos.map(v=>`<img src="${v.photo}" class="gallery-img" onclick="viewVisitPhoto('${v.id}')" style="width:100%;border-radius:10px;cursor:pointer;">`).join('');
 }
@@ -1427,8 +1435,8 @@ function renderSuperLabs(){
   var el=document.getElementById('superLabsList');
   if(!el) return;
   el.innerHTML=LABS.map(lab=>{
-    var members=D.users.filter(u=>u.labId===lab.id).length;
-    var visits=D.visits.filter(v=>v.labId===lab.id&&v.status==='completed').length;
+    var members=(D.users||[]).filter(u=>u.labId===lab.id).length;
+    var visits=(D.visits||[]).filter(v=>v.labId===lab.id&&v.status==='completed').length;
     return `<div class="card" style="margin-bottom:10px;">
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="width:44px;height:44px;border-radius:12px;background:${lab.color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;flex-shrink:0;">
@@ -1452,10 +1460,10 @@ function renderCanvasDashboard(){
   var lab=LABS.find(l=>l.id===currentLabId);
   var labColor=lab?lab.color:'var(--primary)';
   var labColorLight=lab?lab.colorLight:'var(--primary-50)';
-  var myUsers=D.users.filter(u=>u.labId===currentLabId&&u.role==='visitor'&&u.active);
-  var todayVisits=D.visits.filter(v=>v.labId===currentLabId&&v.date===today());
+  var myUsers=(D.users||[]).filter(u=>u.labId===currentLabId&&u.role==='visitor'&&u.active);
+  var todayVisits=(D.visits||[]).filter(v=>v.labId===currentLabId&&v.date===today());
   var completed=todayVisits.filter(v=>v.status==='completed').length;
-  var totalPts=D.points.filter(p=>myUsers.some(u=>u.id===p.assignedTo)).length;
+  var totalPts=(D.points||[]).filter(p=>myUsers.some(u=>u.id===p.assignedTo)).length;
   var pct=totalPts?Math.round(completed/totalPts*100):0;
   el.innerHTML=`
     <div class="canvas-hero" style="background:linear-gradient(135deg,${labColor},${labColor}99);">
@@ -1466,13 +1474,13 @@ function renderCanvasDashboard(){
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-num">${myUsers.length}</div><div class="stat-label">Visitadores</div></div>
       <div class="stat-card"><div class="stat-num">${completed}</div><div class="stat-label">Visitas hoy</div></div>
-      <div class="stat-card"><div class="stat-num">${D.visits.filter(v=>v.labId===currentLabId&&v.status==='completed').length}</div><div class="stat-label">Total visitas</div></div>
+      <div class="stat-card"><div class="stat-num">${(D.visits||[]).filter(v=>v.labId===currentLabId&&v.status==='completed').length}</div><div class="stat-label">Total visitas</div></div>
       <div class="stat-card"><div class="stat-num">${totalPts}</div><div class="stat-label">Puntos totales</div></div>
     </div>
     <div class="section-title">Equipo</div>
     <div class="canvas-grid">${myUsers.map(u=>{
-      var uPts=D.points.filter(p=>p.assignedTo===u.id);
-      var uDone=D.visits.filter(v=>v.visitorId===u.id&&v.date===today()&&v.status==='completed').length;
+      var uPts=(D.points||[]).filter(p=>p.assignedTo===u.id);
+      var uDone=(D.visits||[]).filter(v=>v.visitorId===u.id&&v.date===today()&&v.status==='completed').length;
       var uPct=uPts.length?Math.round(uDone/uPts.length*100):0;
       var col=avatarColor(u.id);
       return `<div class="canvas-card" onclick="switchAdminTab('visitadores',document.querySelectorAll('#adminScreen .tab-btn')[1]);openVisitorDetail('${u.id}')">
@@ -1490,12 +1498,12 @@ function renderCanvasDashboard(){
 function renderVisitorList(){
   var el=document.getElementById('visitorList');
   if(!el) return;
-  var myUsers=D.users.filter(u=>u.labId===currentLabId&&u.role==='visitor');
+  var myUsers=(D.users||[]).filter(u=>u.labId===currentLabId&&u.role==='visitor');
   document.getElementById('visitorCount').textContent=myUsers.length;
   if(!myUsers.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-users"></i><p>Sin visitadores</p></div>';return;}
   el.innerHTML=myUsers.map(u=>{
     var col=avatarColor(u.id);
-    var pts=D.points.filter(p=>p.assignedTo===u.id).length;
+    var pts=(D.points||[]).filter(p=>p.assignedTo===u.id).length;
     return `<div class="user-item" onclick="openVisitorDetail('${u.id}')">
       <div class="avatar" style="background:${col};">${initials(u.name)}</div>
       <div style="flex:1;"><div style="font-weight:700;">${esc(u.name)}</div><div style="font-size:12px;color:var(--muted);">@${esc(u.username)} · ${pts} puntos</div></div>
@@ -1510,8 +1518,8 @@ function openVisitorDetail(uid){
   switchAdminTab('visitorDetail',null);
   var el=document.getElementById('visitorDetailContent');
   var col=avatarColor(u.id);
-  var pts=D.points.filter(p=>p.assignedTo===uid);
-  var visits=D.visits.filter(v=>v.visitorId===uid);
+  var pts=(D.points||[]).filter(p=>p.assignedTo===uid);
+  var visits=(D.visits||[]).filter(v=>v.visitorId===uid);
   var todayDone=visits.filter(v=>v.date===today()&&v.status==='completed').length;
   el.innerHTML=`
     <div style="text-align:center;padding:16px 0;">
@@ -1574,7 +1582,7 @@ function saveVisitor(){
     if(u){u.name=name;u.username=username;u.labId=labId;if(password)u.password=password;}
   }else{
     if(!password){toast('Contraseña obligatoria','err');return;}
-    if(D.users.find(u=>u.username===username)){toast('Usuario ya existe','err');return;}
+    if((D.users||[]).find(u=>u.username===username)){toast('Usuario ya existe','err');return;}
     D.users.push({id:uid(),name,username,password,role:'visitor',labId,active:true});
   }
   save(D); closeModal('modalVisitor'); renderVisitorList(); toast(id?'Visitador actualizado':'Visitador creado');
@@ -1614,7 +1622,7 @@ function openPointEdit(pid){
   openModal('modalPoint');
 }
 function deletePoint(pid,vid){
-  D.points=D.points.filter(p=>p.id!==pid);
+  D.points=(D.points||[]).filter(p=>p.id!==pid);
   save(D);
   if(vid) openVisitorDetail(vid);
   toast('Punto eliminado');
@@ -1622,7 +1630,7 @@ function deletePoint(pid,vid){
 function populateVisitFilter(){
   var sel=document.getElementById('filterVisitVisitor');
   if(!sel) return;
-  var myUsers=D.users.filter(u=>u.labId===currentLabId&&u.role==='visitor');
+  var myUsers=(D.users||[]).filter(u=>u.labId===currentLabId&&u.role==='visitor');
   sel.innerHTML='<option value="">Todos</option>'+myUsers.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('');
 }
 function renderAdminVisitas(){
@@ -1631,7 +1639,7 @@ function renderAdminVisitas(){
   var vf=document.getElementById('filterVisitVisitor')?document.getElementById('filterVisitVisitor').value:'';
   var sf=document.getElementById('filterVisitStatus')?document.getElementById('filterVisitStatus').value:'';
   var tf=document.getElementById('filterVisitType')?document.getElementById('filterVisitType').value:'';
-  var list=D.visits.filter(v=>v.labId===currentLabId&&(vf?v.visitorId===vf:true)&&(sf?v.status===sf:true)&&(tf?v.type===tf:true));
+  var list=(D.visits||[]).filter(v=>v.labId===currentLabId&&(vf?v.visitorId===vf:true)&&(sf?v.status===sf:true)&&(tf?v.type===tf:true));
   list.sort((a,b)=>b.date>a.date?1:-1);
   if(!list.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>Sin visitas</p></div>';return;}
   el.innerHTML=list.map(v=>{
@@ -1650,7 +1658,7 @@ function renderAdminVisitas(){
 function renderAdminFotos(){
   var el=document.getElementById('adminPhotoGallery');
   if(!el) return;
-  var photos=D.visits.filter(v=>v.photo&&v.labId===currentLabId);
+  var photos=(D.visits||[]).filter(v=>v.photo&&v.labId===currentLabId);
   if(!photos.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-images"></i><p>Sin fotos</p></div>';return;}
   el.innerHTML='<div class="gallery-grid">'+photos.map(v=>`<img src="${v.photo}" style="width:100%;border-radius:10px;cursor:pointer;" onclick="viewVisitPhoto('${v.id}')">`).join('')+'</div>';
 }
@@ -1661,7 +1669,7 @@ function renderAdminFotos(){
 function arriveToPoint(pid){
   var p=pointById(pid);
   if(!p) return;
-  var existing=D.visits.find(v=>v.pointId===pid&&v.visitorId===currentUser.id&&v.date===today());
+  var existing=(D.visits||[]).find(v=>v.pointId===pid&&v.visitorId===currentUser.id&&v.date===today());
   if(existing) return;
   var v={id:uid(),pointId:pid,visitorId:currentUser.id,labId:p.labId||currentUser.labId,date:today(),status:'in-progress',arrivedAt:new Date().toISOString(),type:'general'};
   if(visitaGpsCoords){v.lat=visitaGpsCoords.lat;v.lng=visitaGpsCoords.lng;}
@@ -1786,8 +1794,8 @@ function renderVisitorSemana(){
   for(var i=0;i<6;i++){var d=new Date(weekStart);d.setDate(weekStart.getDate()+i);days.push(d.toISOString().slice(0,10));}
   el.innerHTML=days.map(function(dateStr){
     var label=fmtDate(dateStr);
-    var myPts=D.points.filter(p=>p.assignedTo===currentUser.id&&p.dayOfWeek===(new Date(dateStr+'T12:00:00').getDay()||7));
-    var done=D.visits.filter(v=>v.visitorId===currentUser.id&&v.date===dateStr&&v.status==='completed').length;
+    var myPts=(D.points||[]).filter(p=>p.assignedTo===currentUser.id&&p.dayOfWeek===(new Date(dateStr+'T12:00:00').getDay()||7));
+    var done=(D.visits||[]).filter(v=>v.visitorId===currentUser.id&&v.date===dateStr&&v.status==='completed').length;
     var pct=myPts.length?Math.round(done/myPts.length*100):0;
     return `<div class="card" style="margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -1804,10 +1812,10 @@ function renderVisitorPerfil(){
   if(el){el.style.background=avatarColor(currentUser.id);el.textContent=initials(currentUser.name);}
   var nameEl=document.getElementById('vProfileName'); if(nameEl) nameEl.textContent=currentUser.name;
   var userEl=document.getElementById('vProfileUser'); if(userEl) userEl.textContent='@'+currentUser.username;
-  var total=D.visits.filter(v=>v.visitorId===currentUser.id&&v.status==='completed').length;
-  var todayV=D.visits.filter(v=>v.visitorId===currentUser.id&&v.date===today()&&v.status==='completed').length;
+  var total=(D.visits||[]).filter(v=>v.visitorId===currentUser.id&&v.status==='completed').length;
+  var todayV=(D.visits||[]).filter(v=>v.visitorId===currentUser.id&&v.date===today()&&v.status==='completed').length;
   var now=new Date(); var weekStart=new Date(now); weekStart.setDate(now.getDate()-now.getDay()+1);
-  var weekV=D.visits.filter(v=>v.visitorId===currentUser.id&&v.status==='completed'&&v.date>=weekStart.toISOString().slice(0,10)).length;
+  var weekV=(D.visits||[]).filter(v=>v.visitorId===currentUser.id&&v.status==='completed'&&v.date>=weekStart.toISOString().slice(0,10)).length;
   var t=document.getElementById('vProfileTotal'); if(t) t.textContent=total;
   var td=document.getElementById('vProfileToday'); if(td) td.textContent=todayV;
   var wk=document.getElementById('vProfileWeek'); if(wk) wk.textContent=weekV;
@@ -1864,7 +1872,7 @@ function confirmarMapaPicker(){
    PREVISUALIZAR RUTA
    ------------------------------------------------------------------ */
 function openRoutePreview(dow){
-  var myPts=D.points.filter(p=>p.assignedTo===currentUser.id&&p.dayOfWeek==dow).sort((a,b)=>a.order-b.order);
+  var myPts=(D.points||[]).filter(p=>p.assignedTo===currentUser.id&&p.dayOfWeek==dow).sort((a,b)=>a.order-b.order);
   var dayName=DOW_NAME[dow]||'';
   var mapsUrl=buildMapsRouteUrl(myPts);
   var html=`<div class="preview-header">
@@ -1925,7 +1933,7 @@ function aplicarFechasCustom(){
 function renderInformes(){
   var el=document.getElementById('rptLabCards'); if(!el) return;
   el.innerHTML=LABS.map(lab=>{
-    var visits=D.visits.filter(v=>v.labId===lab.id&&(!rptDesde||v.date>=rptDesde)&&(!rptHasta||v.date<=rptHasta));
+    var visits=(D.visits||[]).filter(v=>v.labId===lab.id&&(!rptDesde||v.date>=rptDesde)&&(!rptHasta||v.date<=rptHasta));
     var done=visits.filter(v=>v.status==='completed').length;
     return `<div class="card" style="margin-bottom:10px;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
