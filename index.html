@@ -1983,9 +1983,130 @@ function renderInformes(){
     </div>`;
   }).join('');
 }
-function generarPDF(labId){toast('Generando PDF...','info');}
-function generarExcel(labId){toast('Generando Excel...','info');}
-function generarPPTX(labId){toast('Generando PPTX...','info');}
+function getReportData(labId){
+  var lab=LABS.find(function(l){return l.id===labId;})||{name:'Todos',color:'#0d9488'};
+  var visits=(D.visits||[]).filter(function(v){
+    var matchLab=labId?v.labId===labId:true;
+    var matchDesde=rptDesde?v.date>=rptDesde:true;
+    var matchHasta=rptHasta?v.date<=rptHasta:true;
+    return matchLab&&matchDesde&&matchHasta;
+  });
+  var rows=visits.map(function(v){
+    var pt=(D.points||[]).find(function(p){return p.id===v.pointId;})||{};
+    var usr=(D.users||[]).find(function(u){return u.id===v.userId;})||{};
+    return {
+      fecha:v.date||'',
+      visitador:usr.name||v.visitorId||'',
+      punto:pt.name||v.pointName||'',
+      direccion:pt.address||'',
+      estado:v.status==='completed'?'Completada':v.status==='in-progress'?'En curso':'Pendiente',
+      tipo:v.type==='profesional'?'Visita Profesional':'Visita General',
+      medico:v.doctorName||'',
+      especialidad:v.specialty||'',
+      notas:v.notes||'',
+      laboratorio:lab.name
+    };
+  });
+  return {lab:lab, rows:rows, desde:rptDesde, hasta:rptHasta};
+}
+
+function generarPDF(labId){
+  toast('Generando PDF...','info');
+  var data=getReportData(labId);
+  var {jsPDF}=window.jspdf;
+  var doc=new jsPDF({orientation:'landscape'});
+  var lab=data.lab;
+  // Header
+  doc.setFillColor(13,148,136);
+  doc.rect(0,0,297,20,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(14);
+  doc.setFont(undefined,'bold');
+  doc.text('APPMED – Informe de Visitas: '+lab.name,14,13);
+  doc.setFontSize(9);
+  doc.setFont(undefined,'normal');
+  doc.text('Periodo: '+(data.desde||'Todo')+' al '+(data.hasta||'Todo'),200,13);
+  // Table
+  doc.setTextColor(0,0,0);
+  var cols=['Fecha','Visitador','Punto','Tipo','Médico','Especialidad','Estado','Notas'];
+  var rows=data.rows.map(function(r){return[r.fecha,r.visitador,r.punto,r.tipo,r.medico,r.especialidad,r.estado,r.notas];});
+  doc.autoTable({
+    head:[cols],
+    body:rows,
+    startY:25,
+    styles:{fontSize:8,cellPadding:3},
+    headStyles:{fillColor:[13,148,136],textColor:255,fontStyle:'bold'},
+    alternateRowStyles:{fillColor:[240,253,250]},
+    columnStyles:{7:{cellWidth:40}}
+  });
+  doc.save('Informe_'+lab.name+'_'+today()+'.pdf');
+}
+
+function generarExcel(labId){
+  toast('Generando Excel...','info');
+  var data=getReportData(labId);
+  var wb=XLSX.utils.book_new();
+  var header=['Fecha','Visitador','Punto','Dirección','Tipo','Médico','Especialidad','Estado','Notas','Laboratorio'];
+  var rows=data.rows.map(function(r){return[r.fecha,r.visitador,r.punto,r.direccion,r.tipo,r.medico,r.especialidad,r.estado,r.notas,r.laboratorio];});
+  var ws=XLSX.utils.aoa_to_sheet([header].concat(rows));
+  // Column widths
+  ws['!cols']=[{wch:12},{wch:20},{wch:22},{wch:28},{wch:18},{wch:22},{wch:18},{wch:14},{wch:30},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws,'Visitas');
+  // Summary sheet
+  var summary=[['Laboratorio','Total Visitas','Completadas','En Curso','Pendientes']];
+  var allLabs=labId?[LABS.find(function(l){return l.id===labId;})||{id:labId,name:labId}]:LABS;
+  allLabs.forEach(function(lab){
+    var lv=data.rows.filter(function(r){return r.laboratorio===lab.name;});
+    summary.push([lab.name,lv.length,lv.filter(function(r){return r.estado==='Completada';}).length,lv.filter(function(r){return r.estado==='En curso';}).length,lv.filter(function(r){return r.estado==='Pendiente';}).length]);
+  });
+  var ws2=XLSX.utils.aoa_to_sheet(summary);
+  XLSX.utils.book_append_sheet(wb,ws2,'Resumen');
+  XLSX.writeFile(wb,'Informe_'+data.lab.name+'_'+today()+'.xlsx');
+}
+
+function generarPPTX(labId){
+  toast('Generando PPTX...','info');
+  var data=getReportData(labId);
+  var pptx=new PptxGenJS();
+  pptx.layout='LAYOUT_WIDE';
+  // Slide 1 - Portada
+  var s1=pptx.addSlide();
+  s1.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:'100%',fill:{color:'0d9488'}});
+  s1.addText('APPMED',{x:1,y:1.5,w:8,h:1.2,fontSize:48,bold:true,color:'FFFFFF',align:'center'});
+  s1.addText('Informe de Visitas – '+data.lab.name,{x:1,y:3,w:8,h:0.7,fontSize:22,color:'CCFBF1',align:'center'});
+  s1.addText('Periodo: '+(data.desde||'Todo')+' al '+(data.hasta||'Todo'),{x:1,y:3.9,w:8,h:0.5,fontSize:14,color:'CCFBF1',align:'center'});
+  // Slide 2 - Resumen
+  var s2=pptx.addSlide();
+  s2.addText('Resumen del Periodo',{x:0.5,y:0.3,w:9,h:0.6,fontSize:24,bold:true,color:'0d9488'});
+  var total=data.rows.length;
+  var completadas=data.rows.filter(function(r){return r.estado==='Completada';}).length;
+  var enCurso=data.rows.filter(function(r){return r.estado==='En curso';}).length;
+  var stats=[['Total visitas',total],['Completadas',completadas],['En curso',enCurso],['Pendientes',total-completadas-enCurso]];
+  stats.forEach(function(st,i){
+    s2.addShape(pptx.ShapeType.rect,{x:0.5+i*2.4,y:1.2,w:2.1,h:1.4,fill:{color:i===0?'0d9488':i===1?'059669':i===2?'0284c7':'6b7280'},line:{color:'FFFFFF'}});
+    s2.addText(String(st[1]),{x:0.5+i*2.4,y:1.4,w:2.1,h:0.7,fontSize:32,bold:true,color:'FFFFFF',align:'center'});
+    s2.addText(st[0],{x:0.5+i*2.4,y:2.1,w:2.1,h:0.4,fontSize:11,color:'FFFFFF',align:'center'});
+  });
+  // Slide 3 - Tabla de visitas
+  if(data.rows.length>0){
+    var s3=pptx.addSlide();
+    s3.addText('Detalle de Visitas',{x:0.5,y:0.3,w:9,h:0.6,fontSize:24,bold:true,color:'0d9488'});
+    var tableRows=[
+      [{text:'Fecha',options:{bold:true,fill:'0d9488',color:'FFFFFF'}},{text:'Visitador',options:{bold:true,fill:'0d9488',color:'FFFFFF'}},{text:'Punto',options:{bold:true,fill:'0d9488',color:'FFFFFF'}},{text:'Tipo',options:{bold:true,fill:'0d9488',color:'FFFFFF'}},{text:'Estado',options:{bold:true,fill:'0d9488',color:'FFFFFF'}}]
+    ];
+    data.rows.slice(0,20).forEach(function(r,i){
+      tableRows.push([
+        {text:r.fecha,options:{fill:i%2===0?'F0FDF4':'FFFFFF'}},
+        {text:r.visitador,options:{fill:i%2===0?'F0FDF4':'FFFFFF'}},
+        {text:r.punto,options:{fill:i%2===0?'F0FDF4':'FFFFFF'}},
+        {text:r.tipo,options:{fill:i%2===0?'F0FDF4':'FFFFFF'}},
+        {text:r.estado,options:{fill:i%2===0?'F0FDF4':'FFFFFF'}}
+      ]);
+    });
+    s3.addTable(tableRows,{x:0.3,y:1.1,w:9.4,colW:[1.4,2,2.2,2,1.8],fontSize:9});
+  }
+  pptx.writeFile({fileName:'Informe_'+data.lab.name+'_'+today()+'.pptx'});
+}
 
 /* ------------------------------------------------------------------
    EVENT LISTENERS Y ARRANQUE
