@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0F766E">
-  <title>APPMED</title>                               <!-- 1️⃣ Nombre cambiado -->
+  <title>APPMED</title>                        
   <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiTWVkVmlzaXQiLCJzaG9ydF9uYW1lIjoiTWVkVmlzaXQiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzBGNzY2RSIsInRoZW1lX2NvbG9yIjoiIzBGNzY2RSJ9">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Serif+Display&display=swap" rel="stylesheet">
@@ -1713,7 +1713,7 @@ function renderAdminVisitas(){
       body+='<div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fa-solid fa-user" style="width:16px;"></i> Visitador: '+esc(u.name||v.visitorId||'')+'</div>';
       if(v.gift) body+='<div style="font-size:12px;margin-bottom:6px;background:#FEF9C3;padding:4px 10px;border-radius:8px;"><i class="fa-solid fa-gift" style="color:#D97706;"></i> Obsequio: '+esc(v.gift)+'</div>';
       if(v.notes) body+='<div style="font-size:12px;margin-bottom:8px;background:var(--bg);padding:8px 10px;border-radius:8px;"><i class="fa-solid fa-note-sticky" style="color:var(--muted);"></i> '+esc(v.notes)+'</div>';
-      if(v.photo) body+='<img src="'+v.photo+'" class="visit-photo-thumb" style="margin-bottom:8px;width:100%;max-height:160px;object-fit:cover;border-radius:10px;cursor:pointer;" onclick="viewVisitPhoto(''+v.id+'')">';
+      if(v.photo) body+='<img src="'+v.photo+'" class="visit-photo-thumb" style="margin-bottom:8px;width:100%;max-height:160px;object-fit:cover;border-radius:10px;cursor:pointer;" onclick="viewVisitPhoto(&quot;'+v.id+'&quot;)">';
       if(v.firma) body+='<div style="margin-top:8px;border:1px solid var(--border);border-radius:10px;padding:8px;background:#fff;">'
         +'<div style="font-size:11px;color:var(--muted);margin-bottom:4px;"><i class="fa-solid fa-signature"></i> Firma del profesional</div>'
         +'<img src="'+v.firma+'" style="width:100%;max-height:100px;object-fit:contain;border-radius:6px;">'
@@ -1724,7 +1724,7 @@ function renderAdminVisitas(){
       if(p.address) body+='<div style="font-size:12px;color:var(--muted);margin-bottom:2px;"><i class="fa-solid fa-location-dot" style="width:16px;"></i> '+esc(p.address)+'</div>';
       body+='<div style="font-size:12px;color:var(--muted);">'+esc(u.name||'')+'</div>';
       if(v.notes) body+='<div style="font-size:12px;margin-top:6px;background:var(--bg);padding:6px 10px;border-radius:8px;">'+esc(v.notes)+'</div>';
-      if(v.photo) body+='<img src="'+v.photo+'" class="visit-photo-thumb" style="margin-top:8px;cursor:pointer;" onclick="viewVisitPhoto(''+v.id+'')">';
+      if(v.photo) body+='<img src="'+v.photo+'" class="visit-photo-thumb" style="margin-top:8px;cursor:pointer;" onclick="viewVisitPhoto(&quot;'+v.id+'&quot;)">';
     }
     return '<div class="card" style="margin-bottom:12px;">'+header+body+'</div>';
   }).join('');
