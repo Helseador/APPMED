@@ -571,6 +571,43 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modalNuevoLab">
+  <div class="modal-sheet">
+    <div class="modal-title">Nuevo Laboratorio</div>
+    <div class="form-group">
+      <label class="form-label">Nombre del laboratorio <span style="color:var(--danger);">*</span></label>
+      <input class="form-input" id="nlNombre" placeholder="Ej: Bayer, Pfizer...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Color</label>
+      <div id="nlColorPicker" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
+        <button type="button" style="width:32px;height:32px;border-radius:8px;background:#0d9488;border:2px solid transparent;cursor:pointer;" onclick="nlSelColor('#0d9488',this)"></button>
+        <button type="button" style="width:32px;height:32px;border-radius:8px;background:#7C3AED;border:2px solid transparent;cursor:pointer;" onclick="nlSelColor('#7C3AED',this)"></button>
+        <button type="button" style="width:32px;height:32px;border-radius:8px;background:#DC2626;border:2px solid transparent;cursor:pointer;" onclick="nlSelColor('#DC2626',this)"></button>
+        <button type="button" style="width:32px;height:32px;border-radius:8px;background:#D97706;border:2px solid transparent;cursor:pointer;" onclick="nlSelColor('#D97706',this)"></button>
+        <button type="button" style="width:32px;height:32px;border-radius:8px;background:#2563EB;border:2px solid transparent;cursor:pointer;" onclick="nlSelColor('#2563EB',this)"></button>
+        <button type="button" style="width:32px;height:32px;border-radius:8px;background:#059669;border:2px solid transparent;cursor:pointer;" onclick="nlSelColor('#059669',this)"></button>
+        <button type="button" style="width:32px;height:32px;border-radius:8px;background:#DB2777;border:2px solid transparent;cursor:pointer;" onclick="nlSelColor('#DB2777',this)"></button>
+      </div>
+      <input type="hidden" id="nlColor" value="#0d9488">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Logo del laboratorio (opcional)</label>
+      <input type="file" id="nlLogo" accept="image/*" style="display:none;" onchange="nlPreviewLogo(this)">
+      <div onclick="document.getElementById('nlLogo').click()" style="border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;background:var(--bg);">
+        <div id="nlLogoPreview" style="display:none;margin-bottom:8px;"><img id="nlLogoImg" style="max-height:60px;border-radius:8px;"></div>
+        <i class="fa-solid fa-image" style="font-size:22px;color:var(--muted);"></i>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;">Toca para subir imagen</div>
+      </div>
+    </div>
+    <input type="hidden" id="nlIcon" value="fa-flask">
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalNuevoLab')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="superGuardarLab()"><i class="fa-solid fa-plus"></i> Crear</button>
+    </div>
+  </div>
+</div>
+
 <div class="confirm-overlay" id="confirmOverlay"><div class="confirm-box"><div class="confirm-icon" id="confirmIcon"><i id="confirmIconI"></i></div><div class="confirm-title" id="confirmTitle"></div><div class="confirm-msg" id="confirmMsg"></div><div class="confirm-actions"><button class="btn btn-outline" onclick="cancelConfirm()">Cancelar</button><button class="btn" id="confirmOkBtn" onclick="executeConfirm()">Confirmar</button></div></div></div>
 
 <script>
@@ -1093,6 +1130,15 @@ function superAbrirNuevoLab(){
   document.querySelectorAll('#nlColorPicker button').forEach(b=>b.style.borderColor='transparent');
   document.querySelectorAll('#nlIconPicker button').forEach(b=>{b.style.background='var(--bg)'; b.style.borderColor='var(--border)';});
   openModal('modalNuevoLab');
+}
+function nlPreviewLogo(input){
+  if(!input.files||!input.files[0]) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    document.getElementById('nlLogoImg').src=e.target.result;
+    document.getElementById('nlLogoPreview').style.display='block';
+  };
+  reader.readAsDataURL(input.files[0]);
 }
 function nlSelColor(col,btn){document.getElementById('nlColor').value=col; document.querySelectorAll('#nlColorPicker button').forEach(b=>b.style.borderColor='transparent'); btn.style.borderColor='#000';}
 function nlSelIcon(ic,btn){document.getElementById('nlIcon').value=ic; document.querySelectorAll('#nlIconPicker button').forEach(b=>{b.style.background='var(--bg)'; b.style.borderColor='var(--border)';}); btn.style.background=buttonColor=document.getElementById('nlColor').value; btn.style.borderColor=buttonColor; btn.style.color='#fff';}
@@ -1638,20 +1684,49 @@ function renderAdminVisitas(){
   var vf=document.getElementById('filterVisitVisitor')?document.getElementById('filterVisitVisitor').value:'';
   var sf=document.getElementById('filterVisitStatus')?document.getElementById('filterVisitStatus').value:'';
   var tf=document.getElementById('filterVisitType')?document.getElementById('filterVisitType').value:'';
-  var list=(D.visits||[]).filter(v=>v.labId===currentLabId&&(vf?v.visitorId===vf:true)&&(sf?v.status===sf:true)&&(tf?v.type===tf:true));
-  list.sort((a,b)=>b.date>a.date?1:-1);
+  var list=(D.visits||[]).filter(function(v){
+    return (currentLabId?v.labId===currentLabId:true)&&(vf?v.visitorId===vf:true)&&(sf?v.status===sf:true)&&(tf?v.type===tf:true);
+  });
+  list.sort(function(a,b){return b.date>a.date?1:-1;});
   if(!list.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>Sin visitas</p></div>';return;}
-  el.innerHTML=list.map(v=>{
-    var u=userById(v.visitorId); var p=pointById(v.pointId);
+  el.innerHTML=list.map(function(v){
+    var u=userById(v.visitorId)||{}; var p=pointById(v.pointId)||{};
     var bc=v.status==='completed'?'badge-done':v.status==='in-progress'?'badge-progress':v.status==='cancelled'?'badge-cancel':'badge-pending';
     var bl=v.status==='completed'?'Completada':v.status==='in-progress'?'En Curso':v.status==='cancelled'?'Cancelada':'Pendiente';
-    return `<div class="card" style="margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <span class="badge ${bc}">${bl}</span><span style="font-size:11px;color:var(--muted);">${fmtDate(v.date)}</span>
-      </div>
-      <div style="font-weight:700;">${p?esc(p.name):esc(v.placeName||'Visita libre')}</div>
-      <div style="font-size:12px;color:var(--muted);">${u?esc(u.name):'?'}</div>
-      ${v.photo?`<img src="${v.photo}" class="visit-photo-thumb" style="margin-top:8px;" onclick="viewVisitPhoto('${v.id}')">`:''}</div>`;
+    var lab=LABS.find(function(l){return l.id===v.labId;})||{};
+    var isProf=v.type==='profesional';
+    var header='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+      +'<div style="display:flex;align-items:center;gap:8px;">'
+      +'<span class="badge '+bc+'">'+bl+'</span>'
+      +(isProf?'<span style="background:#7C3AED20;color:#7C3AED;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;"><i class="fa-solid fa-user-doctor"></i> Profesional</span>':'')
+      +'</div>'
+      +'<span style="font-size:11px;color:var(--muted);">'+fmtDate(v.date)+'</span>'
+      +'</div>';
+    var body='';
+    if(isProf){
+      // ── VISITA PROFESIONAL: mostrar todo el detalle
+      body+='<div style="font-weight:800;font-size:15px;margin-bottom:4px;"><i class="fa-solid fa-user-doctor" style="color:#7C3AED;margin-right:6px;"></i>'+esc(v.placeName||'')+'</div>';
+      if(v.speciality) body+='<div style="font-size:12px;color:var(--muted);margin-bottom:2px;"><i class="fa-solid fa-stethoscope" style="width:16px;"></i> '+esc(v.speciality)+'</div>';
+      if(v.phone) body+='<div style="font-size:12px;color:var(--muted);margin-bottom:2px;"><i class="fa-solid fa-phone" style="width:16px;"></i> '+esc(v.phone)+'</div>';
+      if(v.address) body+='<div style="font-size:12px;color:var(--muted);margin-bottom:2px;"><i class="fa-solid fa-location-dot" style="width:16px;"></i> '+esc(v.address)+'</div>';
+      if(lab.name) body+='<div style="font-size:12px;color:var(--muted);margin-bottom:2px;"><i class="fa-solid fa-flask" style="width:16px;"></i> '+esc(lab.name)+'</div>';
+      body+='<div style="font-size:12px;color:var(--muted);margin-bottom:8px;"><i class="fa-solid fa-user" style="width:16px;"></i> Visitador: '+esc(u.name||v.visitorId||'')+'</div>';
+      if(v.gift) body+='<div style="font-size:12px;margin-bottom:6px;background:#FEF9C3;padding:4px 10px;border-radius:8px;"><i class="fa-solid fa-gift" style="color:#D97706;"></i> Obsequio: '+esc(v.gift)+'</div>';
+      if(v.notes) body+='<div style="font-size:12px;margin-bottom:8px;background:var(--bg);padding:8px 10px;border-radius:8px;"><i class="fa-solid fa-note-sticky" style="color:var(--muted);"></i> '+esc(v.notes)+'</div>';
+      if(v.photo) body+='<img src="'+v.photo+'" class="visit-photo-thumb" style="margin-bottom:8px;width:100%;max-height:160px;object-fit:cover;border-radius:10px;cursor:pointer;" onclick="viewVisitPhoto(''+v.id+'')">';
+      if(v.firma) body+='<div style="margin-top:8px;border:1px solid var(--border);border-radius:10px;padding:8px;background:#fff;">'
+        +'<div style="font-size:11px;color:var(--muted);margin-bottom:4px;"><i class="fa-solid fa-signature"></i> Firma del profesional</div>'
+        +'<img src="'+v.firma+'" style="width:100%;max-height:100px;object-fit:contain;border-radius:6px;">'
+        +'</div>';
+    } else {
+      // ── VISITA GENERAL
+      body+='<div style="font-weight:700;margin-bottom:2px;">'+esc(p.name||v.placeName||'Visita libre')+'</div>';
+      if(p.address) body+='<div style="font-size:12px;color:var(--muted);margin-bottom:2px;"><i class="fa-solid fa-location-dot" style="width:16px;"></i> '+esc(p.address)+'</div>';
+      body+='<div style="font-size:12px;color:var(--muted);">'+esc(u.name||'')+'</div>';
+      if(v.notes) body+='<div style="font-size:12px;margin-top:6px;background:var(--bg);padding:6px 10px;border-radius:8px;">'+esc(v.notes)+'</div>';
+      if(v.photo) body+='<img src="'+v.photo+'" class="visit-photo-thumb" style="margin-top:8px;cursor:pointer;" onclick="viewVisitPhoto(''+v.id+'')">';
+    }
+    return '<div class="card" style="margin-bottom:12px;">'+header+body+'</div>';
   }).join('');
 }
 function renderAdminFotos(){
@@ -2003,6 +2078,10 @@ function getReportData(labId){
       tipo:v.type==='profesional'?'Visita Profesional':'Visita General',
       medico:v.doctorName||'',
       especialidad:v.specialty||'',
+      telefono:v.phone||'',
+      direccionProf:v.address||'',
+      obsequio:v.gift||'',
+      firma:v.firma?'Sí':'No',
       notas:v.notes||'',
       laboratorio:lab.name
     };
