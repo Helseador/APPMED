@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0F766E">
-  <title>APPMED</title>                        
+  <title>APPMED</title>                               <!-- 1️⃣ Nombre cambiado -->
   <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiTWVkVmlzaXQiLCJzaG9ydF9uYW1lIjoiTWVkVmlzaXQiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzBGNzY2RSIsInRoZW1lX2NvbG9yIjoiIzBGNzY2RSJ9">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Serif+Display&display=swap" rel="stylesheet">
@@ -1450,31 +1450,37 @@ function renderSuperVisitas(){
   if(!el) return;
   var labF=document.getElementById('sFilterLab')?document.getElementById('sFilterLab').value:'';
   var stF=document.getElementById('sFilterStatus')?document.getElementById('sFilterStatus').value:'';
-  var list=(D.visits||[]).filter(v=>(labF?v.labId===labF:true)&&(stF?v.status===stF:true));
-  list.sort((a,b)=>b.date>a.date?1:-1);
+  var list=(D.visits||[]).filter(function(v){return (labF?v.labId===labF:true)&&(stF?v.status===stF:true);});
+  list.sort(function(a,b){return b.date>a.date?1:-1;});
   if(!list.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>Sin visitas</p></div>';return;}
-  el.innerHTML=list.map(v=>{
-    var u=userById(v.visitorId); var p=pointById(v.pointId);
-    var lab=LABS.find(l=>l.id===v.labId);
-    var bc=v.status==='completed'?'badge-done':v.status==='in-progress'?'badge-progress':v.status==='cancelled'?'badge-cancel':'badge-pending';
-    var bl=v.status==='completed'?'Completada':v.status==='in-progress'?'En Curso':v.status==='cancelled'?'Cancelada':'Pendiente';
-    return `<div class="card" style="margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <span class="badge ${bc}">${bl}</span>
-        <span style="font-size:11px;color:var(--muted);">${fmtDate(v.date)}</span>
-      </div>
-      <div style="font-weight:700;">${p?esc(p.name):esc(v.placeName||'Visita')}</div>
-      <div style="font-size:12px;color:var(--muted);">${u?esc(u.name):'?'} · ${lab?esc(lab.name):''}</div>
-      ${v.photo?`<img src="${v.photo}" class="visit-photo-thumb" style="margin-top:8px;" onclick="viewVisitPhoto('${v.id}')">`:''}</div>`;
+  el.innerHTML=list.map(function(v){
+    var u=userById(v.visitorId)||{};
+    var p=pointById(v.pointId)||{};
+    var lab=LABS.find(function(l){return l.id===v.labId;})||{};
+    var bc=v.status==='completed'?'badge-done':v.status==='in-progress'?'badge-progress':'badge-pending';
+    var bl=v.status==='completed'?'Completada':v.status==='in-progress'?'En Curso':'Pendiente';
+    var isProf=v.type==='profesional';
+    var card='<div class="card" style="margin-bottom:10px;">';
+    card+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+    card+='<span class="badge '+bc+'">'+bl+'</span>';
+    card+='<span style="font-size:11px;color:var(--muted);">'+fmtDate(v.date)+'</span>';
+    card+='</div>';
+    card+='<div style="font-weight:700;">'+(isProf?esc(v.placeName||''):esc(p.name||v.placeName||'Visita'))+'</div>';
+    card+='<div style="font-size:12px;color:var(--muted);">'+(u.name?esc(u.name):'?')+' &middot; '+(lab.name?esc(lab.name):'')+'</div>';
+    if(v.photo) card+='<img src="'+v.photo+'" class="visit-photo-thumb" style="margin-top:8px;cursor:pointer;" onclick="viewVisitPhoto(''+v.id+'')">';
+    card+='</div>';
+    return card;
   }).join('');
 }
 function renderSuperFotos(){
   var el=document.getElementById('superFotosList');
   if(!el) return;
   var labF=document.getElementById('sFilterFotoLab')?document.getElementById('sFilterFotoLab').value:'';
-  var photos=(D.visits||[]).filter(v=>v.photo&&(labF?v.labId===labF:true));
+  var photos=(D.visits||[]).filter(function(v){return v.photo&&(labF?v.labId===labF:true);});
   if(!photos.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-images"></i><p>Sin fotos</p></div>';return;}
-  el.innerHTML=photos.map(v=>`<img src="${v.photo}" class="gallery-img" onclick="viewVisitPhoto('${v.id}')" style="width:100%;border-radius:10px;cursor:pointer;">`).join('');
+  el.innerHTML='<div class="gallery-grid">'+photos.map(function(v){
+    return '<img src="'+v.photo+'" class="gallery-img" onclick="viewVisitPhoto(''+v.id+'')" style="width:100%;border-radius:10px;cursor:pointer;">';
+  }).join('')+'</div>';
 }
 function renderSuperLabs(){
   var el=document.getElementById('superLabsList');
@@ -1732,9 +1738,11 @@ function renderAdminVisitas(){
 function renderAdminFotos(){
   var el=document.getElementById('adminPhotoGallery');
   if(!el) return;
-  var photos=(D.visits||[]).filter(v=>v.photo&&v.labId===currentLabId);
+  var photos=(D.visits||[]).filter(function(v){return v.photo&&v.labId===currentLabId;});
   if(!photos.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-images"></i><p>Sin fotos</p></div>';return;}
-  el.innerHTML='<div class="gallery-grid">'+photos.map(v=>`<img src="${v.photo}" style="width:100%;border-radius:10px;cursor:pointer;" onclick="viewVisitPhoto('${v.id}')">`).join('')+'</div>';
+  el.innerHTML='<div class="gallery-grid">'+photos.map(function(v){
+    return '<img src="'+v.photo+'" style="width:100%;border-radius:10px;cursor:pointer;" onclick="viewVisitPhoto(''+v.id+'')">';
+  }).join('')+'</div>';
 }
 
 /* ------------------------------------------------------------------
