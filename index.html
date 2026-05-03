@@ -1467,7 +1467,7 @@ function renderSuperVisitas(){
     card+='</div>';
     card+='<div style="font-weight:700;">'+(isProf?esc(v.placeName||''):esc(p.name||v.placeName||'Visita'))+'</div>';
     card+='<div style="font-size:12px;color:var(--muted);">'+(u.name?esc(u.name):'?')+' &middot; '+(lab.name?esc(lab.name):'')+'</div>';
-    if(v.photo) card+='<img src="'+v.photo+'" class="visit-photo-thumb" style="margin-top:8px;cursor:pointer;" onclick="viewVisitPhoto(''+v.id+'')">';
+    if(v.photo) card+='<img src="'+v.photo+'" class="visit-photo-thumb" style="margin-top:8px;cursor:pointer;" onclick="viewVisitPhoto(this.dataset.id)" data-id="'+v.id+'">';
     card+='</div>';
     return card;
   }).join('');
@@ -1479,7 +1479,7 @@ function renderSuperFotos(){
   var photos=(D.visits||[]).filter(function(v){return v.photo&&(labF?v.labId===labF:true);});
   if(!photos.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-images"></i><p>Sin fotos</p></div>';return;}
   el.innerHTML='<div class="gallery-grid">'+photos.map(function(v){
-    return '<img src="'+v.photo+'" class="gallery-img" onclick="viewVisitPhoto(''+v.id+'')" style="width:100%;border-radius:10px;cursor:pointer;">';
+    return '<img src="'+v.photo+'" class="gallery-img" onclick="viewVisitPhoto(this.dataset.id)" data-id="'+v.id+'" style="width:100%;border-radius:10px;cursor:pointer;">';
   }).join('')+'</div>';
 }
 function renderSuperLabs(){
@@ -1741,7 +1741,7 @@ function renderAdminFotos(){
   var photos=(D.visits||[]).filter(function(v){return v.photo&&v.labId===currentLabId;});
   if(!photos.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-images"></i><p>Sin fotos</p></div>';return;}
   el.innerHTML='<div class="gallery-grid">'+photos.map(function(v){
-    return '<img src="'+v.photo+'" style="width:100%;border-radius:10px;cursor:pointer;" onclick="viewVisitPhoto(''+v.id+'')">';
+    return '<img src="'+v.photo+'" style="width:100%;border-radius:10px;cursor:pointer;" onclick="viewVisitPhoto(this.dataset.id)" data-id="'+v.id+'">';
   }).join('')+'</div>';
 }
 
@@ -1796,6 +1796,7 @@ function completeVisit(){
   save(D); closeModal('modalCloseVisit'); renderVisitorToday(); toast('Visita completada ✓');
 }
 function viewVisitPhoto(vid){
+  if(vid && typeof vid==='object') vid=vid.dataset?vid.dataset.id:vid;
   var v=visitById(vid); if(!v||!v.photo) return;
   document.getElementById('modalPhotoImg').src=v.photo;
   var u=userById(v.visitorId); var p=pointById(v.pointId);
