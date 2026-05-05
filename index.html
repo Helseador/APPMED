@@ -308,7 +308,7 @@
     <div class="tab-content" id="aTab-visitas">
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
         <select class="form-input" style="width:auto;flex:1;min-width:140px;" id="filterVisitVisitor" onchange="renderAdminVisitas()"><option value="">Todos</option></select>
-        <select class="form-input" style="width:auto;flex:1;min-width:120px;" id="filterVisitStatus" onchange="renderAdminVisitas()">
+        <select class="form-input" style="width:auto;flex:1;min-width:120px;" id="filterVisitStatus" onchange="renderAdminVisitas()" value="completed">
           <option value="">Todos</option><option value="pending">Pendiente</option><option value="in-progress">En Curso</option><option value="completed">Completada</option><option value="cancelled">Cancelada</option>
         </select>
         <select class="form-input" style="width:auto;flex:1;min-width:120px;" id="filterVisitType" onchange="renderAdminVisitas()">
@@ -387,7 +387,7 @@
       <div class="section-title" style="margin-bottom:12px;">Todas las Visitas</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
         <select class="form-input" id="sFilterLab" onchange="renderSuperVisitas()" style="font-size:12px;"><option value="">Todos los labs</option><!-- labs will be populated by JS --></select>
-        <select class="form-input" id="sFilterStatus" onchange="renderSuperVisitas()" style="font-size:12px;"><option value="">Todos los estados</option><option value="completed">Completadas</option><option value="in-progress">En curso</option><option value="pending">Pendientes</option></select>
+        <select class="form-input" id="sFilterStatus" onchange="renderSuperVisitas()" style="font-size:12px;"><option value="">Todos los estados</option><option value="completed" selected>Completadas</option><option value="in-progress">En curso</option><option value="pending">Pendientes</option></select>
       </div>
       <div id="superVisitasList"></div>
     </div>
@@ -608,6 +608,39 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modalCargaExcel">
+  <div class="modal-sheet">
+    <div class="modal-title"><i class="fa-solid fa-file-excel" style="color:#059669;"></i> Cargar Rutas desde Excel</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+      El archivo Excel debe tener las columnas:<br>
+      <strong>Usuario | Nombre Punto | Dirección | Ruta | Orden</strong>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Seleccionar visitador</label>
+      <select class="form-input" id="excelVisitorId"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Archivo Excel (.xlsx)</label>
+      <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none;" onchange="previewExcel(this)">
+      <div onclick="document.getElementById('excelFile').click()" style="border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;background:var(--bg);">
+        <i class="fa-solid fa-file-excel" style="font-size:28px;color:#059669;"></i>
+        <div style="font-size:13px;color:var(--muted);margin-top:8px;">Toca para subir Excel</div>
+      </div>
+    </div>
+    <div id="excelRouteNames" style="display:none;margin-bottom:12px;background:var(--bg);border-radius:12px;padding:12px;">
+      <div id="excelRouteNamesContent"></div>
+    </div>
+    <div id="excelPreview" style="display:none;margin-bottom:12px;">
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px;" id="excelPreviewTitle"></div>
+      <div id="excelPreviewList" style="max-height:160px;overflow-y:auto;font-size:12px;"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalCargaExcel')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" id="excelImportBtn" onclick="importarDesdeExcel()" disabled><i class="fa-solid fa-upload"></i> Importar</button>
+    </div>
+  </div>
+</div>
+
 <div class="confirm-overlay" id="confirmOverlay"><div class="confirm-box"><div class="confirm-icon" id="confirmIcon"><i id="confirmIconI"></i></div><div class="confirm-title" id="confirmTitle"></div><div class="confirm-msg" id="confirmMsg"></div><div class="confirm-actions"><button class="btn btn-outline" onclick="cancelConfirm()">Cancelar</button><button class="btn" id="confirmOkBtn" onclick="executeConfirm()">Confirmar</button></div></div></div>
 
 <script>
@@ -664,6 +697,188 @@ function ensureData(d){
 /* ------------------------------------------------------------------
    INICIALIZACIÓN FIREBASE
    ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------
+   CARGA MASIVA DE RUTAS DESDE EXCEL
+   ------------------------------------------------------------------ */
+var excelData=[];
+var excelRoutes={};
+
+function abrirCargaExcel(){
+  var sel=document.getElementById('excelVisitorId');
+  var visitors=(D.users||[]).filter(function(u){
+    return u.role==='visitor'&&(currentUser.role==='super'||u.labId===currentLabId);
+  });
+  sel.innerHTML=visitors.map(function(u){
+    return '<option value="'+u.id+'">'+esc(u.name)+' ('+esc(u.username)+')</option>';
+  }).join('');
+  document.getElementById('excelPreview').style.display='none';
+  document.getElementById('excelRouteNames').style.display='none';
+  document.getElementById('excelFile').value='';
+  document.getElementById('excelImportBtn').disabled=true;
+  excelData=[];
+  excelRoutes={};
+  openModal('modalCargaExcel');
+}
+
+function previewExcel(input){
+  if(!input.files||!input.files[0]) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'array'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+      // ── Detectar fila de headers de días (buscar fila con más celdas no vacías)
+      var headerRow=-1;
+      var dayCols={};
+      for(var r=0;r<Math.min(10,raw.length);r++){
+        var row=raw[r];
+        var nonEmpty=row.filter(function(c){return c&&String(c).trim();}).length;
+        if(nonEmpty>=2){
+          // Check if this row has day-like headers (DIA, LUNES, MARTES, etc.)
+          var hasDays=row.some(function(c){
+            var s=String(c||'').toUpperCase();
+            return s.indexOf('DIA')>=0||s.indexOf('LUNES')>=0||s.indexOf('MARTES')>=0||
+                   s.indexOf('MIERCOLES')>=0||s.indexOf('JUEVES')>=0||s.indexOf('VIERNES')>=0||
+                   s.indexOf('SABADO')>=0||s.indexOf('DOMINGO')>=0;
+          });
+          if(hasDays){
+            headerRow=r;
+            row.forEach(function(c,i){
+              if(i>0&&c&&String(c).trim()) dayCols[i]=String(c).trim();
+            });
+            break;
+          }
+        }
+      }
+
+      if(headerRow<0||Object.keys(dayCols).length===0){
+        // Fallback: try generic column detection
+        toast('Formato no reconocido. Usa el formato estándar (días en columnas).','err');
+        return;
+      }
+
+      // ── Parsear puntos: filas alternas nombre/dirección
+      excelRoutes={};
+      Object.keys(dayCols).forEach(function(col){excelRoutes[col]=[];});
+
+      var r2=headerRow+1;
+      while(r2<raw.length){
+        var numVal=raw[r2][0];
+        if(numVal!==''&&!isNaN(parseInt(numVal))){
+          var order=parseInt(numVal);
+          var nameRow=raw[r2];
+          var addrRow=raw[r2+1]||[];
+          Object.keys(dayCols).forEach(function(col){
+            var name=nameRow[parseInt(col)]||'';
+            var addr=addrRow[parseInt(col)]||'';
+            if(String(name).trim()){
+              excelRoutes[col].push({
+                order:order,
+                name:String(name).trim(),
+                address:String(addr).trim()
+              });
+            }
+          });
+          r2+=2;
+        } else {
+          r2++;
+        }
+      }
+
+      // ── Mostrar preview y campos para renombrar rutas
+      var totalPts=Object.values(excelRoutes).reduce(function(s,a){return s+a.length;},0);
+      document.getElementById('excelPreviewTitle').textContent=
+        totalPts+' puntos en '+Object.keys(dayCols).length+' rutas detectadas';
+
+      // Build route name inputs
+      var routeNamesHtml='<div style="font-size:13px;font-weight:700;margin-bottom:10px;">Nombra cada ruta:</div>';
+      Object.keys(dayCols).forEach(function(col){
+        var dayName=dayCols[col];
+        var pts=excelRoutes[col];
+        routeNamesHtml+='<div style="margin-bottom:10px;">'
+          +'<label style="font-size:12px;color:var(--muted);">'+esc(dayName)+' ('+pts.length+' puntos)</label>'
+          +'<input class="form-input" id="routeName_'+col+'" value="'+esc(dayName)+'" placeholder="Nombre de la ruta" style="margin-top:4px;">'
+          +'</div>';
+      });
+      document.getElementById('excelRouteNamesContent').innerHTML=routeNamesHtml;
+      document.getElementById('excelRouteNames').style.display='block';
+
+      // Preview list
+      var prevHtml='';
+      Object.keys(dayCols).forEach(function(col){
+        var pts=excelRoutes[col];
+        prevHtml+='<div style="margin-bottom:6px;padding:6px;background:var(--bg);border-radius:8px;">'
+          +'<div style="font-size:11px;font-weight:700;color:var(--primary);">'+esc(dayCols[col])+'</div>'
+          +pts.slice(0,3).map(function(p){return '<div style="font-size:11px;">'+p.order+'. '+esc(p.name)+'</div>';}).join('')
+          +(pts.length>3?'<div style="font-size:11px;color:var(--muted);">...y '+(pts.length-3)+' más</div>':'')
+          +'</div>';
+      });
+      document.getElementById('excelPreviewList').innerHTML=prevHtml;
+      document.getElementById('excelPreview').style.display='block';
+      document.getElementById('excelImportBtn').disabled=false;
+
+    }catch(err){
+      toast('Error al leer el Excel: '+err.message,'err');
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(input.files[0]);
+}
+
+function importarDesdeExcel(){
+  var visitorId=document.getElementById('excelVisitorId').value;
+  if(!visitorId||Object.keys(excelRoutes).length===0) return;
+  var visitor=userById(visitorId);
+  if(!visitor){toast('Visitador no encontrado','err');return;}
+  var labId=visitor.labId||currentLabId||'';
+  var added=0;
+
+  Object.keys(excelRoutes).forEach(function(col){
+    var routeNameEl=document.getElementById('routeName_'+col);
+    var routeName=routeNameEl?routeNameEl.value.trim():col;
+    excelRoutes[col].forEach(function(pt){
+      var newPt={
+        id:'id_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),
+        name:pt.name,
+        address:pt.address,
+        routeName:routeName,
+        order:pt.order,
+        assignedTo:visitorId,
+        labId:labId,
+        lat:4.710989,
+        lng:-74.072092
+      };
+      D.points.push(newPt);
+      added++;
+      // Geocodificar en background
+      if(pt.address){
+        (function(p,addr){
+          setTimeout(function(){
+            fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(addr+', Colombia')+'&limit=1&countrycodes=co',
+              {headers:{'Accept-Language':'es','User-Agent':'AppMed/1.0'}})
+              .then(function(r){return r.json();})
+              .then(function(data){
+                if(data&&data.length>0){
+                  p.lat=parseFloat(data[0].lat);
+                  p.lng=parseFloat(data[0].lon);
+                  save(D);
+                }
+              }).catch(function(){});
+          }, added*200); // escalonar requests para no saturar Nominatim
+        })(newPt, pt.address);
+      }
+    });
+  });
+
+  save(D);
+  closeModal('modalCargaExcel');
+  toast(added+' puntos importados en '+Object.keys(excelRoutes).length+' rutas ✓');
+  renderAdminPuntos&&renderAdminPuntos();
+}
+
 function initFirebase(){
   firebase.initializeApp(FIREBASE_CONFIG);
   dbRef = firebase.database();
@@ -1398,18 +1613,15 @@ function switchVisitorTab(tab,btn){
 }
 function switchSuperTab(tab,btn){
   currentSuperTab=tab;
-  document.querySelectorAll('#superScreen .tab-content').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('#superScreen .tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#superScreen .tab-content').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('#superScreen .tab-btn').forEach(function(b){b.classList.remove('active');});
   var el=document.getElementById('sTab-'+tab);
   if(el) el.classList.add('active');
   if(btn) btn.classList.add('active');
-  // Render AFTER tab is visible
-  setTimeout(function(){
-    if(tab==='users') renderSuperUsers();
-    else if(tab==='sVisitas') renderSuperVisitas();
-    else if(tab==='sFotos') renderSuperFotos();
-    else if(tab==='sLabs') renderSuperLabs();
-  }, 50);
+  if(tab==='users') renderSuperUsers();
+  else if(tab==='sVisitas') renderSuperVisitas();
+  else if(tab==='sFotos') renderSuperFotos();
+  else if(tab==='sLabs') renderSuperLabs();
 }
 
 /* ------------------------------------------------------------------
@@ -1475,6 +1687,7 @@ function openSuperDetail(uid){
         </div>
       </div>`).join(''):'<div class="empty-state" style="padding:20px;"><i class="fa-solid fa-map-pin"></i><p>Sin puntos</p></div>'}
       <button class="btn btn-ghost" style="margin-top:8px;" onclick="openNewPoint('${u.id}')"><i class="fa-solid fa-plus"></i> Nuevo punto</button>
+    <button class="btn btn-ghost" style="margin-top:8px;background:#059669;color:#fff;" onclick="abrirCargaExcel()"><i class="fa-solid fa-file-excel"></i> Cargar desde Excel</button>
     </div>`;
 }
 function superNuevoUsuario(){
@@ -1539,7 +1752,8 @@ function renderSuperVisitas(){
   if(!el) return;
   var labF=document.getElementById('sFilterLab')?document.getElementById('sFilterLab').value:'';
   var stF=document.getElementById('sFilterStatus')?document.getElementById('sFilterStatus').value:'';
-  var list=(D.visits||[]).filter(function(v){return (labF?v.labId===labF:true)&&(stF?v.status===stF:true);});
+  var statusF=stF||"completed";
+  var list=(D.visits||[]).filter(function(v){return (labF?v.labId===labF:true)&&v.status===statusF;});
   list.sort(function(a,b){return b.date>a.date?1:-1;});
   if(!list.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>Sin visitas</p></div>';return;}
   el.innerHTML=list.map(function(v){
@@ -1780,9 +1994,10 @@ function renderAdminVisitas(){
   var sf=document.getElementById('filterVisitStatus')?document.getElementById('filterVisitStatus').value:'';
   var tf=document.getElementById('filterVisitType')?document.getElementById('filterVisitType').value:'';
   var isSuper=currentUser&&currentUser.role==='super';
+  var statusFilter=sf||'completed'; // por defecto solo completadas
   var list=(D.visits||[]).filter(function(v){
     var matchLab=isSuper?true:(currentLabId?v.labId===currentLabId:true);
-    return matchLab&&(vf?v.visitorId===vf:true)&&(sf?v.status===sf:true)&&(tf?v.type===tf:true);
+    return matchLab&&(vf?v.visitorId===vf:true)&&v.status===statusFilter&&(tf?v.type===tf:true);
   });
   list.sort(function(a,b){return b.date>a.date?1:-1;});
   if(!list.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>Sin visitas</p></div>';return;}
