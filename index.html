@@ -639,13 +639,19 @@ var MIN_PER_PUNTO=15;
 function defaultData(){
   return {users:[],visits:[],points:[],labs:[],notifications:[]};
 }
+function toArray(val){
+  if(!val) return [];
+  if(Array.isArray(val)) return val;
+  // Firebase returns objects with numeric keys — convert to array
+  return Object.values(val);
+}
 function ensureData(d){
   if(!d) d=defaultData();
-  if(!d.users) d.users=[];
-  if(!d.visits) d.visits=[];
-  if(!d.points) d.points=[];
-  if(!d.labs) d.labs=[];
-  if(!d.notifications) d.notifications=[];
+  d.users=toArray(d.users);
+  d.visits=toArray(d.visits);
+  d.points=toArray(d.points);
+  d.labs=toArray(d.labs);
+  d.notifications=toArray(d.notifications||[]);
   return d;
 }
 
