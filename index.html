@@ -706,17 +706,29 @@ function initFirebase(){
       updateHeaderConn();
     });
 
-  dbRef.ref('medvisit').on('value',function(snap){
+  // Escuchar cambios en tiempo real por colección
+  dbRef.ref('medvisit/visits').on('value',function(snap){
     var remote=snap.val();
-    if(!remote||!remote.users) return;
-    // Ignorar solo si fue EXACTAMENTE nuestro último write
-    if(remote._writeId && remote._writeId===myLastWriteId) return;
-    myLastWriteId=remote._writeId||null;
+    D.visits=toArray(remote);
+    saveLocal(D);
     showSyncIndicator();
-    D=ensureData(remote);
-    refreshLabs();
+    renderCurrentScreen();
+  });
+  dbRef.ref('medvisit/users').on('value',function(snap){
+    var remote=snap.val();
+    D.users=toArray(remote);
     saveLocal(D);
     renderCurrentScreen();
+  });
+  dbRef.ref('medvisit/points').on('value',function(snap){
+    var remote=snap.val();
+    D.points=toArray(remote);
+    saveLocal(D);
+  });
+  dbRef.ref('medvisit/labs').on('value',function(snap){
+    var remote=snap.val();
+    D.labs=toArray(remote||[]);
+    refreshLabs();
   });
 }
 
@@ -771,11 +783,43 @@ function populateLabSelects(){
    ------------------------------------------------------------------ */
 function saveLocal(d){try{localStorage.setItem('medvisit_v5',JSON.stringify(d));}catch(e){}}
 function save(d){
-  myLastWriteId=sessionPrefix+'_'+Math.random().toString(36).substr(2,6);
-  d._writeId=myLastWriteId;
   saveLocal(d);
   if(firebaseReady && dbRef){
-    dbRef.ref('medvisit').set(d).catch(err=>{console.error('Firebase error',err);toast('Error de sincronizacion, datos guardados localmente','err');});
+    // Guardar colecciones por separado para evitar sobreescrituras entre usuarios
+    var updates={};
+    updates['medvisit/users']=d.users||[];
+    updates['medvisit/visits']=d.visits||[];
+    updates['medvisit/points']=d.points||[];
+    updates['medvisit/labs']=d.labs||[];
+    dbRef.update(updates).catch(function(err){
+      console.error('Firebase error',err);
+      toast('Error de sincronizacion, datos guardados localmente','err');
+    });
+  }
+}
+
+// Guardar una sola visita (atómico — no afecta otras visitas)
+function saveVisit(visit){
+  saveLocal(D);
+  if(firebaseReady && dbRef){
+    var idx=(D.visits||[]).findIndex(function(v){return v.id===visit.id;});
+    if(idx>=0){
+      dbRef.ref('medvisit/visits/'+idx).set(visit).catch(function(err){
+        console.error('Firebase visit error',err);
+      });
+    }
+  }
+}
+
+// Agregar nueva visita (atómico — push)
+function pushVisit(visit){
+  D.visits.push(visit);
+  saveLocal(D);
+  if(firebaseReady && dbRef){
+    dbRef.ref('medvisit/visits').push(visit).catch(function(err){
+      console.error('Firebase push error',err);
+      toast('Error al guardar visita','err');
+    });
   }
 }
 
@@ -1774,8 +1818,7 @@ function arriveToPoint(pid){
   if(existing) return;
   var v={id:uid(),pointId:pid,visitorId:currentUser.id,labId:p.labId||currentUser.labId,date:today(),status:'in-progress',arrivedAt:new Date().toISOString(),type:'general'};
   if(visitaGpsCoords){v.lat=visitaGpsCoords.lat;v.lng=visitaGpsCoords.lng;}
-  D.visits.push(v);
-  save(D); renderVisitorToday(); toast('Llegada registrada');
+  pushVisit(v); renderVisitorToday(); toast('Llegada registrada');
 }
 function openCloseVisit(vid,pid){
   var p=pointById(pid);
@@ -1813,7 +1856,8 @@ function completeVisit(){
   if(photo&&photo.startsWith('data:')) D.visits[idx].photo=photo;
   if(jefe) D.visits[idx].jefe=jefe;
   if(notes) D.visits[idx].notes=notes;
-  save(D); closeModal('modalCloseVisit'); renderVisitorToday(); toast('Visita completada ✓');
+  saveVisit(D.visits[idx]);
+  closeModal('modalCloseVisit'); renderVisitorToday(); toast('Visita completada ✓');
 }
 function viewVisitPhoto(vid){
   if(vid && typeof vid==='object') vid=vid.dataset?vid.dataset.id:vid;
