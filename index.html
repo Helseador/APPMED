@@ -1383,6 +1383,7 @@ function renderVisitorToday(){
       <button class="btn btn-primary btn-sm" style="flex:1;" onclick="openRoutePreview(${myPts[0]?myPts[0].dayOfWeek:1})"><i class="fa-solid fa-eye"></i> Previsualizar ruta</button>
       ${mapsUrl?`<a href="${mapsUrl}" target="_blank" rel="noopener" class="btn btn-sm" style="flex:1;background:var(--info);color:#fff;text-decoration:none;"><i class="fa-solid fa-diamond-turn-right"></i> Navegar</a>`:''}
       ${isToday?`<button class="btn btn-sm" onclick="abrirNuevaVisita()" style="flex:1;background:#7C3AED;color:#fff;"><i class="fa-solid fa-user-doctor"></i> Visita prof.</button>`:''}
+      ${currentUser&&currentUser.freeVisit?`<button class="btn btn-sm" onclick="abrirVisitaLibre()" style="flex:1;background:#059669;color:#fff;"><i class="fa-solid fa-plus"></i> Visita libre</button>`:''}
     </div>
   </div>`;
   // -------- Lista de puntos ----------
@@ -1428,6 +1429,28 @@ function renderVisitorToday(){
    FUNCIÓN DE VISITA (NUEVA) – mantiene lógica original, sólo se
    asegura de usar la variable global visitaGpsCoords.
    ------------------------------------------------------------------ */
+function abrirVisitaLibre(){
+  // Abre el modal de visita en modo libre (sin pointId)
+  visitaGpsCoords=null; visitaFotoDataGeneral=null; visitaFotoDataProf=null; profFirmaActiva=false;
+  profFirmaCanvas=null;
+  // Get GPS
+  var txt=document.getElementById('vg-gpsStatus');
+  if(txt) txt.textContent='Obteniendo ubicación...';
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      function(pos){visitaGpsCoords={lat:pos.coords.latitude,lng:pos.coords.longitude};if(txt)txt.textContent='GPS ✓';},
+      function(){visitaGpsCoords=null;if(txt)txt.textContent='Sin GPS';}
+    );
+  }
+  // Switch to general tab and mark as free visit
+  document.querySelectorAll('#modalNuevaVisita .tab-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('#modalNuevaVisita .tab-content').forEach(function(t){t.classList.remove('active');});
+  var tabG=document.getElementById('tabGeneral');
+  if(tabG){tabG.classList.add('active');}
+  var btnG=document.querySelector('#modalNuevaVisita .tab-btn');
+  if(btnG){btnG.classList.add('active');}
+  openModal('modalNuevaVisita');
+}
 function abrirNuevaVisita(){
   visitaGpsCoords=null; visitaFotoDataGeneral=null; visitaFotoDataProf=null; profFirmaActiva=false;
   selectVisitType(null);
@@ -1806,6 +1829,15 @@ function superDeleteUser(uid){
 function toggleUserActive(uid){
   var u=userById(uid);
   if(u){u.active=!u.active; save(D); openSuperDetail(uid); toast(u.active?'Usuario activado':'Usuario desactivado');}
+}
+function toggleFreeVisit(uid){
+  var u=userById(uid);
+  if(u){
+    u.freeVisit=!u.freeVisit;
+    save(D);
+    openSuperDetail(uid);
+    toast(u.freeVisit?'Visita libre activada ✓':'Visita libre desactivada');
+  }
 }
 function togglePw(uid,pw){
   var el=document.getElementById('pwText_'+uid);
@@ -2224,7 +2256,7 @@ function guardarVisitaGeneral(){
   var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentLabId,date:today(),status:'completed',completedAt:new Date().toISOString(),type:'general',placeName:lugar,address:document.getElementById('vg-direccion').value.trim(),contact:document.getElementById('vg-contacto').value.trim(),notes:document.getElementById('vg-notas').value.trim()};
   if(visitaFotoDataGeneral) v.photo=visitaFotoDataGeneral;
   if(visitaGpsCoords){v.lat=visitaGpsCoords.lat;v.lng=visitaGpsCoords.lng;}
-  D.visits.push(v); save(D); closeModal('modalNuevaVisita'); renderVisitorToday(); toast('Visita guardada ✓');
+  pushVisit(v); closeModal('modalNuevaVisita'); renderVisitorToday(); toast('Visita guardada ✓');
 }
 function guardarVisitaProfesional(){
   var nombre=document.getElementById('vp-nombre').value.trim();
@@ -2236,7 +2268,7 @@ function guardarVisitaProfesional(){
   var firma=profFirmaCanvas?profFirmaCanvas.toDataURL('image/png'):null;
   var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentLabId,date:today(),status:'completed',completedAt:new Date().toISOString(),type:'profesional',placeName:nombre,speciality:document.getElementById('vp-especialidad').value.trim(),phone:tel,address:dir,gift:document.getElementById('vp-toggleObsequio').checked?document.getElementById('vp-obsequio').value.trim():'',notes:document.getElementById('vp-notas').value.trim(),photo:visitaFotoDataProf,firma:firma};
   if(visitaGpsCoords){v.lat=visitaGpsCoords.lat;v.lng=visitaGpsCoords.lng;}
-  D.visits.push(v); save(D); closeModal('modalNuevaVisita'); renderVisitorToday(); toast('Visita profesional guardada ✓');
+  pushVisit(v); closeModal('modalNuevaVisita'); renderVisitorToday(); toast('Visita profesional guardada ✓');
 }
 
 /* ------------------------------------------------------------------
@@ -2254,7 +2286,12 @@ function renderVisitorSemana(){
   });
   routeNames.sort();
   if(!routeNames.length){
-    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);">No tienes rutas asignadas aún.</div>';
+    var freeBtn=currentUser&&currentUser.freeVisit?
+      '<div style="margin-top:20px;display:flex;flex-direction:column;gap:10px;">'
+      +'<button class="btn btn-primary" onclick="abrirVisitaLibre()" style="width:100%;"><i class="fa-solid fa-plus"></i> Nueva visita general</button>'
+      +'<button class="btn btn-sm" onclick="abrirNuevaVisita()" style="width:100%;background:#7C3AED;color:#fff;"><i class="fa-solid fa-user-doctor"></i> Nueva visita a profesional</button>'
+      +'</div>':'';
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);">No tienes rutas asignadas aún.</div>'+freeBtn;
     return;
   }
   var html='';
