@@ -1806,15 +1806,16 @@ function handlePhotoTaken(e){
 }
 function completeVisit(){
   var vid=document.getElementById('closeVisitId').value;
-  var v=visitById(vid); if(!v) return;
+  var idx=(D.visits||[]).findIndex(function(v){return v.id===vid;});
+  if(idx<0) return;
   var photo=document.getElementById('photoPreview').src;
   var jefe=document.getElementById('closeJefe').value.trim();
   var notes=document.getElementById('closeNotes').value.trim();
-  v.status='completed';
-  v.completedAt=new Date().toISOString();
-  if(photo&&photo.startsWith('data:')) v.photo=photo;
-  if(jefe) v.jefe=jefe;
-  if(notes) v.notes=notes;
+  D.visits[idx].status='completed';
+  D.visits[idx].completedAt=new Date().toISOString();
+  if(photo&&photo.startsWith('data:')) D.visits[idx].photo=photo;
+  if(jefe) D.visits[idx].jefe=jefe;
+  if(notes) D.visits[idx].notes=notes;
   save(D); closeModal('modalCloseVisit'); renderVisitorToday(); toast('Visita completada ✓');
 }
 function viewVisitPhoto(vid){
