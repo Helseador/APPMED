@@ -670,7 +670,7 @@ function initFirebase(){
         myLastWriteId=remote._writeId||null;
       }else{
         D=defaultData();
-        myLastWriteId=Date.now()+'_init';
+        myLastWriteId=sessionPrefix+'_init';
         D._writeId=myLastWriteId;
         dbRef.ref('medvisit').set(D);
       }
@@ -703,10 +703,14 @@ function initFirebase(){
   dbRef.ref('medvisit').on('value',function(snap){
     var remote=snap.val();
     if(!remote||!remote.users) return;
-    if(remote._writeId && remote._writeId===myLastWriteId) return;
+    // Solo ignorar si FUE NUESTRO propio write (writeId empieza con nuestra sesión)
+    if(remote._writeId && remote._writeId===myLastWriteId && myLastWriteId.indexOf(sessionPrefix)===0) return;
     showSyncIndicator();
     D=ensureData(remote);
-    myLastWriteId=remote._writeId||null;
+    // No sobreescribir myLastWriteId con el de otros — solo actualizamos si es nuestro
+    if(!remote._writeId || remote._writeId.indexOf(sessionPrefix)!==0){
+      myLastWriteId=remote._writeId||null;
+    }
     refreshLabs();
     saveLocal(D);
     renderCurrentScreen();
@@ -719,6 +723,7 @@ function initFirebase(){
 var D=defaultData(), currentUser=null, currentLabId=null;
 var firebaseReady=false, firebaseOnline=false, dbRef=null;
 var myLastWriteId=null;
+var sessionPrefix=Date.now()+'_s';
 var currentAdminTab='canvas', currentVisitorTab='hoy', currentSuperTab='users';
 var lastVisitorDetailId=null, lastSuperDetailId=null;
 var _visitRoute=null;   // <-- nuevo: ruta seleccionada por el visitador
