@@ -642,8 +642,14 @@ function defaultData(){
 function toArray(val){
   if(!val) return [];
   if(Array.isArray(val)) return val;
-  // Firebase returns objects with numeric keys — convert to array
-  return Object.values(val);
+  // Firebase returns objects — preserve the key as _fbKey
+  return Object.entries(val).map(function(entry){
+    var key=entry[0], obj=entry[1];
+    if(obj && typeof obj==='object' && !obj._fbKey){
+      obj._fbKey=key;
+    }
+    return obj;
+  });
 }
 function ensureData(d){
   if(!d) d=defaultData();
@@ -802,10 +808,27 @@ function save(d){
 function saveVisit(visit){
   saveLocal(D);
   if(firebaseReady && dbRef){
-    var idx=(D.visits||[]).findIndex(function(v){return v.id===visit.id;});
-    if(idx>=0){
-      dbRef.ref('medvisit/visits/'+idx).set(visit).catch(function(err){
-        console.error('Firebase visit error',err);
+    if(visit._fbKey){
+      // Tenemos la key de Firebase — actualizar directamente
+      dbRef.ref('medvisit/visits/'+visit._fbKey).update({
+        status:visit.status,
+        completedAt:visit.completedAt||null,
+        photo:visit.photo||null,
+        jefe:visit.jefe||null,
+        notes:visit.notes||null
+      }).catch(function(err){console.error('Firebase visit error',err);});
+    } else {
+      // No tenemos key — buscar en Firebase por id
+      dbRef.ref('medvisit/visits').orderByChild('id').equalTo(visit.id).once('value',function(snap){
+        snap.forEach(function(child){
+          child.ref.update({
+            status:visit.status,
+            completedAt:visit.completedAt||null,
+            photo:visit.photo||null,
+            jefe:visit.jefe||null,
+            notes:visit.notes||null
+          });
+        });
       });
     }
   }
@@ -816,7 +839,12 @@ function pushVisit(visit){
   D.visits.push(visit);
   saveLocal(D);
   if(firebaseReady && dbRef){
-    dbRef.ref('medvisit/visits').push(visit).catch(function(err){
+    var ref=dbRef.ref('medvisit/visits').push();
+    visit._fbKey=ref.key; // guardar la key de Firebase en el objeto
+    // actualizar en D.visits también
+    var idx=D.visits.findIndex(function(v){return v.id===visit.id;});
+    if(idx>=0) D.visits[idx]._fbKey=ref.key;
+    ref.set(visit).catch(function(err){
       console.error('Firebase push error',err);
       toast('Error al guardar visita','err');
     });
