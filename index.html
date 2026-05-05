@@ -1006,13 +1006,13 @@ function saveLocal(d){try{localStorage.setItem('medvisit_v5',JSON.stringify(d));
 function save(d){
   saveLocal(d);
   if(firebaseReady && dbRef){
-    // Guardar colecciones por separado para evitar sobreescrituras entre usuarios
+    // Guardar colecciones por separado usando ref().update()
     var updates={};
-    updates['medvisit/users']=d.users||[];
-    updates['medvisit/visits']=d.visits||[];
-    updates['medvisit/points']=d.points||[];
-    updates['medvisit/labs']=d.labs||[];
-    dbRef.update(updates).catch(function(err){
+    updates['users']=d.users||[];
+    updates['visits']=d.visits||[];
+    updates['points']=d.points||[];
+    updates['labs']=d.labs||[];
+    dbRef.ref('medvisit').update(updates).catch(function(err){
       console.error('Firebase error',err);
       toast('Error de sincronizacion, datos guardados localmente','err');
     });
@@ -1332,17 +1332,29 @@ function renderVisitorToday(){
   </div>`;
   // -------- Lista de puntos ----------
   var pointsHtml=myPts.map(p=>{
-    var visit=(D.visits||[]).find(v=>v.pointId===p.id && v.visitorId===currentUser.id && v.date===today());
+    // Buscar visita de HOY
+    var visitHoy=(D.visits||[]).find(function(v){return v.pointId===p.id && v.visitorId===currentUser.id && v.date===today();});
+    // Buscar visita de las últimas 24h (cualquier estado)
+    var ahora=Date.now();
+    var visitReciente=(D.visits||[]).find(function(v){
+      return v.pointId===p.id && v.visitorId===currentUser.id &&
+             v.arrivedAt && (ahora - new Date(v.arrivedAt).getTime()) < 86400000;
+    });
+    var visit=visitHoy||null;
     var st=visit?visit.status:'pending';
     var badgeClass=st==='completed'?'badge-done':st==='in-progress'?'badge-progress':'badge-pending';
     var badgeLabel=st==='completed'?'Completada':st==='in-progress'?'En Curso':'Pendiente';
     var action='';
-    if(isToday && st==='pending'){
+    if(st==='pending' && visitReciente && visitReciente.status==='completed'){
+      // Bloqueado — ya registró este punto en las últimas 24h
+      action='<div style="margin-top:8px;font-size:11px;color:var(--muted);background:#F3F4F6;padding:8px 12px;border-radius:8px;"><i class="fa-solid fa-lock" style="color:#9CA3AF;"></i> Ya registraste este punto hoy</div>';
+      badgeClass='badge-done'; badgeLabel='Completada';
+    } else if(st==='pending'){
       action=`<div style="display:flex;gap:8px;margin-top:10px;">
         <button class="btn btn-primary btn-sm" onclick="arriveToPoint('${p.id}')" style="flex:1;"><i class="fa-solid fa-location-crosshairs"></i> Llegada</button>
         <a href="${mapsLink(p.lat,p.lng,p.address)}" target="_blank" rel="noopener" class="btn btn-sm" style="flex:0 0 auto;background:var(--info-light);color:var(--info);padding:8px 12px;"><i class="fa-solid fa-map"></i></a>
       </div>`;
-    }else if(isToday && st==='in-progress'){
+    }else if(st==='in-progress'){
       action=`<button class="btn btn-success btn-sm" onclick="openCloseVisit('${visit.id}','${p.id}')" style="margin-top:10px;width:100%;"><i class="fa-solid fa-camera"></i> Cerrar Visita</button>`;
     }else if(st==='completed'){
       action=visit&&visit.photo?`<img src="${visit.photo}" class="visit-photo-thumb" style="margin-top:10px;" onclick="viewVisitPhoto('${visit.id}')">`:
