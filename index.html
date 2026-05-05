@@ -1006,16 +1006,11 @@ function saveLocal(d){try{localStorage.setItem('medvisit_v5',JSON.stringify(d));
 function save(d){
   saveLocal(d);
   if(firebaseReady && dbRef){
-    // Guardar colecciones por separado usando ref().update()
-    var updates={};
-    updates['users']=d.users||[];
-    updates['visits']=d.visits||[];
-    updates['points']=d.points||[];
-    updates['labs']=d.labs||[];
-    dbRef.ref('medvisit').update(updates).catch(function(err){
-      console.error('Firebase error',err);
-      toast('Error de sincronizacion, datos guardados localmente','err');
-    });
+    // Usar set() por colección para reemplazar correctamente (update fusiona arrays)
+    dbRef.ref('medvisit/users').set(d.users||[]).catch(function(err){console.error('FB users err',err);});
+    dbRef.ref('medvisit/points').set(d.points||[]).catch(function(err){console.error('FB points err',err);});
+    dbRef.ref('medvisit/labs').set(d.labs||[]).catch(function(err){console.error('FB labs err',err);});
+    // visits NO se toca aquí — se maneja con pushVisit/saveVisit para no sobreescribir
   }
 }
 
