@@ -709,14 +709,11 @@ function initFirebase(){
   dbRef.ref('medvisit').on('value',function(snap){
     var remote=snap.val();
     if(!remote||!remote.users) return;
-    // Solo ignorar si FUE NUESTRO propio write (writeId empieza con nuestra sesión)
-    if(remote._writeId && remote._writeId===myLastWriteId && myLastWriteId.indexOf(sessionPrefix)===0) return;
+    // Ignorar solo si fue EXACTAMENTE nuestro último write
+    if(remote._writeId && remote._writeId===myLastWriteId) return;
+    myLastWriteId=remote._writeId||null;
     showSyncIndicator();
     D=ensureData(remote);
-    // No sobreescribir myLastWriteId con el de otros — solo actualizamos si es nuestro
-    if(!remote._writeId || remote._writeId.indexOf(sessionPrefix)!==0){
-      myLastWriteId=remote._writeId||null;
-    }
     refreshLabs();
     saveLocal(D);
     renderCurrentScreen();
@@ -774,7 +771,7 @@ function populateLabSelects(){
    ------------------------------------------------------------------ */
 function saveLocal(d){try{localStorage.setItem('medvisit_v5',JSON.stringify(d));}catch(e){}}
 function save(d){
-  myLastWriteId=Date.now()+'_'+Math.random().toString(36).substr(2,6);
+  myLastWriteId=sessionPrefix+'_'+Math.random().toString(36).substr(2,6);
   d._writeId=myLastWriteId;
   saveLocal(d);
   if(firebaseReady && dbRef){
