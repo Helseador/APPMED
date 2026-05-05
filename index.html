@@ -620,6 +620,11 @@
       <select class="form-input" id="excelVisitorId"></select>
     </div>
     <div class="form-group">
+      <label class="form-label">Ciudad del visitador <span style="color:var(--danger);">*</span></label>
+      <input class="form-input" id="excelCiudad" placeholder="Ej: Barranquilla, Medellín, Cali..." value="Bogotá">
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Se usará para geocodificar las direcciones correctamente</div>
+    </div>
+    <div class="form-group">
       <label class="form-label">Archivo Excel (.xlsx)</label>
       <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none;" onchange="previewExcel(this)">
       <div onclick="document.getElementById('excelFile').click()" style="border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;background:var(--bg);">
@@ -840,10 +845,12 @@ function importarDesdeExcel(){
     var routeNameEl=document.getElementById('routeName_'+col);
     var routeName=routeNameEl?routeNameEl.value.trim():col;
     excelRoutes[col].forEach(function(pt){
+      var ciudad=document.getElementById('excelCiudad').value.trim()||'Bogotá';
       var newPt={
         id:'id_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),
         name:pt.name,
         address:pt.address,
+        city:ciudad,
         routeName:routeName,
         order:pt.order,
         assignedTo:visitorId,
@@ -857,7 +864,8 @@ function importarDesdeExcel(){
       if(pt.address){
         (function(p,addr){
           setTimeout(function(){
-            fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(addr+', Colombia')+'&limit=1&countrycodes=co',
+            var ciudad=document.getElementById('excelCiudad').value.trim()||'Colombia';
+            fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(addr+', '+ciudad+', Colombia')+'&limit=1&countrycodes=co',
               {headers:{'Accept-Language':'es','User-Agent':'AppMed/1.0'}})
               .then(function(r){return r.json();})
               .then(function(data){
