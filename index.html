@@ -818,7 +818,13 @@ function showSyncIndicator(){
 }
 function renderCurrentScreen(){
   if(!currentUser) return;
-  if(currentUser.role==='super') renderSuperAdmin();
+  if(currentUser.role==='super'){
+    if(currentSuperTab==='users') renderSuperUsers();
+    else if(currentSuperTab==='sVisitas') renderSuperVisitas();
+    else if(currentSuperTab==='sFotos') renderSuperFotos();
+    else if(currentSuperTab==='sLabs') renderSuperLabs();
+    else renderSuperUsers();
+  }
   else if(currentUser.role==='admin') renderAdmin();
   else renderVisitor();
 }
@@ -1337,9 +1343,7 @@ function switchSuperTab(tab,btn){
    ------------------------------------------------------------------ */
 function renderSuperAdmin(){
   renderSuperUsers();
-  renderSuperVisitas();
-  renderSuperFotos();
-  renderSuperLabs();
+  // Other tabs render on demand when clicked
 }
 function renderSuperUsers(){
   var el=document.getElementById('superUserList');
