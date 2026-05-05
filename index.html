@@ -1309,11 +1309,13 @@ function switchAdminTab(tab,btn){
   var el=document.getElementById('aTab-'+tab);
   if(el) el.classList.add('active');
   if(btn) btn.classList.add('active');
-  if(tab==='canvas') renderCanvasDashboard();
-  else if(tab==='visitadores') renderVisitorList();
-  else if(tab==='visitas') renderAdminVisitas();
-  else if(tab==='fotos') renderAdminFotos();
-  else if(tab==='informes') renderInformes();
+  setTimeout(function(){
+    if(tab==='canvas') renderCanvasDashboard();
+    else if(tab==='visitadores') renderVisitorList();
+    else if(tab==='visitas') renderAdminVisitas();
+    else if(tab==='fotos') renderAdminFotos();
+    else if(tab==='informes') renderInformes();
+  }, 50);
 }
 function switchVisitorTab(tab,btn){
   currentVisitorTab=tab;
@@ -1332,10 +1334,13 @@ function switchSuperTab(tab,btn){
   var el=document.getElementById('sTab-'+tab);
   if(el) el.classList.add('active');
   if(btn) btn.classList.add('active');
-  if(tab==='users') renderSuperUsers();
-  else if(tab==='sVisitas') renderSuperVisitas();
-  else if(tab==='sFotos') renderSuperFotos();
-  else if(tab==='sLabs') renderSuperLabs();
+  // Render AFTER tab is visible
+  setTimeout(function(){
+    if(tab==='users') renderSuperUsers();
+    else if(tab==='sVisitas') renderSuperVisitas();
+    else if(tab==='sFotos') renderSuperFotos();
+    else if(tab==='sLabs') renderSuperLabs();
+  }, 50);
 }
 
 /* ------------------------------------------------------------------
@@ -1705,8 +1710,10 @@ function renderAdminVisitas(){
   var vf=document.getElementById('filterVisitVisitor')?document.getElementById('filterVisitVisitor').value:'';
   var sf=document.getElementById('filterVisitStatus')?document.getElementById('filterVisitStatus').value:'';
   var tf=document.getElementById('filterVisitType')?document.getElementById('filterVisitType').value:'';
+  var isSuper=currentUser&&currentUser.role==='super';
   var list=(D.visits||[]).filter(function(v){
-    return (currentLabId?v.labId===currentLabId:true)&&(vf?v.visitorId===vf:true)&&(sf?v.status===sf:true)&&(tf?v.type===tf:true);
+    var matchLab=isSuper?true:(currentLabId?v.labId===currentLabId:true);
+    return matchLab&&(vf?v.visitorId===vf:true)&&(sf?v.status===sf:true)&&(tf?v.type===tf:true);
   });
   list.sort(function(a,b){return b.date>a.date?1:-1;});
   if(!list.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-clipboard"></i><p>Sin visitas</p></div>';return;}
