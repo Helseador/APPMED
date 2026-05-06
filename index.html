@@ -1763,9 +1763,12 @@ function openSuperDetail(uid){
       <div class="stat-card"><div class="stat-num">${visits.length}</div><div class="stat-label">Visitas totales</div></div>
       <div class="stat-card"><div class="stat-num">${pts.length}</div><div class="stat-label">Puntos asignados</div></div>
     </div>
-    <div style="display:flex;gap:8px;margin-top:4px;">
+    <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;">
       <button class="btn btn-primary" style="flex:1;" onclick="openSuperEdit('${u.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
       <button class="btn ${u.active?'btn-danger':'btn-success'}" style="flex:1;" onclick="toggleUserActive('${u.id}')">${u.active?'Desactivar':'Activar'}</button>
+      <button class="btn btn-sm" style="width:100%;margin-top:4px;background:${u.freeVisit?'#7C3AED':'#F3F4F6'};color:${u.freeVisit?'#fff':'#6B7280'};border:1px solid ${u.freeVisit?'#7C3AED':'#E5E7EB'};" onclick="toggleFreeVisit('${u.id}')">
+        <i class="fa-solid fa-${u.freeVisit?'unlock':'lock'}"></i> ${u.freeVisit?'Visita libre ACTIVADA — clic para desactivar':'Activar visita libre (sin rutas fijas)'}
+      </button>
     </div>
     <div style="margin-top:16px;"><div class="section-title">Puntos asignados</div>
       ${pts.length?pts.map(p=>`<div class="card" style="margin-bottom:8px;padding:12px;">
