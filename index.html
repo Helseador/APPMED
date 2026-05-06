@@ -1383,8 +1383,11 @@ function renderVisitorToday(){
       <button class="btn btn-primary btn-sm" style="flex:1;" onclick="openRoutePreview(${myPts[0]?myPts[0].dayOfWeek:1})"><i class="fa-solid fa-eye"></i> Previsualizar ruta</button>
       ${mapsUrl?`<a href="${mapsUrl}" target="_blank" rel="noopener" class="btn btn-sm" style="flex:1;background:var(--info);color:#fff;text-decoration:none;"><i class="fa-solid fa-diamond-turn-right"></i> Navegar</a>`:''}
       ${isToday?`<button class="btn btn-sm" onclick="abrirNuevaVisita()" style="flex:1;background:#7C3AED;color:#fff;"><i class="fa-solid fa-user-doctor"></i> Visita prof.</button>`:''}
-      ${currentUser&&currentUser.freeVisit?`<button class="btn btn-sm" onclick="abrirVisitaLibre()" style="flex:1;background:#059669;color:#fff;"><i class="fa-solid fa-plus"></i> Visita libre</button>`:''}
     </div>
+    ${currentUser&&currentUser.freeVisit?`<div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn btn-sm" onclick="abrirVisitaLibre()" style="flex:1;background:#059669;color:#fff;font-size:13px;padding:10px;"><i class="fa-solid fa-plus"></i> Registrar visita general</button>
+      <button class="btn btn-sm" onclick="abrirNuevaVisita()" style="flex:1;background:#7C3AED;color:#fff;font-size:13px;padding:10px;"><i class="fa-solid fa-user-doctor"></i> Visita a profesional</button>
+    </div>`:''}
   </div>`;
   // -------- Lista de puntos ----------
   var pointsHtml=myPts.map(p=>{
