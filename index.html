@@ -2677,9 +2677,9 @@ function renderInformes(){
       +'<div style="font-size:13px;color:var(--muted);">'+visits.length+' visitas completadas</div>'
       +'<div style="font-size:13px;color:var(--muted);margin-top:2px;">Pendientes: <span style="color:#E24B4A;font-weight:700;">'+pActivos+' activos</span> · <span style="color:#059669;">'+pResueltos+' resueltos</span></div>'
       +'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">'
-      +'<button class="btn btn-sm btn-primary" onclick="generarPDF(''+lab.id+'')"><i class="fa-solid fa-file-pdf"></i> PDF</button>'
-      +'<button class="btn btn-sm btn-success" onclick="generarExcel(''+lab.id+'')"><i class="fa-solid fa-file-excel"></i> Excel</button>'
-      +'<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTX(''+lab.id+'')"><i class="fa-solid fa-file-powerpoint"></i> PPTX</button>'
+      +'<button class="btn btn-sm btn-primary" onclick="generarPDF(this.dataset.id)" data-id="'+lab.id+'"><i class="fa-solid fa-file-pdf"></i> PDF</button>'
+      +'<button class="btn btn-sm btn-success" onclick="generarExcel(this.dataset.id)" data-id="'+lab.id+'"><i class="fa-solid fa-file-excel"></i> Excel</button>'
+      +'<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTX(this.dataset.id)" data-id="'+lab.id+'"><i class="fa-solid fa-file-powerpoint"></i> PPTX</button>'
       +'</div></div>';
   }).join('');
 }
@@ -2715,6 +2715,7 @@ function getReportData(labId){
 }
 
 function generarPDF(labId){
+  if(labId&&typeof labId==='object') labId=labId.dataset?labId.dataset.id:labId;
   toast('Generando PDF...','info');
   var data=getReportData(labId);
   var {jsPDF}=window.jspdf;
@@ -2773,6 +2774,7 @@ function generarPDF(labId){
 }
 
 function generarExcel(labId){
+  if(labId&&typeof labId==='object') labId=labId.dataset?labId.dataset.id:labId;
   toast('Generando Excel...','info');
   var data=getReportData(labId);
   var wb=XLSX.utils.book_new();
@@ -2837,6 +2839,7 @@ function generarExcel(labId){
 }
 
 function generarPPTX(labId){
+  if(labId&&typeof labId==='object') labId=labId.dataset?labId.dataset.id:labId;
   toast('Generando PPTX...','info');
   var data=getReportData(labId);
   var pptx=new PptxGenJS();
