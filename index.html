@@ -1342,7 +1342,15 @@ function renderVisitorToday(){
   var allMyPts=(D.points||[]).filter(p=>p.assignedTo===currentUser.id);
   var routes=Array.from(new Set(allMyPts.map(p=>p.routeName||'Sin ruta')));
   if(!routes.length){
-    el.innerHTML='<div class="empty-state"><i class="fa-solid fa-couch"></i><p>No tienes puntos asignados</p></div>';
+    if(currentUser && currentUser.freeVisit){
+      el.innerHTML='<div style="padding:24px 16px;">'
+        +'<div style="text-align:center;margin-bottom:24px;color:var(--muted);"><i class="fa-solid fa-unlock" style="font-size:36px;color:#7C3AED;margin-bottom:10px;display:block;"></i><div style="font-weight:700;font-size:16px;color:#1F2937;">Visitas libres activadas</div><div style="font-size:13px;margin-top:4px;">Registra visitas donde necesites</div></div>'
+        +'<button class="btn btn-primary" style="width:100%;margin-bottom:12px;padding:14px;font-size:15px;" onclick="abrirVisitaLibre()"><i class="fa-solid fa-plus"></i> Registrar visita general</button>'
+        +'<button class="btn btn-sm" style="width:100%;padding:14px;font-size:15px;background:#7C3AED;color:#fff;" onclick="abrirNuevaVisita()"><i class="fa-solid fa-user-doctor"></i> Visita a profesional</button>'
+        +'</div>';
+    } else {
+      el.innerHTML='<div class="empty-state"><i class="fa-solid fa-couch"></i><p>No tienes puntos asignados</p></div>';
+    }
     return;
   }
   // Si la ruta elegida no existe o es null, seleccionamos la primera
