@@ -688,7 +688,7 @@ var MIN_PER_PUNTO=15;
    DATOS POR DEFECTO
    ------------------------------------------------------------------ */
 function defaultData(){
-  return {users:[],visits:[],points:[],labs:[],notifications:[]};
+  return {users:[],visits:[],points:[],labs:[],notifications:[],pendientes:[]};
 }
 function toArray(val){
   if(!val) return [];
@@ -709,6 +709,7 @@ function ensureData(d){
   d.points=toArray(d.points);
   d.labs=toArray(d.labs);
   d.notifications=toArray(d.notifications||[]);
+  d.pendientes=toArray(d.pendientes||[]);
   return d;
 }
 
@@ -939,6 +940,158 @@ function importarDesdeExcel(){
   geocodeNext(0);
 }
 
+
+/* ------------------------------------------------------------------
+   PENDIENTES
+   ------------------------------------------------------------------ */
+function getPendientesUsuario(userId){
+  return (D.pendientes||[]).filter(function(p){return p.userId===userId;});
+}
+
+function savePendiente(p){
+  var idx=(D.pendientes||[]).findIndex(function(x){return x.id===p.id;});
+  if(idx>=0){
+    D.pendientes[idx]=p;
+    dbRef.ref('medvisit/pendientes/'+idx).set(p).catch(function(err){console.error(err);});
+  } else {
+    D.pendientes.push(p);
+    dbRef.ref('medvisit/pendientes').push(p).catch(function(err){console.error(err);});
+  }
+  saveLocal(D);
+}
+
+function crearPendiente(userId, texto, prioridad, fechaLimite){
+  if(!texto.trim()) return;
+  var p={
+    id:'pnd_'+Date.now()+'_'+Math.random().toString(36).substr(2,4),
+    userId:userId,
+    texto:texto.trim(),
+    prioridad:prioridad||'normal',
+    fechaLimite:fechaLimite||'',
+    creadoPor:currentUser.id,
+    creadoPorNombre:currentUser.name,
+    creadoAt:new Date().toISOString(),
+    resuelto:false,
+    resueltoAt:null
+  };
+  D.pendientes.push(p);
+  dbRef.ref('medvisit/pendientes').push(p).catch(function(err){console.error(err);});
+  saveLocal(D);
+  return p;
+}
+
+function resolverPendiente(pid){
+  var idx=(D.pendientes||[]).findIndex(function(p){return p.id===pid;});
+  if(idx<0) return;
+  D.pendientes[idx].resuelto=true;
+  D.pendientes[idx].resueltoAt=new Date().toISOString();
+  savePendiente(D.pendientes[idx]);
+  renderVisitorToday();
+  toast('Pendiente marcado como resuelto ✓');
+}
+
+function eliminarPendiente(pid){
+  var idx=(D.pendientes||[]).findIndex(function(p){return p.id===pid;});
+  if(idx<0) return;
+  D.pendientes.splice(idx,1);
+  dbRef.ref('medvisit/pendientes').set(D.pendientes).catch(function(err){console.error(err);});
+  saveLocal(D);
+  renderCurrentScreen();
+  toast('Pendiente eliminado');
+}
+
+function renderPendientesSection(userId, containerEl, showResolved){
+  var all=getPendientesUsuario(userId);
+  var activos=all.filter(function(p){return !p.resuelto;});
+  var resueltos=all.filter(function(p){return p.resuelto;});
+  var isOwner=currentUser.id===userId;
+  var isAdminOrSuper=currentUser.role==='admin'||currentUser.role==='super';
+
+  var html='';
+
+  // New pendiente form
+  html+='<div style="background:var(--surface);border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:var(--shadow);">';
+  html+='<div style="font-weight:700;font-size:13px;margin-bottom:10px;"><i class="fa-solid fa-clipboard-list" style="color:var(--primary);margin-right:6px;"></i>Pendientes</div>';
+  
+  // Activos
+  if(activos.length){
+    activos.sort(function(a,b){
+      var order={urgente:0,semana:1,normal:2};
+      return (order[a.prioridad]||2)-(order[b.prioridad]||2);
+    }).forEach(function(p){
+      var isUrgent=p.prioridad==='urgente';
+      var isSemana=p.prioridad==='semana';
+      var bgColor=isUrgent?'#FCEBEB':isSemana?'#FAEEDA':'var(--bg)';
+      var borderColor=isUrgent?'#F09595':isSemana?'#FAC775':'var(--border)';
+      var badgeBg=isUrgent?'#FCEBEB':isSemana?'#FAEEDA':'#F3F4F6';
+      var badgeColor=isUrgent?'#A32D2D':isSemana?'#854F0B':'#6B7280';
+      var badgeText=isUrgent?'Urgente':isSemana?'Esta semana':'Normal';
+      if(p.fechaLimite) badgeText+=' · '+p.fechaLimite;
+      html+='<div style="background:'+bgColor+';border:1px solid '+borderColor+';border-radius:10px;padding:10px 12px;margin-bottom:8px;">';
+      html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">';
+      html+='<div style="flex:1;">';
+      html+='<span style="font-size:10px;font-weight:700;background:'+badgeBg+';color:'+badgeColor+';padding:2px 8px;border-radius:20px;display:inline-block;margin-bottom:5px;">'+badgeText+'</span>';
+      html+='<div style="font-size:13px;color:var(--text);line-height:1.4;">'+esc(p.texto)+'</div>';
+      if(p.creadoPorNombre&&p.creadoPor!==userId) html+='<div style="font-size:11px;color:var(--muted);margin-top:3px;">Por: '+esc(p.creadoPorNombre)+'</div>';
+      html+='</div>';
+      html+='<div style="display:flex;flex-direction:column;gap:4px;">';
+      if(isOwner||isAdminOrSuper) html+='<button onclick="resolverPendiente(''+p.id+'')" style="font-size:11px;padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;white-space:nowrap;">Listo ✓</button>';
+      if(isAdminOrSuper) html+='<button onclick="eliminarPendiente(''+p.id+'')" style="font-size:11px;padding:4px 8px;border-radius:8px;border:1px solid #F09595;background:#FCEBEB;color:#A32D2D;cursor:pointer;">Borrar</button>';
+      html+='</div>';
+      html+='</div></div>';
+    });
+  } else {
+    html+='<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Sin pendientes activos</div>';
+  }
+
+  // Add new pendiente form
+  html+='<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">';
+  html+='<textarea id="nuevoPendienteTexto_'+userId+'" placeholder="Nuevo pendiente..." style="width:100%;font-size:12px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);resize:none;height:52px;box-sizing:border-box;"></textarea>';
+  html+='<div style="display:flex;gap:6px;margin-top:6px;">';
+  html+='<select id="nuevoPendientePrioridad_'+userId+'" style="flex:1;font-size:12px;padding:5px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);">';
+  html+='<option value="normal">Normal</option><option value="semana">Esta semana</option><option value="urgente">Urgente</option>';
+  html+='</select>';
+  html+='<input type="date" id="nuevoPendienteFecha_'+userId+'" style="flex:1;font-size:12px;padding:5px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);">';
+  html+='<button onclick="agregarPendiente(''+userId+'')" style="font-size:12px;padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--primary);color:#fff;cursor:pointer;"><i class="fa-solid fa-plus"></i></button>';
+  html+='</div>';
+  html+='</div>';
+
+  // Resueltos
+  if(showResolved&&resueltos.length){
+    html+='<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">';
+    html+='<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">Resueltos ('+resueltos.length+')</div>';
+    resueltos.slice(0,5).forEach(function(p){
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);gap:8px;">';
+      html+='<div style="font-size:12px;color:var(--muted);text-decoration:line-through;flex:1;">'+esc(p.texto)+'</div>';
+      if(isAdminOrSuper) html+='<button onclick="eliminarPendiente(''+p.id+'')" style="font-size:10px;padding:3px 7px;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer;color:var(--muted);">X</button>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+
+  html+='</div>';
+  if(containerEl) containerEl.innerHTML=html;
+  return html;
+}
+
+function agregarPendiente(userId){
+  var texto=document.getElementById('nuevoPendienteTexto_'+userId);
+  var prioridad=document.getElementById('nuevoPendientePrioridad_'+userId);
+  var fecha=document.getElementById('nuevoPendienteFecha_'+userId);
+  if(!texto||!texto.value.trim()){toast('Escribe el pendiente','err');return;}
+  crearPendiente(userId, texto.value, prioridad?prioridad.value:'normal', fecha?fecha.value:'');
+  texto.value='';
+  if(fecha) fecha.value='';
+  // Re-render
+  if(currentUser.role==='super'||currentUser.role==='admin'){
+    var el=document.getElementById('pendientesAdmin_'+userId);
+    if(el) renderPendientesSection(userId, el, true);
+  } else {
+    renderVisitorToday();
+  }
+  toast('Pendiente creado ✓');
+}
+
 function initFirebase(){
   firebase.initializeApp(FIREBASE_CONFIG);
   dbRef = firebase.database();
@@ -1010,6 +1163,11 @@ function initFirebase(){
     var remote=snap.val();
     D.labs=toArray(remote||[]);
     refreshLabs();
+  });
+  dbRef.ref('medvisit/pendientes').on('value',function(snap){
+    var remote=snap.val();
+    D.pendientes=toArray(remote||[]);
+    renderCurrentScreen();
   });
 }
 
@@ -1342,6 +1500,10 @@ function renderVisitorToday(){
   var allMyPts=(D.points||[]).filter(p=>p.assignedTo===currentUser.id);
   var routes=Array.from(new Set(allMyPts.map(p=>p.routeName||'Sin ruta')));
   if(!routes.length){
+    // Render pendientes section first
+    var pendEl=document.getElementById('visitorPendientesSection');
+    if(pendEl) renderPendientesSection(currentUser.id, pendEl, false);
+
     if(currentUser && currentUser.freeVisit){
       el.innerHTML='<div style="padding:24px 16px;">'
         +'<div style="text-align:center;margin-bottom:24px;color:var(--muted);"><i class="fa-solid fa-unlock" style="font-size:36px;color:#7C3AED;margin-bottom:10px;display:block;"></i><div style="font-weight:700;font-size:16px;color:#1F2937;">Visitas libres activadas</div><div style="font-size:13px;margin-top:4px;">Registra visitas donde necesites</div></div>'
@@ -1792,7 +1954,9 @@ function openSuperDetail(uid){
       </div>`).join(''):'<div class="empty-state" style="padding:20px;"><i class="fa-solid fa-map-pin"></i><p>Sin puntos</p></div>'}
       <button class="btn btn-ghost" style="margin-top:8px;" onclick="openNewPoint('${u.id}')"><i class="fa-solid fa-plus"></i> Nuevo punto</button>
     <button class="btn btn-ghost" style="margin-top:8px;background:#059669;color:#fff;" onclick="abrirCargaExcel()"><i class="fa-solid fa-file-excel"></i> Cargar desde Excel</button>
-    </div>`;
+    </div>
+    <div id="pendientesAdmin_${u.id}" style="padding:0 0 16px;"></div>`;
+  renderPendientesSection(u.id, document.getElementById("pendientesAdmin_"+u.id), true);
 }
 function superNuevoUsuario(){
   document.getElementById('superEditId').value='';
@@ -2574,6 +2738,29 @@ function generarExcel(labId){
   });
   var ws2=XLSX.utils.aoa_to_sheet(summary);
   XLSX.utils.book_append_sheet(wb,ws2,'Resumen');
+  // Pendientes sheet
+  var pHeader=['Visitador','Pendiente','Prioridad','Fecha Límite','Estado','Creado Por','Fecha Creación'];
+  var visitor=(D.users||[]).find(function(u){return u.labId===(data.lab.id||'');});
+  var pRows=(D.pendientes||[])
+    .filter(function(p){
+      var u=userById(p.userId);
+      return u&&(data.lab.id?u.labId===data.lab.id:true);
+    })
+    .map(function(p){
+      var u=userById(p.userId)||{};
+      return [
+        u.name||'',
+        p.texto||'',
+        p.prioridad==='urgente'?'Urgente':p.prioridad==='semana'?'Esta semana':'Normal',
+        p.fechaLimite||'',
+        p.resuelto?'Resuelto':'Pendiente',
+        p.creadoPorNombre||'',
+        p.creadoAt?p.creadoAt.split('T')[0]:''
+      ];
+    });
+  var wsp=XLSX.utils.aoa_to_sheet([pHeader].concat(pRows));
+  wsp['!cols']=[{wch:20},{wch:40},{wch:12},{wch:14},{wch:12},{wch:20},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,wsp,'Pendientes');
   XLSX.writeFile(wb,'Informe_'+data.lab.name+'_'+today()+'.xlsx');
 }
 
