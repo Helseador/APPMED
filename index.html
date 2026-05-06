@@ -473,7 +473,7 @@
 
 <div class="modal-overlay" id="modalCloseVisit"><div class="modal-sheet"><div class="modal-handle"></div><div class="modal-title">Cerrar Visita</div><input type="hidden" id="closeVisitId"><div style="background:var(--primary-50);border-radius:12px;padding:14px;margin-bottom:18px;"><div style="font-size:13px;font-weight:700;color:var(--primary);" id="closeVisitPointName"></div><div id="closeVisitPointAddr" style="font-size:12px;color:var(--muted);margin-top:2px;"></div></div><input type="file" id="visitPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoTaken(event)"><div class="form-group"><label class="form-label">Foto del Punto</label><div id="photoCaptureArea"><div class="photo-capture-btn" onclick="document.getElementById('visitPhotoInput').click()"><i class="fa-solid fa-camera"></i><span>Tomar Foto</span></div></div><img id="photoPreview" class="photo-preview" style="display:none;"></div><div class="form-group"><label class="form-label">Nombre del Jefe del Punto</label><input class="form-input" id="closeJefe" placeholder="Nombre del responsable"></div><div class="form-group"><label class="form-label">Notas (opcional)</label><textarea class="form-input" id="closeNotes" placeholder="Observaciones..."></textarea></div><div style="display:flex;gap:10px;margin-top:20px;"><button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalCloseVisit')">Cancelar</button><button class="btn btn-success" style="flex:1;" onclick="completeVisit()"><i class="fa-solid fa-check"></i> Completar</button></div></div></div>
 <div class="modal-overlay" id="modalPhoto"><div class="modal-sheet" style="padding:8px 8px 24px;"><div class="modal-handle"></div><div class="modal-title" style="padding:0 12px;">Evidencia</div><img id="modalPhotoImg" style="width:100%;border-radius:12px;"><div style="padding:8px 12px 0;"><div id="modalPhotoInfo" style="font-size:13px;color:var(--muted);line-height:1.5;"></div></div><button class="btn btn-outline" style="margin-top:16px;" onclick="closeModal('modalPhoto')">Cerrar</button></div></div>
-<div class="modal-overlay" id="modalSuperEdit"><div class="modal-sheet"><div class="modal-handle"></div><div class="modal-title" id="modalSuperEditTitle">Editar Usuario</div><input type="hidden" id="superEditId"><div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="seName"></div><div class="form-group"><label class="form-label">Usuario</label><input class="form-input" id="seUsername" autocapitalize="off"></div><div class="form-group"><label class="form-label">Nueva Contrasena</label><input class="form-input" type="text" id="sePassword" placeholder="Dejar vacio para no cambiar"></div><div class="form-group"><label class="form-label">Rol</label><select class="form-input" id="seRole"><option value="visitor">Visitador</option><option value="admin">Administrador</option></select></div><div class="form-group"><label class="form-label">Laboratorio</label><select class="form-input" id="seLabId"><!-- labs will be populated by JS --></select></div><div style="display:flex;gap:10px;margin-top:20px;"><button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalSuperEdit')">Cancelar</button><button class="btn btn-danger btn-sm" id="superDeleteBtn" onclick="var id=document.getElementById('superEditId').value;if(id)superDeleteUser(id);" style="display:none;"><i class="fa-solid fa-trash"></i></button><button class="btn btn-primary" style="flex:2;" onclick="superSaveUser()">Guardar</button></div></div></div>
+<div class="modal-overlay" id="modalSuperEdit"><div class="modal-sheet"><div class="modal-handle"></div><div class="modal-title" id="modalSuperEditTitle">Editar Usuario</div><input type="hidden" id="superEditId"><div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="seName"></div><div class="form-group"><label class="form-label">Usuario</label><input class="form-input" id="seUsername" autocapitalize="off"></div><div class="form-group"><label class="form-label">Nueva Contrasena</label><input class="form-input" type="text" id="sePassword" placeholder="Dejar vacio para no cambiar"></div><div class="form-group"><label class="form-label">Rol</label><select class="form-input" id="seRole"><option value="visitor">Visitador</option><option value="admin">Administrador</option><option value="adminGeneral">Admin General</option></select></div><div class="form-group"><label class="form-label">Laboratorio</label><select class="form-input" id="seLabId"><!-- labs will be populated by JS --></select></div><div style="display:flex;gap:10px;margin-top:20px;"><button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalSuperEdit')">Cancelar</button><button class="btn btn-danger btn-sm" id="superDeleteBtn" onclick="var id=document.getElementById('superEditId').value;if(id)superDeleteUser(id);" style="display:none;"><i class="fa-solid fa-trash"></i></button><button class="btn btn-primary" style="flex:2;" onclick="superSaveUser()">Guardar</button></div></div></div>
 
 <!-- MODAL: NUEVA VISITA (selector de tipo) -->
 <div class="modal-overlay" id="modalNuevaVisita">
@@ -1518,13 +1518,13 @@ function renderAdmin(){ /* mantiene el mismo contenido, solo actualiza saludo */
 function renderVisitor(){ var h=new Date().getHours(); var sal=h<12?'Buenos dias':h<18?'Buenas tardes':'Buenas noches'; document.getElementById('visitorGreeting').textContent=sal+', '+currentUser.name.split(' ')[0]+'!'; var d=new Date(); var days=['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado']; var months=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; document.getElementById('visitorDate').textContent=days[d.getDay()]+', '+d.getDate()+' de '+months[d.getMonth()]+' '+d.getFullYear(); renderVisitorToday();}
 function renderVisitorToday(){
   var el=document.getElementById('visitorTodayPoints');
+  // Siempre renderizar pendientes
+  var pendEl=document.getElementById('visitorPendientesSection');
+  if(pendEl) renderPendientesSection(currentUser.id, pendEl, false);
   // ------- 1) Agrupar puntos por ruta (nuevo) -------
   var allMyPts=(D.points||[]).filter(p=>p.assignedTo===currentUser.id);
   var routes=Array.from(new Set(allMyPts.map(p=>p.routeName||'Sin ruta')));
   if(!routes.length){
-    // Render pendientes section first
-    var pendEl=document.getElementById('visitorPendientesSection');
-    if(pendEl) renderPendientesSection(currentUser.id, pendEl, false);
 
     if(currentUser && currentUser.freeVisit){
       el.innerHTML='<div style="padding:24px 16px;">'
@@ -2293,9 +2293,10 @@ function renderAdminVisitas(){
   var sf=document.getElementById('filterVisitStatus')?document.getElementById('filterVisitStatus').value:'';
   var tf=document.getElementById('filterVisitType')?document.getElementById('filterVisitType').value:'';
   var isSuper=currentUser&&currentUser.role==='super';
-  var statusFilter=sf||'completed'; // por defecto solo completadas
+  var isGeneral=currentUser&&currentUser.role==='adminGeneral';
+  var statusFilter=sf||'completed';
   var list=(D.visits||[]).filter(function(v){
-    var matchLab=isSuper?true:(currentLabId?v.labId===currentLabId:true);
+    var matchLab=(isSuper||isGeneral)?true:(currentLabId?v.labId===currentLabId:true);
     return matchLab&&(vf?v.visitorId===vf:true)&&v.status===statusFilter&&(tf?v.type===tf:true);
   });
   list.sort(function(a,b){return b.date>a.date?1:-1;});
@@ -2661,21 +2662,25 @@ function aplicarFechasCustom(){
 }
 function renderInformes(){
   var el=document.getElementById('rptLabCards'); if(!el) return;
-  el.innerHTML=LABS.map(lab=>{
-    var visits=(D.visits||[]).filter(v=>v.labId===lab.id&&(!rptDesde||v.date>=rptDesde)&&(!rptHasta||v.date<=rptHasta));
-    var done=visits.filter(v=>v.status==='completed').length;
-    return `<div class="card" style="margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <div style="width:36px;height:36px;border-radius:10px;background:${lab.color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;"><i class="fa-solid ${lab.icon}"></i></div>
-        <div style="font-weight:800;">${esc(lab.name)}</div>
-      </div>
-      <div style="font-size:13px;color:var(--muted);">${done} visitas completadas en el periodo</div>
-      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
-        <button class="btn btn-sm btn-primary" onclick="generarPDF('${lab.id}')"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-        <button class="btn btn-sm btn-success" onclick="generarExcel('${lab.id}')"><i class="fa-solid fa-file-excel"></i> Excel</button>
-        <button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTX('${lab.id}')"><i class="fa-solid fa-file-powerpoint"></i> PPTX</button>
-      </div>
-    </div>`;
+  var isSuper=currentUser&&currentUser.role==='super';
+  var isGeneral=currentUser&&currentUser.role==='adminGeneral';
+  var labsToShow=(isSuper||isGeneral)?LABS:LABS.filter(function(l){return l.id===currentLabId;});
+  el.innerHTML=labsToShow.map(function(lab){
+    var visits=(D.visits||[]).filter(function(v){return v.labId===lab.id&&(!rptDesde||v.date>=rptDesde)&&(!rptHasta||v.date<=rptHasta)&&v.status==='completed';});
+    var pends=(D.pendientes||[]).filter(function(p){var u=userById(p.userId);return u&&u.labId===lab.id;});
+    var pActivos=pends.filter(function(p){return !p.resuelto;}).length;
+    var pResueltos=pends.filter(function(p){return p.resuelto;}).length;
+    return '<div class="card" style="margin-bottom:10px;">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
+      +'<div style="width:36px;height:36px;border-radius:10px;background:'+lab.color+';display:flex;align-items:center;justify-content:center;color:#fff;"><i class="fa-solid '+lab.icon+'"></i></div>'
+      +'<div style="font-weight:800;">'+esc(lab.name)+'</div></div>'
+      +'<div style="font-size:13px;color:var(--muted);">'+visits.length+' visitas completadas</div>'
+      +'<div style="font-size:13px;color:var(--muted);margin-top:2px;">Pendientes: <span style="color:#E24B4A;font-weight:700;">'+pActivos+' activos</span> · <span style="color:#059669;">'+pResueltos+' resueltos</span></div>'
+      +'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">'
+      +'<button class="btn btn-sm btn-primary" onclick="generarPDF(''+lab.id+'')"><i class="fa-solid fa-file-pdf"></i> PDF</button>'
+      +'<button class="btn btn-sm btn-success" onclick="generarExcel(''+lab.id+'')"><i class="fa-solid fa-file-excel"></i> Excel</button>'
+      +'<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTX(''+lab.id+'')"><i class="fa-solid fa-file-powerpoint"></i> PPTX</button>'
+      +'</div></div>';
   }).join('');
 }
 function getReportData(labId){
@@ -2738,6 +2743,32 @@ function generarPDF(labId){
     alternateRowStyles:{fillColor:[240,253,250]},
     columnStyles:{7:{cellWidth:40}}
   });
+  var pends=(D.pendientes||[]).filter(function(p){
+    var u=userById(p.userId);
+    if(!u) return false;
+    var fullAccess2=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral');
+    return labId?u.labId===labId:(fullAccess2?true:u.labId===currentLabId);
+  });
+  if(pends.length>0){
+    doc.addPage();
+    doc.setFillColor(13,148,136); doc.rect(0,0,297,20,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
+    doc.text('Pendientes – '+lab.name,14,13);
+    doc.setTextColor(0,0,0);
+    doc.autoTable({
+      head:[['Visitador','Pendiente','Prioridad','Vence','Estado']],
+      body:pends.map(function(p){
+        var u=userById(p.userId)||{};
+        return [u.name||'',p.texto||'',
+          p.prioridad==='urgente'?'Urgente':p.prioridad==='semana'?'Esta semana':'Normal',
+          p.fechaLimite||'',p.resuelto?'Resuelto':'Pendiente'];
+      }),
+      startY:25,styles:{fontSize:8,cellPadding:3},
+      headStyles:{fillColor:[13,148,136],textColor:255,fontStyle:'bold'},
+      alternateRowStyles:{fillColor:[240,253,250]},
+      columnStyles:{1:{cellWidth:80}}
+    });
+  }
   doc.save('Informe_'+lab.name+'_'+today()+'.pdf');
 }
 
@@ -2783,6 +2814,25 @@ function generarExcel(labId){
   var wsp=XLSX.utils.aoa_to_sheet([pHeader].concat(pRows));
   wsp['!cols']=[{wch:20},{wch:40},{wch:12},{wch:14},{wch:12},{wch:20},{wch:14}];
   XLSX.utils.book_append_sheet(wb,wsp,'Pendientes');
+  var pHeader=['Visitador','Laboratorio','Pendiente','Prioridad','Vence','Estado','Creado Por','Resuelto'];
+  var pRows=(D.pendientes||[]).filter(function(p){
+    var u=userById(p.userId);
+    if(!u) return false;
+    var fullAccess=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral');
+    return data.lab.id?u.labId===data.lab.id:(fullAccess?true:u.labId===currentLabId);
+  }).map(function(p){
+    var u=userById(p.userId)||{};
+    var lab=LABS.find(function(l){return l.id===u.labId;})||{};
+    return [u.name||'',lab.name||'',p.texto||'',
+      p.prioridad==='urgente'?'Urgente':p.prioridad==='semana'?'Esta semana':'Normal',
+      p.fechaLimite||'',p.resuelto?'Resuelto':'Pendiente',
+      p.creadoPorNombre||'',p.resueltoAt?p.resueltoAt.split('T')[0]:''];
+  });
+  if(pRows.length>0){
+    var wsp=XLSX.utils.aoa_to_sheet([pHeader].concat(pRows));
+    wsp['!cols']=[{wch:22},{wch:14},{wch:40},{wch:12},{wch:14},{wch:12},{wch:20},{wch:14}];
+    XLSX.utils.book_append_sheet(wb,wsp,'Pendientes');
+  }
   XLSX.writeFile(wb,'Informe_'+data.lab.name+'_'+today()+'.xlsx');
 }
 
