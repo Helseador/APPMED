@@ -788,8 +788,27 @@ function previewExcel(input){
         var numVal=raw[r2][0];
         if(numVal!==''&&!isNaN(parseInt(numVal))){
           var order=parseInt(numVal);
-          var nameRow=raw[r2];
-          var addrRow=raw[r2+1]||[];
+          var nameRow=raw[r2];        // nombre del punto
+          var encargRow=raw[r2+1]||[]; // encargado (ignorar)
+          var addrRow=raw[r2+2]||[];  // dirección real
+          // Detectar si hay 3 filas por punto o 2
+          // Si la siguiente fila sin número tiene texto que parece dirección (contiene # o Calle o Cra o Av)
+          // entonces es 2 filas. Si no, asumimos 3 filas (nombre, encargado, dirección)
+          var nextRow=raw[r2+1]||[];
+          var nextHasAddr=Object.keys(dayCols).some(function(col){
+            var v=String(nextRow[parseInt(col)]||'');
+            return v.match(/#|Calle|Cra|Carrera|Av|Km/i);
+          });
+          var skip=2;
+          if(!nextHasAddr){
+            // 3-row format: name / encargado / address
+            addrRow=raw[r2+2]||[];
+            skip=3;
+          } else {
+            // 2-row format: name / address
+            addrRow=nextRow;
+            skip=2;
+          }
           Object.keys(dayCols).forEach(function(col){
             var name=nameRow[parseInt(col)]||'';
             var addr=addrRow[parseInt(col)]||'';
@@ -801,7 +820,7 @@ function previewExcel(input){
               });
             }
           });
-          r2+=2;
+          r2+=skip;
         } else {
           r2++;
         }
