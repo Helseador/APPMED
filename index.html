@@ -1242,7 +1242,7 @@ function doLogin(){
     att.style.display='block'; att.textContent=rem+' intento'+(rem>1?'s':'')+' restante'+(rem>1?'s':''); att.style.color=rem<=2?'#FCA5A5':'rgba(255,255,255,0.4)';
     return;
   }
-  currentUser={id:user.id,username:user.username,role:user.role,name:user.name};
+  currentUser={id:user.id,username:user.username,role:user.role,name:user.name,labId:user.labId||'',freeVisit:user.freeVisit===true,active:user.active};
   err.textContent=''; loginAttempts=0; att.style.display='none'; resetSession();
   if(user.role==='admin'){
     currentLabId=null;
