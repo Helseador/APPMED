@@ -1131,7 +1131,7 @@ function renderLabSelector(){
   el.innerHTML=LABS.map(function(lab){
     var visitors=(D.users||[]).filter(function(u){return u.role==='visitor'&&u.labId===lab.id;}).length;
     var visitasHoy=(D.visits||[]).filter(function(v){return v.labId===lab.id&&v.date===today()&&v.status==='completed';}).length;
-    return '<div onclick="seleccionarLab(''+lab.id+'')" style="background:var(--surface);border-radius:14px;padding:16px 18px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px;">'
+    return '<div onclick="seleccionarLab(this.dataset.id)" data-id="'+lab.id+'" style="background:var(--surface);border-radius:14px;padding:16px 18px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px;">'
       +'<div style="width:44px;height:44px;border-radius:12px;background:'+lab.color+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;">'
       +(lab.logo?'<img src="'+lab.logo+'" style="max-width:85%;max-height:85%;object-fit:contain;">':'<i class="fa-solid '+lab.icon+'"></i>')
       +'</div>'
@@ -1145,6 +1145,7 @@ function renderLabSelector(){
 }
 
 function seleccionarLab(labId){
+  if(labId&&typeof labId==='object') labId=labId.dataset?labId.dataset.id:labId;
   currentLabId=labId;
   document.getElementById('adminLabSelector').style.display='none';
   document.getElementById('adminLabContent').style.display='block';
