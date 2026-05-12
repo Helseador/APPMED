@@ -293,6 +293,13 @@
     </div>
   </div>
   <div class="app-body">
+    <div id="adminLabSelector" style="display:none;padding:16px;">
+      <div style="font-weight:800;font-size:18px;margin-bottom:16px;">Selecciona un laboratorio</div>
+      <div id="adminLabSelectorList"></div>
+    </div>
+    <div id="adminLabContent" style="display:none;">
+      <button onclick="volverLabSelector()" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--primary);font-weight:700;font-size:13px;cursor:pointer;padding:8px 0 4px;"><i class="fa-solid fa-arrow-left"></i> Todos los laboratorios</button>
+    </div>
     <div class="tab-content active" id="aTab-canvas"></div>
     <div class="tab-content" id="aTab-visitadores">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -524,7 +531,7 @@
         <button onclick="selectVisitType(null)" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:13px;font-weight:600;padding:0;"><i class="fa-solid fa-arrow-left"></i> Cambiar tipo</button>
       </div>
       <div class="gps-chip" id="gpsChipProf"><i class="fa-solid fa-satellite-dish" style="font-size:11px;"></i> <span id="gpsTextProf">Obteniendo ubicacion...</span></div>
-      <div class="form-group"><label class="form-label">Nombre del profesional <span style="color:var(--danger);">*</span></label><input class="form-input" id="vp-nombre" placeholder="Dr. / Dra. Nombre Apellido"></div>
+      <div class="form-group"><label class="form-label">Nombre del Punto <span style="color:var(--danger);">*</span></label><input class="form-input" id="vp-punto" placeholder="Ej: Clínica del Norte, Compensar Suba..."></div><div class="form-group"><label class="form-label">Nombre del profesional <span style="color:var(--danger);">*</span></label><input class="form-input" id="vp-nombre" placeholder="Dr. / Dra. Nombre Apellido"></div>
       <div class="form-group"><label class="form-label">Especialidad</label><input class="form-input" id="vp-especialidad" placeholder="Ej. Cardiologia, Medicina general..."></div>
       <div class="form-group"><label class="form-label">Numero de contacto <span style="color:var(--danger);">*</span></label><input class="form-input" type="tel" id="vp-telefono" placeholder="3XX XXX XXXX"></div>
       <div class="form-group"><label class="form-label">Direccion del consultorio <span style="color:var(--danger);">*</span></label><input class="form-input" id="vp-direccion" placeholder="Calle, carrera, consultorio, piso..."></div>
@@ -1114,6 +1121,53 @@ function agregarPendiente(userId){
   toast('Pendiente creado ✓');
 }
 
+
+/* ------------------------------------------------------------------
+   ADMIN GENERAL — Selector de laboratorio
+   ------------------------------------------------------------------ */
+function renderLabSelector(){
+  var el=document.getElementById('adminLabSelectorList');
+  if(!el) return;
+  el.innerHTML=LABS.map(function(lab){
+    var visitors=(D.users||[]).filter(function(u){return u.role==='visitor'&&u.labId===lab.id;}).length;
+    var visitasHoy=(D.visits||[]).filter(function(v){return v.labId===lab.id&&v.date===today()&&v.status==='completed';}).length;
+    return '<div onclick="seleccionarLab(''+lab.id+'')" style="background:var(--surface);border-radius:14px;padding:16px 18px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px;">'
+      +'<div style="width:44px;height:44px;border-radius:12px;background:'+lab.color+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;">'
+      +(lab.logo?'<img src="'+lab.logo+'" style="max-width:85%;max-height:85%;object-fit:contain;">':'<i class="fa-solid '+lab.icon+'"></i>')
+      +'</div>'
+      +'<div style="flex:1;">'
+      +'<div style="font-weight:800;font-size:15px;">'+esc(lab.name)+'</div>'
+      +'<div style="font-size:12px;color:var(--muted);">'+visitors+' visitadores · '+visitasHoy+' visitas hoy</div>'
+      +'</div>'
+      +'<i class="fa-solid fa-chevron-right" style="color:var(--muted);"></i>'
+      +'</div>';
+  }).join('');
+}
+
+function seleccionarLab(labId){
+  currentLabId=labId;
+  document.getElementById('adminLabSelector').style.display='none';
+  document.getElementById('adminLabContent').style.display='block';
+  document.querySelectorAll('#adminScreen .tab-content').forEach(function(t){
+    if(t.id!=='adminLabContent') t.style.display='';
+  });
+  var lab=LABS.find(function(l){return l.id===labId;})||{};
+  document.getElementById('adminGreeting').textContent=lab.name+'   '+currentUser.name;
+  renderAdmin();
+  // Show tab bar
+  document.querySelector('#adminScreen .tab-bar') && (document.querySelector('#adminScreen .tab-bar').style.display='');
+}
+
+function volverLabSelector(){
+  currentLabId=null;
+  document.getElementById('adminLabSelector').style.display='block';
+  document.getElementById('adminLabContent').style.display='none';
+  // Hide all tab content and tab bar
+  document.querySelectorAll('#adminScreen .tab-content').forEach(function(t){t.style.display='none';});
+  document.querySelector('#adminScreen .tab-bar') && (document.querySelector('#adminScreen .tab-bar').style.display='none');
+  renderLabSelector();
+}
+
 function initFirebase(){
   firebase.initializeApp(FIREBASE_CONFIG);
   dbRef = firebase.database();
@@ -1436,7 +1490,7 @@ function doLogin(){
     toast(getGreeting()+', '+user.name.split(' ')[0]+'!');
   }
 }
-function doLogout(){currentUser=null; currentLabId=null; _visitRoute=null; gpsPermission='unknown'; stopSession(); document.getElementById('loginUser').value=''; document.getElementById('loginPass').value=''; document.getElementById('loginError').textContent=''; document.getElementById('loginAttempts').style.display='none'; lastVisitorDetailId=null; lastSuperDetailId=null; currentAdminTab='canvas'; currentVisitorTab='hoy'; currentSuperTab='users'; showScreen('loginScreen');}
+function doLogout(){currentUser=null; currentLabId=null;  _visitRoute=null; gpsPermission='unknown'; stopSession(); document.getElementById('loginUser').value=''; document.getElementById('loginPass').value=''; document.getElementById('loginError').textContent=''; document.getElementById('loginAttempts').style.display='none'; lastVisitorDetailId=null; lastSuperDetailId=null; currentAdminTab='canvas'; currentVisitorTab='hoy'; currentSuperTab='users'; showScreen('loginScreen');}
 function resetSession(){sessionEnd=Date.now()+SESSION_MINUTES*60*1000; if(sessionTimer) clearInterval(sessionTimer); sessionTimer=setInterval(()=>{var r=Math.max(0,sessionEnd-Date.now());var m=Math.floor(r/60000),s=Math.floor((r%60000)/1000);var txt=m+':'+s.toString().padStart(2,'0');['adminSessionTimer','visitorSessionTimer'].forEach(id=>{var el=document.querySelector('#'+id); if(el){ if(r<300000){el.style.display='flex'; el.querySelector('span').textContent=txt;} else el.style.display='none'; } }); if(r<=0){clearInterval(sessionTimer); sessionTimer=null; doLogout(); toast('Sesion cerrada por inactividad','info');}},1000);}
 function stopSession(){if(sessionTimer){clearInterval(sessionTimer); sessionTimer=null;} ['adminSessionTimer','visitorSessionTimer'].forEach(id=>{var el=document.querySelector('#'+id); if(el) el.style.display='none';});}
 
@@ -1510,7 +1564,28 @@ function selectLab(id){
 /* ------------------------------------------------------------------
    ADMIN – DASHBOARD & VISITADORES
    ------------------------------------------------------------------ */
-function renderAdmin(){ /* mantiene el mismo contenido, solo actualiza saludo */ var lab=LABS.find(l=>l.id===currentLabId); document.getElementById('adminGreeting').textContent=(lab?lab.name+'   ':'')+currentUser.name; renderCanvasDashboard(); populateVisitFilter();}
+function renderAdmin(){
+  var isGeneral=currentUser&&currentUser.role==='adminGeneral';
+  if(isGeneral&&!currentLabId){
+    // Show lab selector
+    document.getElementById('adminLabSelector').style.display='block';
+    document.getElementById('adminLabContent').style.display='none';
+    document.querySelectorAll('#adminScreen .tab-content').forEach(function(t){t.style.display='none';});
+    var tabBar=document.querySelector('#adminScreen .tab-bar');
+    if(tabBar) tabBar.style.display='none';
+    document.getElementById('adminGreeting').textContent='Admin General · '+currentUser.name;
+    renderLabSelector();
+    return;
+  }
+  document.getElementById('adminLabSelector').style.display='none';
+  document.getElementById('adminLabContent').style.display=isGeneral?'block':'none';
+  document.querySelectorAll('#adminScreen .tab-content').forEach(function(t){t.style.display='';});
+  var tabBar=document.querySelector('#adminScreen .tab-bar');
+  if(tabBar) tabBar.style.display='';
+  var lab=LABS.find(function(l){return l.id===currentLabId;});
+  document.getElementById('adminGreeting').textContent=(lab?lab.name+'   ':'')+currentUser.name;
+  renderCanvasDashboard(); populateVisitFilter();
+}
 
 /* ------------------------------------------------------------------
    VISITADOR – RUTAS (CAMBIO 3)
@@ -1650,7 +1725,7 @@ function abrirNuevaVisita(){
   visitaGpsCoords=null; visitaFotoDataGeneral=null; visitaFotoDataProf=null; profFirmaActiva=false;
   selectVisitType(null);
   // limpiar campos
-  ['vg-lugar','vg-direccion','vg-contacto','vg-notas','vp-nombre','vp-especialidad','vp-telefono','vp-direccion','vp-obsequio','vp-notas'].forEach(id=>{document.getElementById(id).value='';});
+  ['vg-lugar','vg-direccion','vg-contacto','vg-notas','vp-punto','vp-nombre','vp-especialidad','vp-telefono','vp-direccion','vp-obsequio','vp-notas'].forEach(id=>{var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('vg-preview').style.display='none';
   document.getElementById('vp-preview').style.display='none';
   document.getElementById('vg-foto').value=''; document.getElementById('vp-foto').value='';
@@ -2317,6 +2392,7 @@ function renderAdminVisitas(){
     var body='';
     if(isProf){
       // ── VISITA PROFESIONAL: mostrar todo el detalle
+      if(v.pointName) body+='<div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:2px;"><i class="fa-solid fa-hospital" style="width:16px;"></i>'+esc(v.pointName)+'</div>';
       body+='<div style="font-weight:800;font-size:15px;margin-bottom:4px;"><i class="fa-solid fa-user-doctor" style="color:#7C3AED;margin-right:6px;"></i>'+esc(v.placeName||'')+'</div>';
       if(v.speciality) body+='<div style="font-size:12px;color:var(--muted);margin-bottom:2px;"><i class="fa-solid fa-stethoscope" style="width:16px;"></i> '+esc(v.speciality)+'</div>';
       if(v.phone) body+='<div style="font-size:12px;color:var(--muted);margin-bottom:2px;"><i class="fa-solid fa-phone" style="width:16px;"></i> '+esc(v.phone)+'</div>';
@@ -2467,7 +2543,8 @@ function guardarVisitaProfesional(){
   if(!profFirmaActiva){toast('La firma del profesional es obligatoria','err');return;}
   if(!visitaFotoDataProf){toast('La foto de evidencia es obligatoria','err');return;}
   var firma=profFirmaCanvas?profFirmaCanvas.toDataURL('image/png'):null;
-  var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentLabId,date:today(),status:'completed',completedAt:new Date().toISOString(),type:'profesional',placeName:nombre,speciality:document.getElementById('vp-especialidad').value.trim(),phone:tel,address:dir,gift:document.getElementById('vp-toggleObsequio').checked?document.getElementById('vp-obsequio').value.trim():'',notes:document.getElementById('vp-notas').value.trim(),photo:visitaFotoDataProf,firma:firma};
+  var punto=document.getElementById('vp-punto').value.trim();
+  var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentLabId,date:today(),status:'completed',completedAt:new Date().toISOString(),type:'profesional',pointName:punto,placeName:nombre,speciality:document.getElementById('vp-especialidad').value.trim(),phone:tel,address:dir,gift:document.getElementById('vp-toggleObsequio').checked?document.getElementById('vp-obsequio').value.trim():'',notes:document.getElementById('vp-notas').value.trim(),photo:visitaFotoDataProf,firma:firma};
   if(visitaGpsCoords){v.lat=visitaGpsCoords.lat;v.lng=visitaGpsCoords.lng;}
   pushVisit(v); closeModal('modalNuevaVisita'); renderVisitorToday(); toast('Visita profesional guardada ✓');
 }
@@ -2703,6 +2780,7 @@ function getReportData(labId){
       tipo:v.type==='profesional'?'Visita Profesional':'Visita General',
       medico:v.doctorName||'',
       especialidad:v.specialty||'',
+      puntoNombre:v.pointName||'',
       telefono:v.phone||'',
       direccionProf:v.address||'',
       obsequio:v.gift||'',
