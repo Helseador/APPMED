@@ -353,7 +353,7 @@
         </div>
       </div>
       <div class="section-title">Por Laboratorio</div>
-      <div id="rptLabCards"></div>
+      <div id="rptLabCheckboxes" style="display:none;margin-bottom:12px;"></div><div id="rptLabCards"></div>
     </div>
   </div>
   <div class="tab-bar" id="adminTabBar">
@@ -1169,6 +1169,38 @@ function volverLabSelector(){
   renderLabSelector();
 }
 
+
+function getSelectedLabs(){
+  var selected=[];
+  LABS.forEach(function(l){
+    var cb=document.getElementById('chkLab_'+l.id);
+    if(cb&&cb.checked) selected.push(l);
+  });
+  return selected.length?selected:LABS;
+}
+function generarPDFMulti(){
+  var labs=getSelectedLabs();
+  if(labs.length===1){generarPDF(labs[0].id);return;}
+  // Pass null to generate all selected — override labsToReport inside generarPDF
+  // We'll temporarily set a global
+  window._selectedLabs=labs;
+  generarPDF('__multi__');
+  window._selectedLabs=null;
+}
+function generarPPTXMulti(){
+  var labs=getSelectedLabs();
+  if(labs.length===1){generarPPTX(labs[0].id);return;}
+  window._selectedLabs=labs;
+  generarPPTX('__multi__');
+  window._selectedLabs=null;
+}
+function generarExcelMulti(){
+  var labs=getSelectedLabs();
+  if(labs.length===1){generarExcel(labs[0].id);return;}
+  window._selectedLabs=labs;
+  generarExcel('__multi__');
+  window._selectedLabs=null;
+}
 function initFirebase(){
   firebase.initializeApp(FIREBASE_CONFIG);
   dbRef = firebase.database();
@@ -2749,6 +2781,22 @@ function renderInformes(){
   var isSuper=currentUser&&currentUser.role==='super';
   var isGeneral=currentUser&&currentUser.role==='adminGeneral';
   var labsToShow=(isSuper||isGeneral)?LABS:LABS.filter(function(l){return l.id===currentLabId;});
+  // Checkboxes for adminGeneral/super
+  var cbEl=document.getElementById('rptLabCheckboxes');
+  if(cbEl&&(isSuper||isGeneral)){
+    cbEl.style.display='block';
+    cbEl.innerHTML='<div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--muted);">Selecciona laboratorios para el informe:</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:8px;">'+LABS.map(function(l){
+        return '<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;background:var(--bg);padding:5px 10px;border-radius:8px;border:1px solid var(--border);">'
+          +'<input type="checkbox" id="chkLab_'+l.id+'" checked style="cursor:pointer;"> '+esc(l.name)+'</label>';
+      }).join('')
+      +'</div>'
+      +'<div style="display:flex;gap:8px;margin-top:10px;">'
+      +'<button class="btn btn-sm btn-primary" onclick="generarPDFMulti()"><i class="fa-solid fa-file-pdf"></i> PDF seleccionados</button>'
+      +'<button class="btn btn-sm btn-success" onclick="generarPPTXMulti()"><i class="fa-solid fa-file-powerpoint"></i> PPTX seleccionados</button>'
+      +'<button class="btn btn-sm btn-success" onclick="generarExcelMulti()"><i class="fa-solid fa-file-excel"></i> Excel seleccionados</button>'
+      +'</div>';
+  }
   el.innerHTML=labsToShow.map(function(lab){
     var visits=(D.visits||[]).filter(function(v){return v.labId===lab.id&&(!rptDesde||v.date>=rptDesde)&&(!rptHasta||v.date<=rptHasta)&&v.status==='completed';});
     var pends=(D.pendientes||[]).filter(function(p){var u=userById(p.userId);return u&&u.labId===lab.id;});
@@ -2802,60 +2850,193 @@ function getReportData(labId){
 function generarPDF(labId){
   if(labId&&typeof labId==='object') labId=labId.dataset?labId.dataset.id:labId;
   toast('Generando PDF...','info');
-  var data=getReportData(labId);
   var {jsPDF}=window.jspdf;
-  var doc=new jsPDF({orientation:'landscape'});
-  var lab=data.lab;
-  // Header
-  doc.setFillColor(13,148,136);
-  doc.rect(0,0,297,20,'F');
-  doc.setTextColor(255,255,255);
-  doc.setFontSize(14);
-  doc.setFont(undefined,'bold');
-  doc.text('APPMED – Informe de Visitas: '+lab.name,14,13);
-  doc.setFontSize(9);
-  doc.setFont(undefined,'normal');
-  doc.text('Periodo: '+(data.desde||'Todo')+' al '+(data.hasta||'Todo'),200,13);
-  // Table
-  doc.setTextColor(0,0,0);
-  var cols=['Fecha','Visitador','Punto','Tipo','Médico','Especialidad','Estado','Notas'];
-  var rows=data.rows.map(function(r){return[r.fecha,r.visitador,r.punto,r.tipo,r.medico,r.especialidad,r.estado,r.notas];});
-  doc.autoTable({
-    head:[cols],
-    body:rows,
-    startY:25,
-    styles:{fontSize:8,cellPadding:3},
-    headStyles:{fillColor:[13,148,136],textColor:255,fontStyle:'bold'},
-    alternateRowStyles:{fillColor:[240,253,250]},
-    columnStyles:{7:{cellWidth:40}}
-  });
-  var pends=(D.pendientes||[]).filter(function(p){
-    var u=userById(p.userId);
-    if(!u) return false;
-    var fullAccess2=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral');
-    return labId?u.labId===labId:(fullAccess2?true:u.labId===currentLabId);
-  });
-  if(pends.length>0){
+  var doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  var W=297,H=210;
+  var isSuper=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral');
+  var labsToReport=labId==='__multi__'?(window._selectedLabs||LABS):labId?[LABS.find(function(l){return l.id===labId;})||{id:labId,name:labId,color:'#0d9488'}]
+    :(isSuper?LABS:LABS.filter(function(l){return l.id===currentLabId;}));
+  var periodoLabel=(rptDesde||'Todo')+' al '+(rptHasta||'Hoy');
+
+  function hexToRgb(h){h=h.replace('#','');return[parseInt(h.substring(0,2),16),parseInt(h.substring(2,4),16),parseInt(h.substring(4,6),16)];}
+  function setFill(h){var c=hexToRgb(h);doc.setFillColor(c[0],c[1],c[2]);}
+  function setTxt(h){var c=hexToRgb(h);doc.setTextColor(c[0],c[1],c[2]);}
+
+  // ── PORTADA ───────────────────────────────────────────────────
+  setFill('#1B3A6B'); doc.rect(0,0,W,H,'F');
+  setFill('#152F5A'); doc.rect(0,H-18,W,18,'F');
+  doc.setFontSize(9); setTxt('#8FAFD4'); doc.text('INFORME DE GESTIÓN · VISITADORES MÉDICOS',14,20);
+  doc.setFontSize(28); doc.setFont(undefined,'bold'); setTxt('#FFFFFF');
+  doc.text(labId?(LABS.find(function(l){return l.id===labId;})||{name:'General'}).name:'Todos los laboratorios',14,45);
+  doc.setFontSize(12); doc.setFont(undefined,'normal'); setTxt('#8FAFD4');
+  doc.text('Visitadores médicos · '+periodoLabel,14,58);
+  setFill('#FFFFFF'); doc.roundedRect(W-42,12,30,20,2,2,'F');
+  doc.setFontSize(9); doc.setFont(undefined,'bold'); setTxt('#1B3A6B'); doc.text('HELSE',W-27,20,{align:'center'});
+  doc.setFontSize(7); doc.setFont(undefined,'normal'); doc.text('Enjoy Life',W-27,26,{align:'center'});
+  doc.setFontSize(8); setTxt('#8FAFD4');
+  doc.text('Generado: '+today()+' · Admin: '+currentUser.name,14,H-10);
+  doc.text('Powered by APPMED by HELSE',W-14,H-10,{align:'right'});
+
+  labsToReport.forEach(function(lab,labIdx){
+    if(!lab) return;
+    var labVisits=(D.visits||[]).filter(function(v){
+      var matchLab=lab.id?v.labId===lab.id:true;
+      var matchDesde=rptDesde?v.date>=rptDesde:true;
+      var matchHasta=rptHasta?v.date<=rptHasta:true;
+      return matchLab&&matchDesde&&matchHasta;
+    });
+    var completed=labVisits.filter(function(v){return v.status==='completed';});
+    var labUsers=(D.users||[]).filter(function(u){return u.role==='visitor'&&(lab.id?u.labId===lab.id:true);});
+    var labPts=(D.points||[]).filter(function(p){return lab.id?p.labId===lab.id:true;});
+    var cumplimiento=Math.round((completed.length/Math.max(labPts.length,1))*100);
+    var labPends=(D.pendientes||[]).filter(function(p){var u=userById(p.userId);return u&&(lab.id?u.labId===lab.id:true);});
+    var pActivos=labPends.filter(function(p){return !p.resuelto;});
+    var pResueltos=labPends.filter(function(p){return p.resuelto;});
+    var pVencidos=pActivos.filter(function(p){return p.creadoAt&&(Date.now()-new Date(p.creadoAt).getTime())>7*86400000;});
+
+    // ── PÁGINA RESUMEN ────────────────────────────────────────────
     doc.addPage();
-    doc.setFillColor(13,148,136); doc.rect(0,0,297,20,'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont(undefined,'bold');
-    doc.text('Pendientes – '+lab.name,14,13);
-    doc.setTextColor(0,0,0);
+    setFill('#1B3A6B'); doc.rect(0,0,W,22,'F');
+    doc.setFontSize(14); doc.setFont(undefined,'bold'); setTxt('#FFFFFF');
+    doc.text('Resumen general · '+lab.name,10,14);
+    doc.setFontSize(8); doc.setFont(undefined,'normal'); setTxt('#8FAFD4');
+    doc.text(periodoLabel,10,20);
+    // Metric boxes
+    var metrics=[{val:cumplimiento+'%',lbl:'Cumplimiento',col:'#1D9E75'},{val:completed.length,lbl:'Visitas completadas',col:'#185FA5'},{val:pActivos.length,lbl:'Pendientes activos',col:'#E24B4A'},{val:pVencidos.length,lbl:'Pend. vencidos',col:'#BA7517'}];
+    metrics.forEach(function(m,i){
+      var x=10+i*70;
+      setFill('#F0F4F8'); doc.roundedRect(x,28,64,24,1,1,'F');
+      doc.setFontSize(18); doc.setFont(undefined,'bold'); setTxt(m.col); doc.text(String(m.val),x+32,42,{align:'center'});
+      doc.setFontSize(7); doc.setFont(undefined,'normal'); setTxt('#666666'); doc.text(m.lbl,x+32,50,{align:'center'});
+    });
+    // Per-visitor bars
+    doc.setFontSize(9); doc.setFont(undefined,'bold'); setTxt('#333333'); doc.text('Cumplimiento por visitador',10,62);
+    labUsers.slice(0,8).forEach(function(u,i){
+      var uv=completed.filter(function(v){return v.visitorId===u.id;});
+      var up=labPts.filter(function(p){return p.assignedTo===u.id;}).length||1;
+      var pct=Math.min(100,Math.round((uv.length/up)*100));
+      var y=68+i*10;
+      doc.setFontSize(7); doc.setFont(undefined,'normal'); setTxt('#333333'); doc.text(u.name,10,y+4);
+      setFill('#E8EDF2'); doc.rect(55,y,180,5,'F');
+      setFill(pct>=80?'#1D9E75':pct>=60?'#BA7517':'#E24B4A'); doc.rect(55,y,Math.max(0.5,180*pct/100),5,'F');
+      doc.setFontSize(7); setTxt('#666666'); doc.text(pct+'%',240,y+4);
+    });
+
+    // ── PÁGINA DETALLE VISITAS ────────────────────────────────────
+    doc.addPage();
+    setFill('#1B3A6B'); doc.rect(0,0,W,22,'F');
+    doc.setFontSize(14); doc.setFont(undefined,'bold'); setTxt('#FFFFFF'); doc.text('Detalle de visitas · '+lab.name,10,14);
+    doc.setFontSize(8); doc.setFont(undefined,'normal'); setTxt('#8FAFD4'); doc.text('Puntos visitados · tiempo por visita',10,20);
+    var totalTime=0,countTime=0,profTime=0,profCount=0;
+    completed.forEach(function(v){
+      if(v.arrivedAt&&v.completedAt){
+        var m=Math.round((new Date(v.completedAt)-new Date(v.arrivedAt))/60000);
+        if(m>0&&m<480){totalTime+=m;countTime++;if(v.type==='profesional'){profTime+=m;profCount++;}}
+      }
+    });
     doc.autoTable({
-      head:[['Visitador','Pendiente','Prioridad','Vence','Estado']],
-      body:pends.map(function(p){
-        var u=userById(p.userId)||{};
-        return [u.name||'',p.texto||'',
-          p.prioridad==='urgente'?'Urgente':p.prioridad==='semana'?'Esta semana':'Normal',
-          p.fechaLimite||'',p.resuelto?'Resuelto':'Pendiente'];
+      head:[['Punto visitado','Visitador','Tipo','Tiempo','Fecha']],
+      body:completed.slice(0,30).map(function(v){
+        var u=userById(v.visitorId)||{name:''};
+        var pt=pointById(v.pointId)||{};
+        var mins=0;
+        if(v.arrivedAt&&v.completedAt){mins=Math.round((new Date(v.completedAt)-new Date(v.arrivedAt))/60000);}
+        var ptLabel=v.type==='profesional'?(v.pointName?v.pointName+' · ':'')+String(v.placeName||''):(pt.name||v.placeName||'Visita');
+        return[ptLabel,u.name,v.type==='profesional'?'Profesional':'General',mins>0?mins+' min':'—',v.date||''];
       }),
-      startY:25,styles:{fontSize:8,cellPadding:3},
-      headStyles:{fillColor:[13,148,136],textColor:255,fontStyle:'bold'},
-      alternateRowStyles:{fillColor:[240,253,250]},
-      columnStyles:{1:{cellWidth:80}}
+      startY:26,styles:{fontSize:7.5,cellPadding:2},
+      headStyles:{fillColor:[27,58,107],textColor:255,fontStyle:'bold'},
+      alternateRowStyles:{fillColor:[245,248,250]},
+      columnStyles:{0:{cellWidth:90},2:{cellWidth:25},3:{cellWidth:20},4:{cellWidth:22}}
+    });
+    var avgT=countTime>0?Math.round(totalTime/countTime):0;
+    var avgP=profCount>0?Math.round(profTime/profCount):0;
+    var finalY=(doc.lastAutoTable.finalY||160)+5;
+    setFill('#E8F5F0'); doc.rect(10,finalY,W-20,10,'F');
+    doc.setFontSize(8); doc.setFont(undefined,'bold'); setTxt('#0F6E56');
+    doc.text('Promedio general: '+avgT+' min  ·  Promedio profesional: '+avgP+' min  ·  Total: '+completed.length+' visitas',14,finalY+6.5);
+
+    // ── PÁGINA PENDIENTES ─────────────────────────────────────────
+    doc.addPage();
+    setFill('#1B3A6B'); doc.rect(0,0,W,22,'F');
+    doc.setFontSize(14); doc.setFont(undefined,'bold'); setTxt('#FFFFFF'); doc.text('Gestión de pendientes · '+lab.name,10,14);
+    doc.setFontSize(8); doc.setFont(undefined,'normal'); setTxt('#8FAFD4'); doc.text('Activos · resueltos · vencidos sin gestión',10,20);
+    // Summary boxes
+    [{val:pActivos.length,lbl:'Activos',col:'#E24B4A',bg:'#FCEBEB'},{val:pResueltos.length,lbl:'Resueltos',col:'#1D9E75',bg:'#E1F5EE'},{val:pVencidos.length,lbl:'Vencidos',col:'#BA7517',bg:'#FAEEDA'}].forEach(function(m,i){
+      setFill(m.bg); doc.roundedRect(10+i*95,26,88,20,1,1,'F');
+      doc.setFontSize(16); doc.setFont(undefined,'bold'); setTxt(m.col); doc.text(String(m.val),54+i*95,38,{align:'center'});
+      doc.setFontSize(7); doc.setFont(undefined,'normal'); doc.text(m.lbl,54+i*95,43,{align:'center'});
+    });
+    // Active list left col
+    doc.setFontSize(8); doc.setFont(undefined,'bold'); setTxt('#333333'); doc.text('Pendientes activos',10,56);
+    pActivos.slice(0,8).forEach(function(p,i){
+      var u=userById(p.userId)||{name:''};
+      var col=p.prioridad==='urgente'?'#E24B4A':p.prioridad==='semana'?'#BA7517':'#888780';
+      setFill('#F8F9FA'); doc.rect(10,58+i*16,130,14,'F');
+      setFill(col); doc.rect(10,58+i*16,2,14,'F');
+      doc.setFontSize(7.5); doc.setFont(undefined,'bold'); setTxt('#222222');
+      doc.text(String(p.texto||'').substring(0,45),14,65+i*16);
+      doc.setFontSize(6.5); doc.setFont(undefined,'normal'); setTxt('#666666');
+      doc.text(u.name+' · '+(p.prioridad==='urgente'?'Urgente':p.prioridad==='semana'?'Esta semana':'Normal')+(p.fechaLimite?' · '+p.fechaLimite:''),14,70+i*16);
+    });
+    // Vencidos right col
+    doc.setFontSize(8); doc.setFont(undefined,'bold'); setTxt('#A32D2D'); doc.text('Vencidos sin gestión ⚠',148,56);
+    if(pVencidos.length===0){
+      setFill('#E1F5EE'); doc.rect(148,58,140,14,'F');
+      doc.setFontSize(8); setTxt('#1D9E75'); doc.text('Sin pendientes vencidos ✓',218,67,{align:'center'});
+    } else {
+      pVencidos.slice(0,6).forEach(function(p,i){
+        var u=userById(p.userId)||{name:''};
+        var dias=Math.round((Date.now()-new Date(p.creadoAt).getTime())/86400000);
+        setFill('#FCEBEB'); doc.rect(148,58+i*16,140,14,'F');
+        doc.setFontSize(7.5); doc.setFont(undefined,'bold'); setTxt('#A32D2D');
+        doc.text(String(p.texto||'').substring(0,45),152,65+i*16);
+        doc.setFontSize(6.5); doc.setFont(undefined,'normal');
+        doc.text(u.name+' · Hace '+dias+' días sin resolver',152,70+i*16);
+      });
+    }
+  });
+
+  // ── PÁGINA COMPARATIVA ────────────────────────────────────────
+  if(labsToReport.length>1){
+    doc.addPage();
+    setFill('#1B3A6B'); doc.rect(0,0,W,22,'F');
+    doc.setFontSize(14); doc.setFont(undefined,'bold'); setTxt('#FFFFFF'); doc.text('Comparativa entre laboratorios',10,14);
+    doc.setFontSize(8); doc.setFont(undefined,'normal'); setTxt('#8FAFD4'); doc.text(periodoLabel,10,20);
+    var labColors2=['#1D9E75','#185FA5','#BA7517','#534AB7','#E24B4A','#0F6E56'];
+    var cardWpdf=Math.min(60,260/labsToReport.length);
+    labsToReport.filter(Boolean).forEach(function(lab,i){
+      var lv=(D.visits||[]).filter(function(v){return v.labId===lab.id&&v.status==='completed'&&(!rptDesde||v.date>=rptDesde)&&(!rptHasta||v.date<=rptHasta);});
+      var lpts=(D.points||[]).filter(function(p){return p.labId===lab.id;}).length||1;
+      var pct=Math.min(100,Math.round((lv.length/lpts)*100));
+      var lpends=(D.pendientes||[]).filter(function(p){var u=userById(p.userId);return u&&u.labId===lab.id&&!p.resuelto;});
+      var lvenc=lpends.filter(function(p){return p.creadoAt&&(Date.now()-new Date(p.creadoAt).getTime())>7*86400000;});
+      var col=labColors2[i%labColors2.length];
+      var x=10+i*cardWpdf;
+      setFill('#F5F8FA'); doc.rect(x,26,cardWpdf-3,35,'F');
+      doc.setFontSize(7); doc.setFont(undefined,'bold'); setTxt(col); doc.text(lab.name,x+2,33);
+      doc.setFontSize(14); doc.text(pct+'%',x+(cardWpdf-3)/2,48,{align:'center'});
+      doc.setFontSize(6); doc.setFont(undefined,'normal'); setTxt('#666666');
+      doc.text(lv.length+' visitas',x+2,54);
+      doc.text(lvenc.length+' vencidos',x+2,59);
+    });
+    // Bar chart comparison
+    doc.setFontSize(9); doc.setFont(undefined,'bold'); setTxt('#333333'); doc.text('% Cumplimiento comparativo',10,75);
+    var sorted2=labsToReport.filter(Boolean).map(function(lab){
+      var lv=(D.visits||[]).filter(function(v){return v.labId===lab.id&&v.status==='completed'&&(!rptDesde||v.date>=rptDesde)&&(!rptHasta||v.date<=rptHasta);});
+      var lpts=(D.points||[]).filter(function(p){return p.labId===lab.id;}).length||1;
+      return{name:lab.name,pct:Math.min(100,Math.round((lv.length/lpts)*100))};
+    }).sort(function(a,b){return b.pct-a.pct;});
+    sorted2.forEach(function(l,i){
+      var col=labColors2[i%labColors2.length];
+      doc.setFontSize(7); doc.setFont(undefined,'normal'); setTxt('#333333'); doc.text(l.name,10,83+i*10);
+      setFill('#E8EDF2'); doc.rect(65,79+i*10,180,5,'F');
+      setFill(col); doc.rect(65,79+i*10,Math.max(0.5,180*l.pct/100),5,'F');
+      doc.setFontSize(7); setTxt('#666666'); doc.text(l.pct+'%',250,83+i*10);
     });
   }
-  doc.save('Informe_'+lab.name+'_'+today()+'.pdf');
+
+  doc.save('Informe_APPMED_'+(labId||'General')+'_'+today()+'.pdf');
 }
 
 function generarExcel(labId){
@@ -2926,46 +3107,206 @@ function generarExcel(labId){
 function generarPPTX(labId){
   if(labId&&typeof labId==='object') labId=labId.dataset?labId.dataset.id:labId;
   toast('Generando PPTX...','info');
-  var data=getReportData(labId);
   var pptx=new PptxGenJS();
   pptx.layout='LAYOUT_WIDE';
-  // Slide 1 - Portada
+  pptx.author='APPMED by HELSE';
+
+  var isSuper=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral');
+  var labsToReport=labId==='__multi__'?(window._selectedLabs||LABS):labId?[LABS.find(function(l){return l.id===labId;})||{id:labId,name:labId,color:'#0d9488',icon:'fa-flask'}]
+    :(isSuper?LABS:LABS.filter(function(l){return l.id===currentLabId;}));
+
+  var periodoLabel=(rptDesde||'Todo')+' al '+(rptHasta||'Hoy');
+
+  // ── SLIDE 1: PORTADA ────────────────────────────────────────────
   var s1=pptx.addSlide();
-  s1.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:'100%',fill:{color:'0d9488'}});
-  s1.addText('APPMED',{x:1,y:1.5,w:8,h:1.2,fontSize:48,bold:true,color:'FFFFFF',align:'center'});
-  s1.addText('Informe de Visitas – '+data.lab.name,{x:1,y:3,w:8,h:0.7,fontSize:22,color:'CCFBF1',align:'center'});
-  s1.addText('Periodo: '+(data.desde||'Todo')+' al '+(data.hasta||'Todo'),{x:1,y:3.9,w:8,h:0.5,fontSize:14,color:'CCFBF1',align:'center'});
-  // Slide 2 - Resumen
-  var s2=pptx.addSlide();
-  s2.addText('Resumen del Periodo',{x:0.5,y:0.3,w:9,h:0.6,fontSize:24,bold:true,color:'0d9488'});
-  var total=data.rows.length;
-  var completadas=data.rows.filter(function(r){return r.estado==='Completada';}).length;
-  var enCurso=data.rows.filter(function(r){return r.estado==='En curso';}).length;
-  var stats=[['Total visitas',total],['Completadas',completadas],['En curso',enCurso],['Pendientes',total-completadas-enCurso]];
-  stats.forEach(function(st,i){
-    s2.addShape(pptx.ShapeType.rect,{x:0.5+i*2.4,y:1.2,w:2.1,h:1.4,fill:{color:i===0?'0d9488':i===1?'059669':i===2?'0284c7':'6b7280'},line:{color:'FFFFFF'}});
-    s2.addText(String(st[1]),{x:0.5+i*2.4,y:1.4,w:2.1,h:0.7,fontSize:32,bold:true,color:'FFFFFF',align:'center'});
-    s2.addText(st[0],{x:0.5+i*2.4,y:2.1,w:2.1,h:0.4,fontSize:11,color:'FFFFFF',align:'center'});
-  });
-  // Slide 3 - Tabla de visitas
-  if(data.rows.length>0){
-    var s3=pptx.addSlide();
-    s3.addText('Detalle de Visitas',{x:0.5,y:0.3,w:9,h:0.6,fontSize:24,bold:true,color:'0d9488'});
-    var tableRows=[
-      [{text:'Fecha',options:{bold:true,fill:'0d9488',color:'FFFFFF'}},{text:'Visitador',options:{bold:true,fill:'0d9488',color:'FFFFFF'}},{text:'Punto',options:{bold:true,fill:'0d9488',color:'FFFFFF'}},{text:'Tipo',options:{bold:true,fill:'0d9488',color:'FFFFFF'}},{text:'Estado',options:{bold:true,fill:'0d9488',color:'FFFFFF'}}]
-    ];
-    data.rows.slice(0,20).forEach(function(r,i){
-      tableRows.push([
-        {text:r.fecha,options:{fill:i%2===0?'F0FDF4':'FFFFFF'}},
-        {text:r.visitador,options:{fill:i%2===0?'F0FDF4':'FFFFFF'}},
-        {text:r.punto,options:{fill:i%2===0?'F0FDF4':'FFFFFF'}},
-        {text:r.tipo,options:{fill:i%2===0?'F0FDF4':'FFFFFF'}},
-        {text:r.estado,options:{fill:i%2===0?'F0FDF4':'FFFFFF'}}
-      ]);
+  s1.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:'100%',fill:{color:'1B3A6B'}});
+  s1.addShape(pptx.ShapeType.rect,{x:0,y:4.8,w:'100%',h:0.6,fill:{color:'152F5A'}});
+  s1.addText('INFORME DE GESTIÓN · VISITADORES MÉDICOS',{x:0.5,y:0.4,w:7,h:0.4,fontSize:10,color:'8FAFD4',bold:false,charSpacing:2});
+  s1.addText(labId?(LABS.find(function(l){return l.id===labId;})||{name:'General'}).name:'Todos los laboratorios',{x:0.5,y:0.9,w:7,h:1.1,fontSize:32,color:'FFFFFF',bold:true});
+  s1.addText('Visitadores médicos · '+periodoLabel,{x:0.5,y:2.1,w:7,h:0.4,fontSize:13,color:'8FAFD4'});
+  s1.addShape(pptx.ShapeType.rect,{x:7.8,y:0.5,w:1.5,h:1.5,fill:{color:'FFFFFF'},rounding:0.1});
+  s1.addText('HELSE
+Enjoy Life',{x:7.8,y:0.7,w:1.5,h:1.1,fontSize:10,color:'1B3A6B',bold:true,align:'center'});
+  s1.addText('Generado: '+today()+' · Admin: '+currentUser.name,{x:0.5,y:5.0,w:8,h:0.3,fontSize:9,color:'8FAFD4'});
+  s1.addText('Powered by APPMED',{x:0.5,y:5.3,w:8,h:0.2,fontSize:8,color:'5A7FAA'});
+
+  // ── Por cada laboratorio a reportar ─────────────────────────────
+  labsToReport.forEach(function(lab){
+    if(!lab) return;
+    var labVisits=(D.visits||[]).filter(function(v){
+      var matchLab=lab.id?v.labId===lab.id:true;
+      var matchDesde=rptDesde?v.date>=rptDesde:true;
+      var matchHasta=rptHasta?v.date<=rptHasta:true;
+      return matchLab&&matchDesde&&matchHasta;
     });
-    s3.addTable(tableRows,{x:0.3,y:1.1,w:9.4,colW:[1.4,2,2.2,2,1.8],fontSize:9});
+    var completed=labVisits.filter(function(v){return v.status==='completed';});
+    var labUsers=(D.users||[]).filter(function(u){return u.role==='visitor'&&(lab.id?u.labId===lab.id:true);});
+    var labPts=(D.points||[]).filter(function(p){return lab.id?p.labId===lab.id:true;});
+    var totalPts=labPts.length||1;
+    var cumplimiento=Math.round((completed.length/Math.max(totalPts,1))*100);
+    var labPends=(D.pendientes||[]).filter(function(p){var u=userById(p.userId);return u&&(lab.id?u.labId===lab.id:true);});
+    var pActivos=labPends.filter(function(p){return !p.resuelto;});
+    var pResueltos=labPends.filter(function(p){return p.resuelto;});
+    var pVencidos=pActivos.filter(function(p){
+      if(!p.creadoAt) return false;
+      return (Date.now()-new Date(p.creadoAt).getTime())>7*86400000;
+    });
+
+    // ── SLIDE 2: RESUMEN ──────────────────────────────────────────
+    var s2=pptx.addSlide();
+    s2.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:0.9,fill:{color:'1B3A6B'}});
+    s2.addText('Resumen general · '+lab.name,{x:0.3,y:0.15,w:7,h:0.4,fontSize:16,color:'FFFFFF',bold:true});
+    s2.addText(periodoLabel,{x:0.3,y:0.55,w:7,h:0.25,fontSize:9,color:'8FAFD4'});
+    // 4 metric boxes
+    var metrics=[
+      {val:cumplimiento+'%',lbl:'Cumplimiento',col:'1D9E75'},
+      {val:completed.length,lbl:'Visitas completadas',col:'185FA5'},
+      {val:pActivos.length,lbl:'Pendientes activos',col:'E24B4A'},
+      {val:pVencidos.length,lbl:'Pend. vencidos',col:'BA7517'}
+    ];
+    metrics.forEach(function(m,i){
+      var x=0.3+i*2.35;
+      s2.addShape(pptx.ShapeType.rect,{x:x,y:1.1,w:2.2,h:1.0,fill:{color:'F0F4F8'},line:{color:'E0E8F0',pt:1}});
+      s2.addText(String(m.val),{x:x,y:1.2,w:2.2,h:0.55,fontSize:26,bold:true,color:m.col,align:'center'});
+      s2.addText(m.lbl,{x:x,y:1.75,w:2.2,h:0.3,fontSize:9,color:'666666',align:'center'});
+    });
+    // Per-visitor bars
+    s2.addText('Cumplimiento por visitador',{x:0.3,y:2.3,w:9,h:0.3,fontSize:10,bold:true,color:'333333'});
+    labUsers.slice(0,8).forEach(function(u,i){
+      var userVisits=completed.filter(function(v){return v.visitorId===u.id;});
+      var userPts=labPts.filter(function(p){return p.assignedTo===u.id;}).length||1;
+      var pct=Math.min(100,Math.round((userVisits.length/userPts)*100));
+      var y=2.7+i*0.42;
+      s2.addText(u.name,{x:0.3,y:y,w:1.8,h:0.3,fontSize:9,color:'333333'});
+      s2.addShape(pptx.ShapeType.rect,{x:2.2,y:y+0.05,w:6.5,h:0.2,fill:{color:'E8EDF2'}});
+      s2.addShape(pptx.ShapeType.rect,{x:2.2,y:y+0.05,w:Math.max(0.05,6.5*pct/100),h:0.2,fill:{color:pct>=80?'1D9E75':pct>=60?'BA7517':'E24B4A'}});
+      s2.addText(pct+'%',{x:8.8,y:y,w:0.6,h:0.3,fontSize:9,color:'666666',align:'right'});
+    });
+
+    // ── SLIDE 3: DETALLE DE VISITAS ───────────────────────────────
+    var s3=pptx.addSlide();
+    s3.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:0.9,fill:{color:'1B3A6B'}});
+    s3.addText('Detalle de visitas · '+lab.name,{x:0.3,y:0.15,w:7,h:0.4,fontSize:16,color:'FFFFFF',bold:true});
+    s3.addText('Puntos visitados · tiempo por visita',{x:0.3,y:0.55,w:7,h:0.25,fontSize:9,color:'8FAFD4'});
+    // Table headers
+    var hdrs=['Punto visitado','Visitador','Tipo','Tiempo','Fecha'];
+    var colW=[3.2,1.8,1.2,0.9,1.0];
+    var colX=[0.2];
+    colW.forEach(function(w,i){if(i>0)colX.push(colX[i-1]+colW[i-1]);});
+    hdrs.forEach(function(h,i){
+      s3.addShape(pptx.ShapeType.rect,{x:colX[i],y:1.0,w:colW[i],h:0.35,fill:{color:'1B3A6B'}});
+      s3.addText(h,{x:colX[i]+0.05,y:1.0,w:colW[i]-0.1,h:0.35,fontSize:8,color:'FFFFFF',bold:true});
+    });
+    var totalTime=0,countTime=0;
+    completed.slice(0,14).forEach(function(v,i){
+      var u=userById(v.visitorId)||{name:''};
+      var pt=pointById(v.pointId)||{};
+      var mins=0;
+      if(v.arrivedAt&&v.completedAt){
+        mins=Math.round((new Date(v.completedAt)-new Date(v.arrivedAt))/60000);
+        if(mins>0){totalTime+=mins;countTime++;}
+      }
+      var isProf=v.type==='profesional';
+      var rowBg=i%2===0?'FFFFFF':'F5F8FA';
+      var y=1.4+i*0.28;
+      colW.forEach(function(w,ci){s3.addShape(pptx.ShapeType.rect,{x:colX[ci],y:y,w:w,h:0.26,fill:{color:rowBg}});});
+      var ptLabel=isProf?(v.pointName?v.pointName+' · ':'')+esc2(v.placeName||''):esc2(pt.name||v.placeName||'Visita');
+      s3.addText(ptLabel,{x:colX[0]+0.05,y:y,w:colW[0]-0.1,h:0.26,fontSize:7.5,color:'222222'});
+      s3.addText(u.name.split(' ')[0]||'',{x:colX[1]+0.05,y:y,w:colW[1]-0.1,h:0.26,fontSize:7.5,color:'444444'});
+      s3.addText(isProf?'Profesional':'General',{x:colX[2]+0.05,y:y,w:colW[2]-0.1,h:0.26,fontSize:7.5,color:isProf?'534AB7':'0F6E56'});
+      s3.addText(mins>0?mins+' min':'—',{x:colX[3]+0.05,y:y,w:colW[3]-0.1,h:0.26,fontSize:7.5,color:'444444'});
+      s3.addText(v.date||'',{x:colX[4]+0.05,y:y,w:colW[4]-0.1,h:0.26,fontSize:7.5,color:'444444'});
+    });
+    var avgTime=countTime>0?Math.round(totalTime/countTime):0;
+    var profTime=0,profCount=0;
+    completed.forEach(function(v){
+      if(v.type==='profesional'&&v.arrivedAt&&v.completedAt){
+        var m=Math.round((new Date(v.completedAt)-new Date(v.arrivedAt))/60000);
+        if(m>0){profTime+=m;profCount++;}
+      }
+    });
+    s3.addShape(pptx.ShapeType.rect,{x:0.2,y:5.3,w:9.1,h:0.4,fill:{color:'E8F5F0'}});
+    s3.addText('Promedio general: '+avgTime+' min  ·  Promedio visita profesional: '+(profCount>0?Math.round(profTime/profCount):0)+' min  ·  Total visitas: '+completed.length,{x:0.3,y:5.32,w:9,h:0.35,fontSize:9,color:'0F6E56',bold:true});
+
+    // ── SLIDE 4: PENDIENTES ───────────────────────────────────────
+    var s4=pptx.addSlide();
+    s4.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:0.9,fill:{color:'1B3A6B'}});
+    s4.addText('Gestión de pendientes · '+lab.name,{x:0.3,y:0.15,w:7,h:0.4,fontSize:16,color:'FFFFFF',bold:true});
+    s4.addText('Activos · resueltos · vencidos sin gestión',{x:0.3,y:0.55,w:7,h:0.25,fontSize:9,color:'8FAFD4'});
+    // Summary boxes
+    [{val:pActivos.length,lbl:'Activos',col:'E24B4A',bg:'FCEBEB'},{val:pResueltos.length,lbl:'Resueltos',col:'1D9E75',bg:'E1F5EE'},{val:pVencidos.length,lbl:'Vencidos',col:'BA7517',bg:'FAEEDA'}].forEach(function(m,i){
+      var x=0.3+i*3.1;
+      s4.addShape(pptx.ShapeType.rect,{x:x,y:1.0,w:2.8,h:0.8,fill:{color:m.bg},line:{color:m.col,pt:1}});
+      s4.addText(String(m.val),{x:x,y:1.05,w:2.8,h:0.45,fontSize:22,bold:true,color:m.col,align:'center'});
+      s4.addText(m.lbl,{x:x,y:1.52,w:2.8,h:0.25,fontSize:9,color:m.col,align:'center'});
+    });
+    // Active pendientes list
+    s4.addText('Pendientes activos',{x:0.3,y:2.0,w:4.5,h:0.3,fontSize:10,bold:true,color:'333333'});
+    pActivos.slice(0,6).forEach(function(p,i){
+      var u=userById(p.userId)||{name:''};
+      var col=p.prioridad==='urgente'?'E24B4A':p.prioridad==='semana'?'BA7517':'888780';
+      s4.addShape(pptx.ShapeType.rect,{x:0.3,y:2.35+i*0.48,w:4.3,h:0.42,fill:{color:'F8F9FA'},line:{color:'E0E0E0',pt:1}});
+      s4.addShape(pptx.ShapeType.rect,{x:0.3,y:2.35+i*0.48,w:0.08,h:0.42,fill:{color:col}});
+      s4.addText(p.texto||'',{x:0.5,y:2.38+i*0.48,w:3.5,h:0.22,fontSize:8,color:'222222'});
+      s4.addText(u.name+' · '+(p.prioridad==='urgente'?'Urgente':p.prioridad==='semana'?'Esta semana':'Normal')+(p.fechaLimite?' · '+p.fechaLimite:''),{x:0.5,y:2.6+i*0.48,w:4,h:0.18,fontSize:7,color:'666666'});
+    });
+    // Vencidos list
+    s4.addText('Vencidos sin gestión ⚠',{x:5.0,y:2.0,w:4.3,h:0.3,fontSize:10,bold:true,color:'A32D2D'});
+    if(pVencidos.length===0){
+      s4.addShape(pptx.ShapeType.rect,{x:5.0,y:2.35,w:4.3,h:0.5,fill:{color:'E1F5EE'}});
+      s4.addText('Sin pendientes vencidos ✓',{x:5.0,y:2.45,w:4.3,h:0.3,fontSize:10,color:'1D9E75',align:'center'});
+    } else {
+      pVencidos.slice(0,5).forEach(function(p,i){
+        var u=userById(p.userId)||{name:''};
+        var dias=Math.round((Date.now()-new Date(p.creadoAt).getTime())/86400000);
+        s4.addShape(pptx.ShapeType.rect,{x:5.0,y:2.35+i*0.52,w:4.3,h:0.46,fill:{color:'FCEBEB'},line:{color:'F09595',pt:1}});
+        s4.addText(p.texto||'',{x:5.1,y:2.38+i*0.52,w:4.1,h:0.22,fontSize:8,color:'A32D2D',bold:true});
+        s4.addText(u.name+' · Hace '+dias+' días sin resolver',{x:5.1,y:2.60+i*0.52,w:4.1,h:0.18,fontSize:7,color:'A32D2D'});
+      });
+    }
+  });
+
+  // ── SLIDE 5: COMPARATIVA (solo si hay múltiples labs) ───────────
+  if(labsToReport.length>1){
+    var s5=pptx.addSlide();
+    s5.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:0.9,fill:{color:'1B3A6B'}});
+    s5.addText('Comparativa entre laboratorios',{x:0.3,y:0.15,w:7,h:0.4,fontSize:16,color:'FFFFFF',bold:true});
+    s5.addText(periodoLabel,{x:0.3,y:0.55,w:7,h:0.25,fontSize:9,color:'8FAFD4'});
+    var labColors=['1D9E75','185FA5','BA7517','534AB7','E24B4A','0F6E56'];
+    var cardW=Math.min(2.8,9.1/labsToReport.length);
+    labsToReport.forEach(function(lab,i){
+      if(!lab) return;
+      var lv=(D.visits||[]).filter(function(v){return v.labId===lab.id&&v.status==='completed'&&(!rptDesde||v.date>=rptDesde)&&(!rptHasta||v.date<=rptHasta);});
+      var lpts=(D.points||[]).filter(function(p){return p.labId===lab.id;}).length||1;
+      var pct=Math.min(100,Math.round((lv.length/lpts)*100));
+      var lpends=(D.pendientes||[]).filter(function(p){var u=userById(p.userId);return u&&u.labId===lab.id&&!p.resuelto;});
+      var lvenc=lpends.filter(function(p){return p.creadoAt&&(Date.now()-new Date(p.creadoAt).getTime())>7*86400000;});
+      var col=labColors[i%labColors.length];
+      var x=0.2+i*cardW;
+      s5.addShape(pptx.ShapeType.rect,{x:x,y:1.0,w:cardW-0.15,h:1.4,fill:{color:'F5F8FA'},line:{color:col,pt:1}});
+      s5.addText(lab.name,{x:x+0.1,y:1.05,w:cardW-0.3,h:0.28,fontSize:10,bold:true,color:col});
+      s5.addText(pct+'%',{x:x+0.1,y:1.35,w:cardW-0.3,h:0.45,fontSize:22,bold:true,color:col});
+      s5.addText(lv.length+' visitas',{x:x+0.1,y:1.82,w:cardW-0.3,h:0.2,fontSize:8,color:'666666'});
+      s5.addText(lvenc.length+' vencidos',{x:x+0.1,y:2.02,w:cardW-0.3,h:0.2,fontSize:8,color:lvenc.length>0?'E24B4A':'1D9E75'});
+    });
+    s5.addText('% Cumplimiento comparativo',{x:0.3,y:2.7,w:9,h:0.3,fontSize:10,bold:true,color:'333333'});
+    var sorted=labsToReport.filter(Boolean).map(function(lab){
+      var lv=(D.visits||[]).filter(function(v){return v.labId===lab.id&&v.status==='completed'&&(!rptDesde||v.date>=rptDesde)&&(!rptHasta||v.date<=rptHasta);});
+      var lpts=(D.points||[]).filter(function(p){return p.labId===lab.id;}).length||1;
+      return {name:lab.name,pct:Math.min(100,Math.round((lv.length/lpts)*100))};
+    }).sort(function(a,b){return b.pct-a.pct;});
+    sorted.forEach(function(l,i){
+      var col=labColors[i%labColors.length];
+      s5.addText(l.name,{x:0.3,y:3.1+i*0.42,w:1.8,h:0.3,fontSize:9,color:'333333'});
+      s5.addShape(pptx.ShapeType.rect,{x:2.2,y:3.15+i*0.42,w:6.5,h:0.2,fill:{color:'E8EDF2'}});
+      s5.addShape(pptx.ShapeType.rect,{x:2.2,y:3.15+i*0.42,w:Math.max(0.05,6.5*l.pct/100),h:0.2,fill:{color:col}});
+      s5.addText(l.pct+'%',{x:8.8,y:3.1+i*0.42,w:0.6,h:0.3,fontSize:9,color:'666666',align:'right'});
+    });
   }
-  pptx.writeFile({fileName:'Informe_'+data.lab.name+'_'+today()+'.pptx'});
+
+  function esc2(s){return String(s||'').replace(/[<>&"]/g,function(c){return{'<':'','>'':'','&':'','"':''}[c];});}
+
+  pptx.writeFile({fileName:'Informe_APPMED_'+(labId||'General')+'_'+today()+'.pptx'});
 }
 
 /* ------------------------------------------------------------------
