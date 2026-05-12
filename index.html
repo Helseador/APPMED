@@ -3125,8 +3125,7 @@ function generarPPTX(labId){
   s1.addText(labId?(LABS.find(function(l){return l.id===labId;})||{name:'General'}).name:'Todos los laboratorios',{x:0.5,y:0.9,w:7,h:1.1,fontSize:32,color:'FFFFFF',bold:true});
   s1.addText('Visitadores médicos · '+periodoLabel,{x:0.5,y:2.1,w:7,h:0.4,fontSize:13,color:'8FAFD4'});
   s1.addShape(pptx.ShapeType.rect,{x:7.8,y:0.5,w:1.5,h:1.5,fill:{color:'FFFFFF'},rounding:0.1});
-  s1.addText('HELSE
-Enjoy Life',{x:7.8,y:0.7,w:1.5,h:1.1,fontSize:10,color:'1B3A6B',bold:true,align:'center'});
+  s1.addText('HELSE  Enjoy Life',{x:7.8,y:0.7,w:1.5,h:1.1,fontSize:10,color:'1B3A6B',bold:true,align:'center'});
   s1.addText('Generado: '+today()+' · Admin: '+currentUser.name,{x:0.5,y:5.0,w:8,h:0.3,fontSize:9,color:'8FAFD4'});
   s1.addText('Powered by APPMED',{x:0.5,y:5.3,w:8,h:0.2,fontSize:8,color:'5A7FAA'});
 
