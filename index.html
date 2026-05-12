@@ -2616,7 +2616,7 @@ function renderVisitorSemana(){
     var pts=allMyPts.filter(function(p){return (p.routeName||'Sin ruta')===rn;}).sort(function(a,b){return a.order-b.order;});
     var done=(D.visits||[]).filter(function(v){return v.userId===currentUser.id && pts.some(function(p){return p.id===v.pointId;}) && v.status==='completed';}).length;
     var pct=pts.length?Math.round(done/pts.length*100):0;
-    html+='<div style="background:var(--surface);border-radius:14px;padding:18px 20px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow);" onclick="setVisitRoute(\'' + rn.replace(/'/g,'') + '\')">';
+    html+='<div style="background:var(--surface);border-radius:14px;padding:18px 20px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow);" onclick="setVisitRoute(this.dataset.rn)" data-rn="'+encodeURIComponent(rn)+'">';
     html+='<div style="display:flex;justify-content:space-between;align-items:center;">';
     html+='<div style="font-weight:700;font-size:15px;">'+rn+'</div>';
     html+='<div style="font-weight:700;color:'+(pct===100?'var(--success)':'var(--primary)')+';">'+pct+'%</div>';
@@ -3303,7 +3303,7 @@ function generarPPTX(labId){
     });
   }
 
-  function esc2(s){return String(s||'').replace(/[<>&"]/g,function(c){return{'<':'','>'':'','&':'','"':''}[c];});}
+  function esc2(s){return String(s||'').substring(0,60);}
 
   pptx.writeFile({fileName:'Informe_APPMED_'+(labId||'General')+'_'+today()+'.pptx'});
 }
