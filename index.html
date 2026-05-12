@@ -1479,13 +1479,19 @@ function doLogin(){
   }
   currentUser={id:user.id,username:user.username,role:user.role,name:user.name,labId:user.labId||'',freeVisit:user.freeVisit===true,active:user.active};
   err.textContent=''; loginAttempts=0; att.style.display='none'; resetSession();
-  if(user.role==='admin'){
+  if(user.role==='adminGeneral'){
+    // Admin General → selector de labs
     currentLabId=null;
-    showScreen('labSelectScreen');
-    document.getElementById('labSelectGreeting').textContent=getGreeting()+', '+user.name.split(' ')[0]+'   Selecciona un laboratorio';
-    renderLabSelect();
+    showScreen('adminScreen');
+    renderAdmin();
     toast(getGreeting()+', '+user.name.split(' ')[0]+'!');
-  }else{
+  } else if(user.role==='admin'){
+    // Admin normal → directo a su lab
+    currentLabId=user.labId||null;
+    showScreen('adminScreen');
+    renderAdmin();
+    toast(getGreeting()+', '+user.name.split(' ')[0]+'!');
+  } else {
     gpsPermission='unknown';
     showGpsPermOverlay();
     toast(getGreeting()+', '+user.name.split(' ')[0]+'!');
