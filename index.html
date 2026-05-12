@@ -1250,23 +1250,42 @@ function initFirebase(){
     });
 
   // Escuchar cambios en tiempo real por colección
+  // Debounce: evita múltiples renders seguidos
+  var _renderTimer=null;
+  function scheduleRender(){
+    if(_renderTimer) clearTimeout(_renderTimer);
+    _renderTimer=setTimeout(function(){
+      _renderTimer=null;
+      renderCurrentScreen();
+    }, 400); // espera 400ms antes de renderizar
+  }
+
   dbRef.ref('medvisit/visits').on('value',function(snap){
     var remote=snap.val();
-    D.visits=toArray(remote);
+    var newVisits=toArray(remote);
+    // Solo actualizar si hubo cambios reales
+    if(JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
+    D.visits=newVisits;
     saveLocal(D);
     showSyncIndicator();
-    renderCurrentScreen();
+    scheduleRender();
   });
   dbRef.ref('medvisit/users').on('value',function(snap){
     var remote=snap.val();
-    D.users=toArray(remote);
+    var newUsers=toArray(remote);
+    if(JSON.stringify(newUsers)===JSON.stringify(D.users)) return;
+    D.users=newUsers;
     saveLocal(D);
-    renderCurrentScreen();
+    scheduleRender();
   });
   dbRef.ref('medvisit/points').on('value',function(snap){
     var remote=snap.val();
-    D.points=toArray(remote);
+    var newPts=toArray(remote);
+    if(JSON.stringify(newPts)===JSON.stringify(D.points)) return;
+    D.points=newPts;
     saveLocal(D);
+    // Points changes don't need full re-render unless visitor is viewing routes
+    if(currentUser&&currentUser.role==='visitor') scheduleRender();
   });
   dbRef.ref('medvisit/labs').on('value',function(snap){
     var remote=snap.val();
@@ -1275,8 +1294,10 @@ function initFirebase(){
   });
   dbRef.ref('medvisit/pendientes').on('value',function(snap){
     var remote=snap.val();
-    D.pendientes=toArray(remote||[]);
-    renderCurrentScreen();
+    var newPends=toArray(remote||[]);
+    if(JSON.stringify(newPends)===JSON.stringify(D.pendientes)) return;
+    D.pendientes=newPends;
+    scheduleRender();
   });
 }
 
@@ -1329,7 +1350,15 @@ function populateLabSelects(){
 /* ------------------------------------------------------------------
    GUARDADO LOCAL / FIREBASE
    ------------------------------------------------------------------ */
-function saveLocal(d){try{localStorage.setItem('medvisit_v5',JSON.stringify(d));}catch(e){}}
+function saveLocal(d){
+  // Defer localStorage write to avoid blocking UI
+  var toSave=d;
+  if(typeof requestIdleCallback!=='undefined'){
+    requestIdleCallback(function(){try{localStorage.setItem('medvisit_v5',JSON.stringify(toSave));}catch(e){}});
+  } else {
+    setTimeout(function(){try{localStorage.setItem('medvisit_v5',JSON.stringify(toSave));}catch(e){}},0);
+  }
+}
 function save(d){
   saveLocal(d);
   if(firebaseReady && dbRef){
@@ -1424,6 +1453,8 @@ function showSyncIndicator(){
 }
 function renderCurrentScreen(){
   if(!currentUser) return;
+  // Skip render if tab is hidden (saves battery and CPU on mobile)
+  if(document.hidden) return;
   if(currentUser.role==='super'){
     if(currentSuperTab==='users') renderSuperUsers();
     else if(currentSuperTab==='sVisitas') renderSuperVisitas();
