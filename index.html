@@ -1007,7 +1007,10 @@ function importarDesdeExcel(){
    PENDIENTES
    ------------------------------------------------------------------ */
 function getPendientesUsuario(userId){
-  return (D.pendientes||[]).filter(function(p){return p.userId===userId;});
+  var isSuper=currentUser&&currentUser.role==='super';
+  return (D.pendientes||[]).filter(function(p){
+    return p.userId===userId&&(isSuper?true:!p.eliminado);
+  });
 }
 
 function savePendiente(p){
@@ -1057,8 +1060,29 @@ function eliminarPendiente(pid){
   if(pid&&typeof pid==='object') pid=pid.dataset?pid.dataset.id:pid;
   var idx=(D.pendientes||[]).findIndex(function(p){return p.id===pid;});
   if(idx<0) return;
-  D.pendientes.splice(idx,1);
-  dbRef.ref('medvisit/pendientes').set(D.pendientes).catch(function(err){console.error(err);});
+  var p=D.pendientes[idx];
+  var isSuper=currentUser&&currentUser.role==='super';
+  // Verificar permisos: admin solo puede eliminar de su lab
+  if(!isSuper){
+    var u=userById(p.userId);
+    var isGeneral=currentUser&&currentUser.role==='adminGeneral';
+    if(!isGeneral&&u&&u.labId!==currentLabId){
+      toast('No tienes permiso para eliminar este pendiente','err');
+      return;
+    }
+  }
+  if(isSuper){
+    // SuperAdmin: borrado fisico real
+    D.pendientes.splice(idx,1);
+    dbRef.ref('medvisit/pendientes').set(D.pendientes).catch(function(err){console.error(err);});
+  } else {
+    // Admin/AdminGeneral: borrado suave, queda oculto pero el super lo ve
+    D.pendientes[idx].eliminado=true;
+    D.pendientes[idx].eliminadoPor=currentUser.name;
+    D.pendientes[idx].eliminadoPorId=currentUser.id;
+    D.pendientes[idx].eliminadoAt=new Date().toISOString();
+    savePendiente(D.pendientes[idx]);
+  }
   saveLocal(D);
   renderCurrentScreen();
   toast('Pendiente eliminado');
@@ -1066,10 +1090,13 @@ function eliminarPendiente(pid){
 
 function renderPendientesSection(userId, containerEl, showResolved){
   var all=getPendientesUsuario(userId);
-  var activos=all.filter(function(p){return !p.resuelto;});
-  var resueltos=all.filter(function(p){return p.resuelto;});
   var isOwner=currentUser.id===userId;
-  var isAdminOrSuper=currentUser.role==='admin'||currentUser.role==='super';
+  var isSuper=currentUser.role==='super';
+  var isAdminOrSuper=currentUser.role==='admin'||currentUser.role==='adminGeneral'||isSuper;
+  // SuperAdmin ve todo incluyendo eliminados. Los demas no ven los eliminados.
+  var activos=all.filter(function(p){return !p.resuelto&&(isSuper?true:!p.eliminado);});
+  var resueltos=all.filter(function(p){return p.resuelto&&(isSuper?true:!p.eliminado);});
+  var eliminados=isSuper?all.filter(function(p){return p.eliminado;}):[];
 
   var html='';
 
@@ -1128,6 +1155,22 @@ function renderPendientesSection(userId, containerEl, showResolved){
       html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);gap:8px;">';
       html+='<div style="font-size:12px;color:var(--muted);text-decoration:line-through;flex:1;">'+esc(p.texto)+'</div>';
       if(isAdminOrSuper) html+='<button onclick="eliminarPendiente(this.dataset.id)" data-id="'+p.id+'" style="font-size:10px;padding:3px 7px;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer;color:var(--muted);">X</button>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+  // Eliminados (solo superadmin)
+  if(isSuper&&eliminados.length){
+    html+='<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">';
+    html+='<div style="font-size:11px;font-weight:700;color:#A32D2D;margin-bottom:6px;">Eliminados por admin ('+eliminados.length+')</div>';
+    eliminados.forEach(function(p){
+      var u=userById(p.eliminadoPorId)||{};
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);gap:8px;">';
+      html+='<div style="flex:1;">';
+      html+='<div style="font-size:12px;color:#A32D2D;text-decoration:line-through;">'+esc(p.texto)+'</div>';
+      html+='<div style="font-size:10px;color:var(--muted);">Eliminado por: '+esc(p.eliminadoPor||'Admin')+(p.eliminadoAt?' el '+fmtDate(p.eliminadoAt.split("T")[0]):'')+'</div>';
+      html+='</div>';
+      html+='<button onclick="eliminarPendiente(this.dataset.id)" data-id="'+p.id+'" style="font-size:10px;padding:3px 7px;border-radius:6px;border:1px solid #F09595;background:#FCEBEB;cursor:pointer;color:#A32D2D;">Borrar</button>';
       html+='</div>';
     });
     html+='</div>';
@@ -3131,9 +3174,16 @@ function generarPDF(labId){
     var labUsers=(D.users||[]).filter(function(u){return u.role==='visitor'&&(lab.id?u.labId===lab.id:true);});
     var labPts=(D.points||[]).filter(function(p){return lab.id?p.labId===lab.id:true;});
     var cumplimiento=Math.round((completed.length/Math.max(labPts.length,1))*100);
-    var labPends=(D.pendientes||[]).filter(function(p){var u=userById(p.userId);return u&&(lab.id?u.labId===lab.id:true);});
-    var pActivos=labPends.filter(function(p){return !p.resuelto;});
-    var pResueltos=labPends.filter(function(p){return p.resuelto;});
+    var mesAtrasPptx=new Date(); mesAtrasPptx.setMonth(mesAtrasPptx.getMonth()-1);
+    var mesAtrasPptxStr=mesAtrasPptx.toISOString().split('T')[0];
+    var labPends=(D.pendientes||[]).filter(function(p){
+      var u=userById(p.userId);
+      var fechaP=p.creadoAt?p.creadoAt.split('T')[0]:'';
+      return u&&(lab.id?u.labId===lab.id:true)&&fechaP>=mesAtrasPptxStr;
+    });
+    var pActivos=labPends.filter(function(p){return !p.resuelto&&!p.eliminado;});
+    var pResueltos=labPends.filter(function(p){return p.resuelto&&!p.eliminado;});
+    var pEliminados=labPends.filter(function(p){return p.eliminado;});
     var pVencidos=pActivos.filter(function(p){return p.creadoAt&&(Date.now()-new Date(p.creadoAt).getTime())>7*86400000;});
 
     // ── PÁGINA RESUMEN ────────────────────────────────────────────
@@ -3324,7 +3374,7 @@ function generarExcel(labId){
   var wsp=XLSX.utils.aoa_to_sheet([pHeader].concat(pRows));
   wsp['!cols']=[{wch:20},{wch:40},{wch:12},{wch:14},{wch:12},{wch:20},{wch:14}];
   XLSX.utils.book_append_sheet(wb,wsp,'Pendientes');
-  var pHeader=['Visitador','Laboratorio','Pendiente','Prioridad','Vence','Estado','Creado Por','Resuelto'];
+  var pHeader=['Visitador','Laboratorio','Pendiente','Prioridad','Vence','Estado','Creado Por','Fecha Gestion'];
   var pRows=(D.pendientes||[]).filter(function(p){
     var u=userById(p.userId);
     if(!u) return false;
@@ -3385,9 +3435,16 @@ function generarPPTX(labId){
     var labPts=(D.points||[]).filter(function(p){return lab.id?p.labId===lab.id:true;});
     var totalPts=labPts.length||1;
     var cumplimiento=Math.round((completed.length/Math.max(totalPts,1))*100);
-    var labPends=(D.pendientes||[]).filter(function(p){var u=userById(p.userId);return u&&(lab.id?u.labId===lab.id:true);});
-    var pActivos=labPends.filter(function(p){return !p.resuelto;});
-    var pResueltos=labPends.filter(function(p){return p.resuelto;});
+    var mesAtrasPptx=new Date(); mesAtrasPptx.setMonth(mesAtrasPptx.getMonth()-1);
+    var mesAtrasPptxStr=mesAtrasPptx.toISOString().split('T')[0];
+    var labPends=(D.pendientes||[]).filter(function(p){
+      var u=userById(p.userId);
+      var fechaP=p.creadoAt?p.creadoAt.split('T')[0]:'';
+      return u&&(lab.id?u.labId===lab.id:true)&&fechaP>=mesAtrasPptxStr;
+    });
+    var pActivos=labPends.filter(function(p){return !p.resuelto&&!p.eliminado;});
+    var pResueltos=labPends.filter(function(p){return p.resuelto&&!p.eliminado;});
+    var pEliminados=labPends.filter(function(p){return p.eliminado;});
     var pVencidos=pActivos.filter(function(p){
       if(!p.creadoAt) return false;
       return (Date.now()-new Date(p.creadoAt).getTime())>7*86400000;
@@ -3403,7 +3460,7 @@ function generarPPTX(labId){
       {val:cumplimiento+'%',lbl:'Cumplimiento',col:'1D9E75'},
       {val:completed.length,lbl:'Visitas completadas',col:'185FA5'},
       {val:pActivos.length,lbl:'Pendientes activos',col:'E24B4A'},
-      {val:pVencidos.length,lbl:'Pend. vencidos',col:'BA7517'}
+      {val:pResueltos.length,lbl:'Resueltos',col:'059669'}
     ];
     metrics.forEach(function(m,i){
       var x=0.3+i*2.35;
@@ -3475,7 +3532,7 @@ function generarPPTX(labId){
     s4.addText('Gestión de pendientes · '+lab.name,{x:0.3,y:0.15,w:7,h:0.4,fontSize:16,color:'FFFFFF',bold:true});
     s4.addText('Activos · resueltos · vencidos sin gestión',{x:0.3,y:0.55,w:7,h:0.25,fontSize:9,color:'8FAFD4'});
     // Summary boxes
-    [{val:pActivos.length,lbl:'Activos',col:'E24B4A',bg:'FCEBEB'},{val:pResueltos.length,lbl:'Resueltos',col:'1D9E75',bg:'E1F5EE'},{val:pVencidos.length,lbl:'Vencidos',col:'BA7517',bg:'FAEEDA'}].forEach(function(m,i){
+    [{val:pActivos.length,lbl:'Activos',col:'E24B4A',bg:'FCEBEB'},{val:pResueltos.length,lbl:'Resueltos',col:'1D9E75',bg:'E1F5EE'},{val:pEliminados.length,lbl:'Gestionados',col:'6B7280',bg:'F3F4F6'}].forEach(function(m,i){
       var x=0.3+i*3.1;
       s4.addShape(pptx.ShapeType.rect,{x:x,y:1.0,w:2.8,h:0.8,fill:{color:m.bg},line:{color:m.col,pt:1}});
       s4.addText(String(m.val),{x:x,y:1.05,w:2.8,h:0.45,fontSize:22,bold:true,color:m.col,align:'center'});
