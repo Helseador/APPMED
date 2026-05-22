@@ -798,7 +798,14 @@ function previewExcel(input){
           if(hasDays){
             headerRow=r;
             row.forEach(function(c,i){
-              if(i>0&&c&&String(c).trim()) dayCols[i]=String(c).trim();
+              if(c&&String(c).trim()&&String(c).trim()!=='nan'){
+                var s=String(c).toUpperCase();
+                if(s.indexOf('DIA')>=0||s.indexOf('LUNES')>=0||s.indexOf('MARTES')>=0||
+                   s.indexOf('MIERCOLES')>=0||s.indexOf('JUEVES')>=0||s.indexOf('VIERNES')>=0||
+                   s.indexOf('SABADO')>=0||s.indexOf('DOMINGO')>=0){
+                  dayCols[i]=String(c).trim();
+                }
+              }
             });
             break;
           }
