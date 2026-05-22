@@ -709,7 +709,7 @@ function defaultData(){
 }
 function toArray(val){
   if(!val) return [];
-  if(Array.isArray(val)) return val;
+  if(Array.isArray(val)) return val.filter(function(x){return x!=null;});
   // Firebase returns objects — preserve the key as _fbKey
   return Object.entries(val).map(function(entry){
     var key=entry[0], obj=entry[1];
@@ -717,7 +717,7 @@ function toArray(val){
       obj._fbKey=key;
     }
     return obj;
-  });
+  }).filter(function(x){return x!=null;});
 }
 function ensureData(d){
   if(!d) d=defaultData();
@@ -1009,6 +1009,7 @@ function importarDesdeExcel(){
 function getPendientesUsuario(userId){
   var isSuper=currentUser&&currentUser.role==='super';
   return (D.pendientes||[]).filter(function(p){
+    if(!p||!p.id) return false; // ignorar entradas vacias
     return p.userId===userId&&(isSuper?true:!p.eliminado);
   });
 }
@@ -1094,9 +1095,10 @@ function renderPendientesSection(userId, containerEl, showResolved){
   var isSuper=currentUser.role==='super';
   var isAdminOrSuper=currentUser.role==='admin'||currentUser.role==='adminGeneral'||isSuper;
   // SuperAdmin ve todo incluyendo eliminados. Los demas no ven los eliminados.
+  // Retrocompatible: datos viejos no tienen campo eliminado ni resuelto
   var activos=all.filter(function(p){return !p.resuelto&&(isSuper?true:!p.eliminado);});
-  var resueltos=all.filter(function(p){return p.resuelto&&(isSuper?true:!p.eliminado);});
-  var eliminados=isSuper?all.filter(function(p){return p.eliminado;}):[];
+  var resueltos=all.filter(function(p){return p.resuelto===true&&(isSuper?true:!p.eliminado);});
+  var eliminados=isSuper?all.filter(function(p){return p.eliminado===true;}):[];
 
   var html='';
 
@@ -3191,13 +3193,14 @@ function generarPDF(labId){
     var mesAtrasPptx=new Date(); mesAtrasPptx.setMonth(mesAtrasPptx.getMonth()-1);
     var mesAtrasPptxStr=mesAtrasPptx.toISOString().split('T')[0];
     var labPends=(D.pendientes||[]).filter(function(p){
+      if(!p||!p.id) return false;
       var u=userById(p.userId);
       var fechaP=p.creadoAt?p.creadoAt.split('T')[0]:'';
-      return u&&(lab.id?u.labId===lab.id:true)&&fechaP>=mesAtrasPptxStr;
+      return u&&(lab.id?u.labId===lab.id:true)&&(!fechaP||fechaP>=mesAtrasPptxStr);
     });
     var pActivos=labPends.filter(function(p){return !p.resuelto&&!p.eliminado;});
-    var pResueltos=labPends.filter(function(p){return p.resuelto&&!p.eliminado;});
-    var pEliminados=labPends.filter(function(p){return p.eliminado;});
+    var pResueltos=labPends.filter(function(p){return p.resuelto===true&&!p.eliminado;});
+    var pEliminados=labPends.filter(function(p){return p.eliminado===true;});
     var pVencidos=pActivos.filter(function(p){return p.creadoAt&&(Date.now()-new Date(p.creadoAt).getTime())>7*86400000;});
 
     // ── PÁGINA RESUMEN ────────────────────────────────────────────
@@ -3452,13 +3455,14 @@ function generarPPTX(labId){
     var mesAtrasPptx=new Date(); mesAtrasPptx.setMonth(mesAtrasPptx.getMonth()-1);
     var mesAtrasPptxStr=mesAtrasPptx.toISOString().split('T')[0];
     var labPends=(D.pendientes||[]).filter(function(p){
+      if(!p||!p.id) return false;
       var u=userById(p.userId);
       var fechaP=p.creadoAt?p.creadoAt.split('T')[0]:'';
-      return u&&(lab.id?u.labId===lab.id:true)&&fechaP>=mesAtrasPptxStr;
+      return u&&(lab.id?u.labId===lab.id:true)&&(!fechaP||fechaP>=mesAtrasPptxStr);
     });
     var pActivos=labPends.filter(function(p){return !p.resuelto&&!p.eliminado;});
-    var pResueltos=labPends.filter(function(p){return p.resuelto&&!p.eliminado;});
-    var pEliminados=labPends.filter(function(p){return p.eliminado;});
+    var pResueltos=labPends.filter(function(p){return p.resuelto===true&&!p.eliminado;});
+    var pEliminados=labPends.filter(function(p){return p.eliminado===true;});
     var pVencidos=pActivos.filter(function(p){
       if(!p.creadoAt) return false;
       return (Date.now()-new Date(p.creadoAt).getTime())>7*86400000;
