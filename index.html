@@ -3082,7 +3082,21 @@ function renderInformes(){
       +'<button class="btn btn-sm btn-success" onclick="generarExcelMulti()"><i class="fa-solid fa-file-excel"></i> Excel seleccionados</button>'
       +'</div>';
   }
-  el.innerHTML=labsToShow.map(function(lab){
+  // Boton de informe general solo para adminGeneral y superAdmin
+  var generalHtml='';
+  if(isSuper||isGeneral){
+    generalHtml='<div class="card" style="margin-bottom:10px;">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
+      +'<div style="width:36px;height:36px;border-radius:10px;background:#1B3A6B;display:flex;align-items:center;justify-content:center;color:#fff;"><i class="fa-solid fa-globe"></i></div>'
+      +'<div style="font-weight:800;">Informe General — Todos los laboratorios</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+      +'<button class="btn btn-sm btn-primary" onclick="generarPDF('')"><i class="fa-solid fa-file-pdf"></i> PDF</button>'
+      +'<button class="btn btn-sm btn-success" onclick="generarExcel('')"><i class="fa-solid fa-file-excel"></i> Excel</button>'
+      +'<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTX('')"><i class="fa-solid fa-file-powerpoint"></i> PPTX</button>'
+      +'</div></div>';
+  }
+  el.innerHTML=generalHtml+labsToShow.map(function(lab){
     var visits=(D.visits||[]).filter(function(v){return v.labId===lab.id&&(!rptDesde||v.date>=rptDesde)&&(!rptHasta||v.date<=rptHasta)&&v.status==='completed';});
     var pends=(D.pendientes||[]).filter(function(p){var u=userById(p.userId);return u&&u.labId===lab.id;});
     var pActivos=pends.filter(function(p){return !p.resuelto;}).length;
