@@ -3091,9 +3091,9 @@ function renderInformes(){
       +'<div style="font-weight:800;">Informe General — Todos los laboratorios</div>'
       +'</div>'
       +'<div style="display:flex;gap:8px;flex-wrap:wrap;">'
-      +'<button class="btn btn-sm btn-primary" onclick="generarPDF('')"><i class="fa-solid fa-file-pdf"></i> PDF</button>'
-      +'<button class="btn btn-sm btn-success" onclick="generarExcel('')"><i class="fa-solid fa-file-excel"></i> Excel</button>'
-      +'<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTX('')"><i class="fa-solid fa-file-powerpoint"></i> PPTX</button>'
+      +'<button class="btn btn-sm btn-primary" onclick="generarPDF(this.dataset.id)" data-id=""><i class="fa-solid fa-file-pdf"></i> PDF</button>'
+      +'<button class="btn btn-sm btn-success" onclick="generarExcel(this.dataset.id)" data-id=""><i class="fa-solid fa-file-excel"></i> Excel</button>'
+      +'<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTX(this.dataset.id)" data-id=""><i class="fa-solid fa-file-powerpoint"></i> PPTX</button>'
       +'</div></div>';
   }
   el.innerHTML=generalHtml+labsToShow.map(function(lab){
