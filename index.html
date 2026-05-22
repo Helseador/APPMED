@@ -3653,4 +3653,95 @@ initFirebase();
 </script>
 
 </body>
+</html      function isAddr(v){
+        var s=String(v||'').trim();
+        return !!(s.match(/#/)||
+          s.match(/^(AV|CRA|CL|KR|AC|AK|AUTO|DIAG|CALLE|CARRERA|TRANS)[\s\.#0-9]/i)||
+          s.match(/\bCalle\b|\bCarrera\b|\bAvenida\b/i)||
+          s.match(/[0-9]+[A-Za-z]?\s*#\s*[0-9]/));
+      }
+      function isPunto(v){
+        var s=String(v||'').trim();
+        return s.length>2&&s.toLowerCase()!=='nan'&&!isAddr(v);
+      }
+      function limpiarDir(v){
+        return String(v||'').trim().replace(/\s*\/.*$/,'').trim();
+      }
+
+      var dayColNums=Object.keys(dayCols).map(function(k){return parseInt(k);});
+      excelRoutes={};
+      dayColNums.forEach(function(c){excelRoutes[c]=[];});
+
+      var r2=headerRow+1;
+      var orderCount=0;
+      while(r2<raw.length){
+        var curRow=raw[r2]||[];
+        var nxtRow=raw[r2+1]||[];
+        var hasName=dayColNums.some(function(c){return isPunto(curRow[c]);});
+        if(!hasName){r2++;continue;}
+        orderCount++;
+        var nxtHasAddr=dayColNums.some(function(c){return isAddr(nxtRow[c]);});
+        var nxtHasName=dayColNums.some(function(c){return isPunto(nxtRow[c]);});
+        var addrRow=[];
+        var skip=1;
+        if(nxtHasAddr&&!nxtHasName){addrRow=nxtRow;skip=2;}
+        dayColNums.forEach(function(c){
+          var name=String(curRow[c]||'').trim();
+          var addrFull=String(addrRow[c]||'').trim();
+          var addr=limpiarDir(addrFull);
+          if(isPunto(name)){
+            excelRoutes[c].push({order:orderCount,name:name,address:addr});
+          }
+        });
+        r2+=skip;
+      }
+
+      // Rebuild dayCols with numeric keys for display
+      var dayColsDisplay={};
+      dayColNums.forEach(function(c){dayColsDisplay[c]=dayCols[c]||dayCols[String(c)];});
+      dayCols=dayColsDisplay;
+
+            // ── Mostrar preview y campos para renombrar rutas
+      var totalPts=Object.values(excelRoutes).reduce(function(s,a){return s+a.length;},0);
+      document.getElementById('excelPreviewTitle').textContent=
+        totalPts+' puntos en '+Object.keys(dayCols).length+' rutas detectadas';
+
+      // Build route name inputs
+      var routeNamesHtml='<div style="font-size:13px;font-weight:700;margin-bottom:10px;">Nombra cada ruta:</div>';
+      Object.keys(dayCols).forEach(function(col){
+        var dayName=dayCols[col];
+        var pts=excelRoutes[col];
+        routeNamesHtml+='<div style="margin-bottom:10px;">'
+          +'<label style="font-size:12px;color:var(--muted);">'+esc(dayName)+' ('+pts.length+' puntos)</label>'
+          +'<input class="form-input" id="routeName_'+col+'" value="'+esc(dayName)+'" placeholder="Nombre de la ruta" style="margin-top:4px;">'
+          +'</div>';
+      });
+      document.getElementById('excelRouteNamesContent').innerHTML=routeNamesHtml;
+      document.getElementById('excelRouteNames').style.display='block';
+
+      // Preview list
+      var prevHtml='';
+      Object.keys(dayCols).forEach(function(col){
+        var pts=excelRoutes[col];
+        prevHtml+='<div style="margin-bottom:6px;padding:6px;background:var(--bg);border-radius:8px;">'
+          +'<div style="font-size:11px;font-weight:700;color:var(--primary);">'+esc(dayCols[col])+'</div>'
+          +pts.slice(0,3).map(function(p){return '<div style="font-size:11px;">'+p.order+'. '+esc(p.name)+'</div>';}).join('')
+          +(pts.length>3?'<div style="font-size:11px;color:var(--muted);">...y '+(pts.length-3)+' más</div>':'')
+          +'</div>';
+      });
+      document.getElementById('excelPreviewList').innerHTML=prevHtml;
+      document.getElementById('excelPreview').style.display='block';
+      document.getElementById('excelImportBtn').disabled=false;
+
+    }catch(err){
+      toast('Error al leer el Excel: '+err.message,'err');
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(input.files[0]);
+}
+
+</script>
+
+</body>
 </html>
