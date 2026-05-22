@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0F766E">
-  <title>APPMED</title>                               <!-- 1️⃣ Nombre cambiado -->
+  <title>APPMED</title>
   <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiTWVkVmlzaXQiLCJzaG9ydF9uYW1lIjoiTWVkVmlzaXQiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzBGNzY2RSIsInRoZW1lX2NvbG9yIjoiIzBGNzY2RSJ9">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Serif+Display&display=swap" rel="stylesheet">
@@ -691,6 +691,16 @@ var MAX_LOGIN_ATTEMPTS=5, LOCKOUT_SECONDS=30, SESSION_MINUTES=30;
 var AV_COLORS=['#0F766E','#D97706','#DC2626','#7C3AED','#2563EB','#DB2777','#059669','#EA580C','#4F46E5','#0891B2'];
 var MIN_PER_PUNTO=15;
 
+/* ==============================================================
+   ESTRUCTURA BASE DE DATOS
+   - defaultData: estructura vacia inicial
+   - ensureData: garantiza que D siempre tenga todas sus propiedades
+   - toArray: convierte objetos de Firebase en arrays
+   ============================================================== */
+/* ==============================================================
+   ESTRUCTURA BASE DE DATOS
+   Estructura inicial vacia de D. ensureData garantiza que siempre existan todas las propiedades. toArray convierte objetos de Firebase en arrays.
+   ============================================================== */
 /* ------------------------------------------------------------------
    DATOS POR DEFECTO
    ------------------------------------------------------------------ */
@@ -720,10 +730,25 @@ function ensureData(d){
   return d;
 }
 
+/* ==============================================================
+   CONEXION A FIREBASE
+   Conecta con Firebase Realtime Database. Escucha cambios en tiempo real por coleccion (visits, users, points, labs, pendientes). Usa debounce de 400ms para no rerenderizar en cada cambio.
+   ============================================================== */
 /* ------------------------------------------------------------------
    INICIALIZACIÓN FIREBASE
    ------------------------------------------------------------------ */
 
+/* ==============================================================
+   IMPORTACION MASIVA DESDE EXCEL
+   - Lee archivos xlsx con rutas de visitadores
+   - Detecta dias automaticamente (LUNES, DIA 1, etc.)
+   - Permite renombrar rutas antes de importar
+   - Geocodifica direcciones en segundo plano
+   ============================================================== */
+/* ==============================================================
+   IMPORTACION DE RUTAS DESDE EXCEL
+   Lee archivos xlsx con rutas de visitadores. Detecta dias automaticamente (LUNES, DIA 1, etc.). Permite renombrar rutas, muestra progreso de geocodificacion y soporta cualquier formato de columnas.
+   ============================================================== */
 /* ------------------------------------------------------------------
    CARGA MASIVA DE RUTAS DESDE EXCEL
    ------------------------------------------------------------------ */
@@ -967,6 +992,17 @@ function importarDesdeExcel(){
 }
 
 
+/* ==============================================================
+   SISTEMA DE PENDIENTES
+   - Los visitadores y admins pueden crear tareas pendientes
+   - Se muestran al inicio de la pantalla del visitador
+   - El admin ve los pendientes de cada visitador
+   - Los vencidos (mas de 7 dias) se marcan en rojo
+   ============================================================== */
+/* ==============================================================
+   SISTEMA DE PENDIENTES
+   Crea, resuelve y elimina tareas pendientes por visitador. Se muestran al inicio de la pantalla del visitador. Los vencidos (mas de 7 dias sin resolver) se marcan en rojo. Aparecen tambien en los informes.
+   ============================================================== */
 /* ------------------------------------------------------------------
    PENDIENTES
    ------------------------------------------------------------------ */
@@ -1122,6 +1158,16 @@ function agregarPendiente(userId){
 }
 
 
+/* ==============================================================
+   SELECTOR DE LABORATORIO PARA ADMIN GENERAL
+   - El Admin General puede navegar entre todos los labs
+   - Muestra tarjetas con estadisticas por laboratorio
+   - Los admins normales van directo a su lab
+   ============================================================== */
+/* ==============================================================
+   SELECTOR DE LABORATORIO PARA ADMIN GENERAL
+   El Admin General ve todos los labs al entrar y puede navegar entre ellos libremente. Los admins normales van directo a su laboratorio asignado sin ver este selector.
+   ============================================================== */
 /* ------------------------------------------------------------------
    ADMIN GENERAL — Selector de laboratorio
    ------------------------------------------------------------------ */
@@ -1301,6 +1347,18 @@ function initFirebase(){
   });
 }
 
+/* ==============================================================
+   VARIABLES GLOBALES DE ESTADO
+   - currentUser: usuario logueado
+   - D: datos en memoria (usuarios, visitas, puntos, labs, pendientes)
+   - firebaseReady/Online: estado de conexion
+   - currentLabId: lab activo del admin
+   - sessionPrefix: identificador unico de sesion
+   ============================================================== */
+/* ==============================================================
+   VARIABLES GLOBALES DE ESTADO
+   currentUser: usuario logueado. D: datos en memoria. firebaseReady y firebaseOnline: estado de conexion. currentLabId: lab activo del admin. sessionPrefix: ID unico por sesion para distinguir escrituras propias.
+   ============================================================== */
 /* ------------------------------------------------------------------
    VARIABLES DE ESTADO
    ------------------------------------------------------------------ */
@@ -1316,6 +1374,10 @@ var profFirmaCanvas=null, profFirmaCtx=null, profFirmaActiva=false;
 var lockoutEnd=0, loginAttempts=0, lockoutInterval=null;
 var sessionTimer=null, sessionEnd=0;
 
+/* ==============================================================
+   FUNCIONES AUXILIARES
+   uid: genera IDs unicos. today: fecha actual YYYY-MM-DD. fmtDate: formatea fechas. esc: sanitiza HTML. userById y pointById: buscan registros por ID. getGreeting: saludo segun hora del dia.
+   ============================================================== */
 /* ------------------------------------------------------------------
    Funciones auxiliares (hash, avatar, fecha, etc.)
    ------------------------------------------------------------------ */
@@ -1347,6 +1409,17 @@ function populateLabSelects(){
   });
 }
 
+/* ==============================================================
+   GUARDADO DE DATOS
+   - save: guarda usuarios, puntos y labs en Firebase
+   - saveVisit: actualiza una visita existente por su clave Firebase
+   - pushVisit: agrega una nueva visita con push atomico
+   - saveLocal: copia los datos en localStorage como respaldo offline
+   ============================================================== */
+/* ==============================================================
+   GUARDADO DE DATOS
+   save: escribe users, points y labs en Firebase con set() por coleccion. saveVisit: actualiza una visita existente usando su clave Firebase (_fbKey). pushVisit: agrega nueva visita con push atomico. saveLocal: copia en localStorage como respaldo offline sin bloquear la UI.
+   ============================================================== */
 /* ------------------------------------------------------------------
    GUARDADO LOCAL / FIREBASE
    ------------------------------------------------------------------ */
@@ -1417,6 +1490,10 @@ function pushVisit(visit){
   }
 }
 
+/* ==============================================================
+   INDICADORES DE CONEXION
+   updateConnBadge: actualiza el badge de la pantalla de login. updateHeaderConn: actualiza el indicador Cloud/Local en cada header. showSyncIndicator: muestra la animacion de sincronizacion brevemente. renderCurrentScreen: rerenderiza la pantalla activa del usuario logueado.
+   ============================================================== */
 /* ------------------------------------------------------------------
    CONEXIÓN – badges de estado
    ------------------------------------------------------------------ */
@@ -1466,6 +1543,16 @@ function renderCurrentScreen(){
   else renderVisitor();
 }
 
+/* ==============================================================
+   NOTIFICACIONES Y MODALES
+   - toast: mensaje flotante temporal (exito, error, info)
+   - openModal / closeModal: abre y cierra paneles modales
+   - confirmAction: dialogo de confirmacion antes de acciones criticas
+   ============================================================== */
+/* ==============================================================
+   NOTIFICACIONES Y MODALES
+   toast: muestra mensaje flotante temporal (verde exito, rojo error, azul info). openModal y closeModal: controlan los paneles deslizables. confirmAction: dialogo de confirmacion antes de acciones irreversibles.
+   ============================================================== */
 /* ------------------------------------------------------------------
    TOAST / MODALES
    ------------------------------------------------------------------ */
@@ -1473,6 +1560,10 @@ function toast(msg,type){type=type||'ok';var w=document.getElementById('toastWra
 function openModal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
 function closeModal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
 
+/* ==============================================================
+   NOTIFICACIONES INTERNAS
+   Sistema de notificaciones entre admin y visitadores. Marca notificaciones como leidas y actualiza el contador del icono de campana.
+   ============================================================== */
 /* ------------------------------------------------------------------
    NOTIFICACIONES (ADMIN / SUPER)
    ------------------------------------------------------------------ */
@@ -1518,6 +1609,10 @@ function rejectPoint(pid){
   save(D); renderNotifications(); toast('Punto rechazado');
 }
 
+/* ==============================================================
+   AUTENTICACION Y SESION
+   doLogin: valida usuario y contrasena contra D.users, asigna rol y redirige a la pantalla correcta. doLogout: limpia el estado y regresa al login. startSession y stopSession: temporizador de inactividad que cierra la sesion automaticamente.
+   ============================================================== */
 /* ------------------------------------------------------------------
    LOGIN / LOGOUT / SESIONES
    ------------------------------------------------------------------ */
@@ -1564,6 +1659,10 @@ function doLogout(){currentUser=null; currentLabId=null;  _visitRoute=null; gpsP
 function resetSession(){sessionEnd=Date.now()+SESSION_MINUTES*60*1000; if(sessionTimer) clearInterval(sessionTimer); sessionTimer=setInterval(()=>{var r=Math.max(0,sessionEnd-Date.now());var m=Math.floor(r/60000),s=Math.floor((r%60000)/1000);var txt=m+':'+s.toString().padStart(2,'0');['adminSessionTimer','visitorSessionTimer'].forEach(id=>{var el=document.querySelector('#'+id); if(el){ if(r<300000){el.style.display='flex'; el.querySelector('span').textContent=txt;} else el.style.display='none'; } }); if(r<=0){clearInterval(sessionTimer); sessionTimer=null; doLogout(); toast('Sesion cerrada por inactividad','info');}},1000);}
 function stopSession(){if(sessionTimer){clearInterval(sessionTimer); sessionTimer=null;} ['adminSessionTimer','visitorSessionTimer'].forEach(id=>{var el=document.querySelector('#'+id); if(el) el.style.display='none';});}
 
+/* ==============================================================
+   UTILIDADES DE GPS
+   Solicita permiso de ubicacion al navegador. Guarda las coordenadas actuales en visitaGpsCoords para adjuntarlas a las visitas.
+   ============================================================== */
 /* ------------------------------------------------------------------
    GPS UTILIDADES
    ------------------------------------------------------------------ */
@@ -1597,6 +1696,10 @@ function obtenerGPSVisita(chipId,textId){
   }).catch(()=>{visitaGpsCoords=null; txt.textContent='No disponible   se guardara sin coordenadas';});
 }
 
+/* ==============================================================
+   SELECCION DE LABORATORIO (LEGACY)
+   Pantalla de seleccion de lab usada en versiones anteriores. Actualmente el Admin General usa el nuevo selector integrado en la pantalla de admin.
+   ============================================================== */
 /* ------------------------------------------------------------------
    LAB SELECT
    ------------------------------------------------------------------ */
@@ -1631,6 +1734,10 @@ function selectLab(id){
   toast('Laboratorio: '+(lab?lab.name:''));
 }
 
+/* ==============================================================
+   PANEL ADMINISTRADOR
+   renderAdmin: inicializa el panel del admin. renderCanvasDashboard: muestra el hero de cumplimiento y las tarjetas de cada visitador. renderVisitorList: lista de visitadores con barra de progreso. openVisitorDetail: abre el perfil completo de un visitador con sus puntos y pendientes.
+   ============================================================== */
 /* ------------------------------------------------------------------
    ADMIN – DASHBOARD & VISITADORES
    ------------------------------------------------------------------ */
@@ -1657,6 +1764,10 @@ function renderAdmin(){
   renderCanvasDashboard(); populateVisitFilter();
 }
 
+/* ==============================================================
+   PANTALLA DEL VISITADOR
+   renderVisitor: saludo y fecha. renderVisitorToday: muestra pendientes activos y las rutas del dia con sus puntos. setVisitRoute: selecciona la ruta activa. renderVisitorSemana: pestaña Mis Rutas con tarjetas por nombre de ruta.
+   ============================================================== */
 /* ------------------------------------------------------------------
    VISITADOR – RUTAS (CAMBIO 3)
    ------------------------------------------------------------------ */
@@ -1765,6 +1876,10 @@ function renderVisitorToday(){
   el.innerHTML=selector+summary+pointsHtml;
 }
 
+/* ==============================================================
+   REGISTRO DE VISITAS
+   arriveToPoint: registra llegada a un punto y crea la visita en Firebase. openCloseVisit: abre el modal de cierre. completeVisit: guarda foto, notas y marca la visita como completada. handlePhotoTaken: captura y comprime la foto a 65% de calidad y maximo 1200px.
+   ============================================================== */
 /* ------------------------------------------------------------------
    FUNCIÓN DE VISITA (NUEVA) – mantiene lógica original, sólo se
    asegura de usar la variable global visitaGpsCoords.
@@ -1805,6 +1920,10 @@ function abrirNuevaVisita(){
   openModal('modalNuevaVisita');
 }
 
+/* ==============================================================
+   VISITAS LIBRES Y A PROFESIONALES
+   abrirNuevaVisita: abre el modal de visita a profesional. abrirVisitaLibre: abre el mismo modal sin punto asignado. guardarVisitaGeneral: guarda una visita libre con lugar y foto. guardarVisitaProfesional: guarda visita con nombre del punto, medico, especialidad, telefono, firma y foto.
+   ============================================================== */
 /* ------------------------------------------------------------------
    TIPOS DE VISITA – selector (mantiene UI original)
    ------------------------------------------------------------------ */
@@ -1821,6 +1940,10 @@ function selectVisitType(tipo){
   }
 }
 
+/* ==============================================================
+   GESTION DE PUNTOS
+   openNewPoint y openEditPoint: abre el modal de nuevo o editar punto. savePoint: guarda el punto con nombre, direccion, ruta, orden y coordenadas. deletePoint: elimina un punto con confirmacion.
+   ============================================================== */
 /* ------------------------------------------------------------------
    GUARDADO DE PUNTOS – nuevo campo routeName (CAMBIO 3)
    ------------------------------------------------------------------ */
@@ -1849,6 +1972,10 @@ function savePoint(){
   toast(id?'Punto actualizado':'Punto creado');
 }
 
+/* ==============================================================
+   GESTION DE LABORATORIOS
+   superGuardarLab: crea un nuevo laboratorio con nombre, color e imagen de logo. renderSuperLabs: muestra la lista de labs creados por el superadmin. nlPreviewLogo y nlSelColor: previsualizan el logo y el color antes de guardar.
+   ============================================================== */
 /* ------------------------------------------------------------------
    SUPER ADMIN – CREAR NUEVO LABORATORIO CON LOGO (CAMBIO 4)
    ------------------------------------------------------------------ */
@@ -1903,6 +2030,10 @@ function superGuardarLab(){
   }
 }
 
+/* ==============================================================
+   CONSTANTES GLOBALES
+   BASE_LABS: lista de laboratorios hardcodeados (Nestle, Abamia, Fresenius, Ketolance, Abbott). LABS: combinacion de BASE_LABS con los labs creados dinamicamente. SESSION_MINUTES: tiempo de inactividad antes de cerrar sesion. MIN_PER_PUNTO: minutos estimados por punto.
+   ============================================================== */
 /* ------------------------------------------------------------------
    CONSTANTES GLOBALES FALTANTES
    ------------------------------------------------------------------ */
@@ -1911,6 +2042,10 @@ var gpsPermission='unknown';
 var _superBackTo=null;
 var rptDesde=null, rptHasta=null;
 
+/* ==============================================================
+   NAVEGACION ENTRE PANTALLAS
+   showScreen: muestra la pantalla indicada y oculta las demas. showLockout: muestra el bloqueo por intentos fallidos. showGpsPermOverlay: muestra el dialogo de permiso de GPS.
+   ============================================================== */
 /* ------------------------------------------------------------------
    NAVEGACIÓN – PANTALLAS
    ------------------------------------------------------------------ */
@@ -1920,6 +2055,10 @@ function showScreen(id){
   if(el) el.classList.add('active');
 }
 
+/* ==============================================================
+   BLOQUEO Y PERMISO GPS
+   Maneja el bloqueo temporal por multiples intentos fallidos de login. Controla la solicitud de permiso de ubicacion GPS al inicio de la sesion del visitador.
+   ============================================================== */
 /* ------------------------------------------------------------------
    LOCKOUT / GPS PERMISSION OVERLAY
    ------------------------------------------------------------------ */
@@ -1956,6 +2095,18 @@ function skipGpsAndInit(){
   renderVisitor();
 }
 
+/* ==============================================================
+   FUNCIONES UTILITARIAS
+   - uid: genera IDs unicos
+   - today: fecha actual en formato YYYY-MM-DD
+   - fmtDate: formatea fechas para mostrar
+   - esc: sanitiza texto para HTML
+   - userById / pointById: busca registros por ID
+   ============================================================== */
+/* ==============================================================
+   FUNCIONES DE BUSQUEDA Y FORMATO
+   pointById: busca un punto por ID. mapsLink: genera URL de Google Maps para una direccion. buildMapsRouteUrl: genera URL de ruta con multiples paradas. DOW_NAME: nombres de dias de la semana. fmtDate: formatea fechas en espanol.
+   ============================================================== */
 /* ------------------------------------------------------------------
    UTILIDADES
    ------------------------------------------------------------------ */
@@ -1987,6 +2138,10 @@ function buildMapsRouteUrl(pts){
   return 'https://www.google.com/maps/dir/?api=1&origin='+origin+'&destination='+dest+(waypoints?'&waypoints='+waypoints:'');
 }
 
+/* ==============================================================
+   CONFIRMACIONES Y ACCIONES CRITICAS
+   confirmLogout: pide confirmacion antes de cerrar sesion. cancelConfirm: cancela cualquier dialogo de confirmacion. confirmAction: ejecuta una funcion solo si el usuario confirma.
+   ============================================================== */
 /* ------------------------------------------------------------------
    CONFIRMAR LOGOUT / ACCIONES
    ------------------------------------------------------------------ */
@@ -2013,6 +2168,10 @@ function cancelConfirm(){
   _confirmCb=null;
 }
 
+/* ==============================================================
+   CAMBIO DE PESTANAS
+   switchAdminTab: cambia entre pestanas del panel admin (Dashboard, Visitas, Fotos, Informes). switchVisitorTab: cambia entre Hoy, Mis Rutas y Perfil. switchSuperTab: cambia entre pestanas del superadmin (Usuarios, Visitas, Fotos, Labs).
+   ============================================================== */
 /* ------------------------------------------------------------------
    TAB SWITCHING
    ------------------------------------------------------------------ */
@@ -2054,6 +2213,10 @@ function switchSuperTab(tab,btn){
   else if(tab==='sLabs') renderSuperLabs();
 }
 
+/* ==============================================================
+   RENDER SUPER ADMIN
+   renderSuperAdmin: inicializa las pestanas del superadmin. renderSuperUsers: lista de todos los usuarios con botones de activar, desactivar, eliminar y permisos especiales. openSuperDetail: perfil completo de un visitador con puntos y pendientes. openSuperEdit: edicion de datos del usuario.
+   ============================================================== */
 /* ------------------------------------------------------------------
    SUPER ADMIN – RENDER
    ------------------------------------------------------------------ */
@@ -2249,6 +2412,10 @@ function renderSuperLabs(){
   }).join('');
 }
 
+/* ==============================================================
+   DASHBOARD DEL ADMIN
+   renderCanvasDashboard: hero con porcentaje de cumplimiento del dia y tarjetas por visitador. renderAdminVisitas: lista de visitas completadas con detalle de visitas a profesionales. renderAdminFotos: galeria de fotos de evidencia. renderInformes: panel de generacion de informes por lab y periodo.
+   ============================================================== */
 /* ------------------------------------------------------------------
    ADMIN – CANVAS DASHBOARD
    ------------------------------------------------------------------ */
@@ -2497,6 +2664,10 @@ function renderAdminFotos(){
   }).join('')+'</div>';
 }
 
+/* ==============================================================
+   FLUJO DE LLEGADA Y CIERRE DE VISITA
+   arriveToPoint: registra la llegada con timestamp y coordenadas GPS. openCloseVisit: prepara el modal de cierre con el nombre del punto. completeVisit: guarda el estado completado, la foto comprimida y las notas en Firebase.
+   ============================================================== */
 /* ------------------------------------------------------------------
    VISITAS – LLEGADA, CIERRE
    ------------------------------------------------------------------ */
@@ -2527,9 +2698,29 @@ function handlePhotoTaken(e){
   var file=e.target.files[0]; if(!file) return;
   var reader=new FileReader();
   reader.onload=function(ev){
-    var preview=document.getElementById('photoPreview');
-    preview.src=ev.target.result; preview.style.display='block';
-    document.getElementById('photoCaptureArea').innerHTML='';
+    // Comprimir imagen antes de mostrar y guardar
+    var img=new Image();
+    img.onload=function(){
+      var MAX=1200; // máximo 1200px en el lado más largo
+      var w=img.width, h=img.height;
+      if(w>MAX||h>MAX){
+        if(w>h){h=Math.round(h*MAX/w);w=MAX;}
+        else{w=Math.round(w*MAX/h);h=MAX;}
+      }
+      var canvas=document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
+      var ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      var compressed=canvas.toDataURL('image/jpeg',0.65); // 65% calidad
+      var preview=document.getElementById('photoPreview');
+      preview.src=compressed;
+      preview.style.display='block';
+      document.getElementById('photoCaptureArea').innerHTML='';
+      // Mostrar tamaño en KB para verificar
+      var kb=Math.round(compressed.length*0.75/1024);
+      console.log('Foto comprimida: '+w+'x'+h+'px · '+kb+'KB');
+    };
+    img.src=ev.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -2557,6 +2748,10 @@ function viewVisitPhoto(vid){
   openModal('modalPhoto');
 }
 
+/* ==============================================================
+   FORMULARIOS DE VISITA LIBRE
+   Formularios para visitas sin punto asignado. La visita general captura lugar, direccion, contacto, foto y notas. La visita profesional agrega nombre del punto, medico, especialidad, telefono, direccion, obsequio, firma digital y foto.
+   ============================================================== */
 /* ------------------------------------------------------------------
    VISITAS LIBRES (GENERAL / PROFESIONAL)
    ------------------------------------------------------------------ */
@@ -2619,6 +2814,10 @@ function guardarVisitaProfesional(){
   pushVisit(v); closeModal('modalNuevaVisita'); renderVisitorToday(); toast('Visita profesional guardada ✓');
 }
 
+/* ==============================================================
+   PESTAÑA MIS RUTAS Y PERFIL DEL VISITADOR
+   renderVisitorSemana: agrupa los puntos del visitador por nombre de ruta y muestra el porcentaje de completado. renderVisitorPerfil: muestra datos del usuario logueado. toggleFreeVisit: activa o desactiva el permiso de visita libre desde el superadmin.
+   ============================================================== */
 /* ------------------------------------------------------------------
    VISITADOR – SEMANA / PERFIL
    ------------------------------------------------------------------ */
@@ -2671,6 +2870,10 @@ function renderVisitorPerfil(){
   var wk=document.getElementById('vProfileWeek'); if(wk) wk.textContent=weekV;
 }
 
+/* ==============================================================
+   GEOCODIFICACION Y MAPA
+   geocodeAddress: convierte una direccion en coordenadas usando Nominatim (OpenStreetMap). Intenta primero con la ciudad del visitador, luego con Colombia. Si no encuentra, usa coordenadas de Bogota como fallback.
+   ============================================================== */
 /* ------------------------------------------------------------------
    GEOCODIFICACIÓN / MAPA PICKER
    ------------------------------------------------------------------ */
@@ -2745,6 +2948,10 @@ function confirmarMapaPicker(){
   closeModal('modalMapPicker');
 }
 
+/* ==============================================================
+   PREVISUALIZACION DE RUTA EN MAPA
+   openRoutePreview: muestra un mapa Leaflet con todos los puntos de la ruta activa. Permite ver la secuencia de visitas antes de salir. updateMapPin: actualiza la posicion de un punto en el mapa picker.
+   ============================================================== */
 /* ------------------------------------------------------------------
    PREVISUALIZAR RUTA
    ------------------------------------------------------------------ */
@@ -2785,6 +2992,10 @@ function openRoutePreview(dow){
   openModal('modalRoutePreview');
 }
 
+/* ==============================================================
+   GENERACION DE INFORMES
+   generarPDF: genera informe completo en PDF con portada, resumen, detalle de visitas, pendientes y comparativa entre labs. generarExcel: exporta a xlsx con hojas de visitas, resumen y pendientes. generarPPTX: presentacion de 5 slides con metricas, graficas de cumplimiento y gestion de pendientes.
+   ============================================================== */
 /* ------------------------------------------------------------------
    INFORMES (stubs básicos)
    ------------------------------------------------------------------ */
@@ -3339,6 +3550,16 @@ function generarPPTX(labId){
   pptx.writeFile({fileName:'Informe_APPMED_'+(labId||'General')+'_'+today()+'.pptx'});
 }
 
+/* ==============================================================
+   ARRANQUE DE LA APLICACION
+   - Registra listeners de teclado (Enter, Escape)
+   - Detecta actividad del usuario para la sesion
+   - Llama a initFirebase para iniciar la conexion
+   ============================================================== */
+/* ==============================================================
+   ARRANQUE DE LA APLICACION
+   Registra listeners de teclado (Enter para login, Escape para cerrar modales). Detecta actividad del usuario (click, scroll, teclas) para mantener la sesion activa. Llama a initFirebase para iniciar la conexion con la base de datos.
+   ============================================================== */
 /* ------------------------------------------------------------------
    EVENT LISTENERS Y ARRANQUE
    ------------------------------------------------------------------ */
