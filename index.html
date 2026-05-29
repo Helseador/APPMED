@@ -1055,9 +1055,14 @@ function importarDesdeExcel(){
    ------------------------------------------------------------------ */
 function getPendientesUsuario(userId){
   var isSuper=currentUser&&currentUser.role==='super';
+  var isAdmin=currentUser&&(currentUser.role==='admin'||currentUser.role==='adminGeneral');
   return (D.pendientes||[]).filter(function(p){
-    if(!p||!p.id) return false; // ignorar entradas vacias
-    return p.userId===userId&&(isSuper?true:!p.eliminado);
+    if(!p||!p.id) return false;
+    if(p.userId!==userId) return false;
+    // Admin y super ven todo (incluso ocultos por visitador)
+    if(isSuper||isAdmin) return !p.eliminado;
+    // Visitador no ve los eliminados ni los marcados como ocultos
+    return !p.eliminado;
   });
 }
 
@@ -1186,7 +1191,10 @@ function renderPendientesSection(userId, containerEl, showResolved){
   // Retrocompatible: datos sin campo = undefined = falsy = correcto comportamiento
   var activos=all.filter(function(p){return !p.resuelto&&!p.eliminado;});
   var resueltos=all.filter(function(p){
-    return p.resuelto===true&&(isSuper?true:!p.eliminado)&&(isAdminOrSuper?true:!p.ocultoVisitador);
+    // Admin y super siempre ven resueltos aunque el visitador los haya ocultado
+    if(isAdminOrSuper) return p.resuelto===true&&!p.eliminado;
+    // Visitador solo ve los que no ha ocultado
+    return p.resuelto===true&&!p.eliminado&&!p.ocultoVisitador;
   });
   var eliminados=isSuper?all.filter(function(p){return p.eliminado===true;}):[];
 
@@ -3495,7 +3503,7 @@ function generarPDF(labId){
     :(isSuper?LABS:LABS.filter(function(l){return l.id===currentLabId;}));
   var periodoLabel=(rptDesde||'Todo')+' al '+(rptHasta||'Hoy');
 
-  function hexToRgb(h){h=h.replace('#','');return[parseInt(h.substring(0,2),16),parseInt(h.substring(2,4),16),parseInt(h.substring(4,6),16)];}
+  function hexToRgb(h){h=String(h||'0d9488').replace('#','').replace(/[^0-9a-fA-F]/g,'');if(h.length<6)h='0d9488';return[parseInt(h.substring(0,2),16),parseInt(h.substring(2,4),16),parseInt(h.substring(4,6),16)];}
   function setFill(h){var c=hexToRgb(h);doc.setFillColor(c[0],c[1],c[2]);}
   function setTxt(h){var c=hexToRgb(h);doc.setTextColor(c[0],c[1],c[2]);}
 
@@ -3516,6 +3524,7 @@ function generarPDF(labId){
 
   labsToReport.forEach(function(lab,labIdx){
     if(!lab) return;
+    try{
     var labVisits=(D.visits||[]).filter(function(v){
       var matchLab=lab.id?v.labId===lab.id:true;
       var matchDesde=rptDesde?v.date>=rptDesde:true;
@@ -3640,6 +3649,7 @@ function generarPDF(labId){
         doc.text(u.name+' · Hace '+dias+' días sin resolver',152,70+i*16);
       });
     }
+    }catch(pdfErr){console.error('PDF lab error:',pdfErr);}
   });
 
   // ── PÁGINA COMPARATIVA ────────────────────────────────────────
