@@ -328,7 +328,10 @@
       <div class="section-title">Galeria de Evidencia Fotografica</div>
       <div id="adminPhotoGallery"></div>
     </div>
-    <div class="tab-content" id="aTab-informes">
+    <div class="tab-content" id="aTab-marketing">
+  <div id="adminMarketingList" style="padding:8px 0;"></div>
+</div>
+<div class="tab-content" id="aTab-informes">
       <div class="card" style="margin-bottom:14px;">
         <div class="section-title" style="margin-bottom:10px;">Rango de Fechas</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;" id="rptPresetBtns">
@@ -362,6 +365,7 @@
     <button class="tab-btn" onclick="switchAdminTab('visitas',this)"><i class="fa-solid fa-clipboard-list"></i>Visitas</button>
     <button class="tab-btn" onclick="switchAdminTab('fotos',this)"><i class="fa-solid fa-images"></i>Fotos</button>
     <button class="tab-btn" onclick="switchAdminTab('informes',this)"><i class="fa-solid fa-chart-bar"></i>Informes</button>
+    <button class="tab-btn" onclick="switchAdminTab('marketing',this)"><i class="fa-solid fa-receipt"></i>Marketing</button>
   </div>
   <div class="app-footer"><strong>APPMED</strong> &middot; Creado por HELSE<br><span style="font-size:10px;">Innovacion tecnologica con proposito humano</span></div>
 </div>
@@ -399,7 +403,10 @@
       <div id="superVisitasList"></div>
     </div>
     <!-- TAB: Fotos -->
-    <div class="tab-content" id="sTab-sFotos">
+    <div class="tab-content" id="sTab-sMkt">
+  <div id="superMarketingList" style="padding:8px 0;"></div>
+</div>
+<div class="tab-content" id="sTab-sFotos">
       <div class="section-title" style="margin-bottom:12px;">Galeria de Evidencias</div>
       <select class="form-input" id="sFilterFotoLab" onchange="renderSuperFotos()" style="font-size:12px;margin-bottom:12px;"><option value="">Todos los labs</option><!-- labs will be populated by JS --></select>
       <div id="superFotosList" class="gallery-grid"></div>
@@ -415,6 +422,7 @@
     <button class="tab-btn" onclick="switchSuperTab('sVisitas',this)"><i class="fa-solid fa-clipboard-list"></i>Visitas</button>
     <button class="tab-btn" onclick="switchSuperTab('sFotos',this)"><i class="fa-solid fa-images"></i>Fotos</button>
     <button class="tab-btn" onclick="switchSuperTab('sLabs',this)"><i class="fa-solid fa-flask"></i>Labs</button>
+    <button class="tab-btn" onclick="switchSuperTab('sMkt',this)"><i class="fa-solid fa-receipt"></i>Marketing</button>
   </div>
   <div class="app-footer"><strong>APPMED</strong> &middot; Creado por HELSE<br><span style="font-size:10px;">Innovacion tecnologica con proposito humano</span></div>
 </div>
@@ -433,7 +441,10 @@
   <div class="app-body">
     <div class="tab-content active" id="vTab-hoy"><div id="visitorPendientesSection" style="padding:12px 16px 0;"></div><div id="visitorTodayPoints"></div></div>
     <div class="tab-content" id="vTab-semana"><div id="visitorWeekSummary"></div></div>
-    <div class="tab-content" id="vTab-perfil">
+    <div class="tab-content" id="vTab-mkt">
+  <div id="visitorMarketingList" style="padding:8px 16px;"></div>
+</div>
+<div class="tab-content" id="vTab-perfil">
       <div class="card" style="text-align:center;padding:32px 18px;">
         <div class="avatar" id="vProfileAvatar" style="width:64px;height:64px;font-size:24px;margin:0 auto 12px;"></div>
         <div style="font-size:18px;font-weight:800;" id="vProfileName"></div>
@@ -450,6 +461,7 @@
     <button class="tab-btn active" onclick="switchVisitorTab('hoy',this)"><i class="fa-solid fa-calendar-day"></i>Hoy</button>
     <button class="tab-btn" onclick="switchVisitorTab('semana',this)"><i class="fa-solid fa-route"></i>Mis Rutas</button>
     <button class="tab-btn" onclick="switchVisitorTab('perfil',this)"><i class="fa-solid fa-user"></i>Perfil</button>
+    <button class="tab-btn" onclick="switchVisitorTab('mkt',this)"><i class="fa-solid fa-receipt"></i>Mis Facturas</button>
   </div>
   <div class="app-footer"><strong>APPMED</strong> &middot; Creado por HELSE<br><span style="font-size:10px;">Innovacion tecnologica con proposito humano</span></div>
 </div>
@@ -1095,9 +1107,15 @@ function resolverPendiente(pid){
   if(idx<0) return;
   D.pendientes[idx].resuelto=true;
   D.pendientes[idx].resueltoAt=new Date().toISOString();
+  // Auto-ocultar de la vista del visitador al resolver
+  if(currentUser&&currentUser.role==='visitor'){
+    D.pendientes[idx].ocultoVisitador=true;
+  }
   savePendiente(D.pendientes[idx]);
-  renderVisitorToday();
-  toast('Pendiente marcado como resuelto ✓');
+  // Rerenderizar solo la seccion de pendientes sin recargar toda la pantalla
+  var pendEl=document.getElementById('visitorPendientesSection');
+  if(pendEl) renderPendientesSection(currentUser.id, pendEl, false);
+  toast('Pendiente resuelto ✓');
 }
 
 function eliminarPendiente(pid){
@@ -1469,6 +1487,63 @@ function renderMarketingInformes(containerId){
     +'</div>';
 }
 
+
+function renderAdminMarketing(){
+  var el=document.getElementById('adminMarketingList');
+  if(!el) return;
+  el.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px;">Cargando...</div>';
+  dbRef.ref('medvisit/marketing').orderByChild('fecha').once('value',function(snap){
+    var items=[];
+    snap.forEach(function(child){items.push(child.val());});
+    items.reverse(); // mas reciente primero
+    var isSuper=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral');
+    var filtered=items.filter(function(r){
+      return isSuper?true:r.labId===currentLabId;
+    });
+    if(!filtered.length){
+      el.innerHTML='<div class="empty-state"><i class="fa-solid fa-receipt"></i><p>Sin registros de marketing</p></div>';
+      return;
+    }
+    var total=filtered.reduce(function(s,r){return s+(r.valor||0);},0);
+    el.innerHTML='<div style="background:var(--primary-50);border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">'
+      +'<div style="font-size:13px;color:var(--muted);">'+filtered.length+' registros</div>'
+      +'<div style="font-weight:800;font-size:16px;color:var(--primary);">Total: $'+total.toLocaleString()+'</div>'
+      +'</div>'
+      +filtered.map(function(r){
+        var lab=LABS.find(function(l){return l.id===r.labId;})||{};
+        return '<div class="card" style="margin-bottom:10px;">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+          +'<div style="font-weight:700;font-size:14px;">'+esc(r.lugar||'')+'</div>'
+          +'<div style="font-weight:800;font-size:15px;color:var(--primary);">$'+(r.valor||0).toLocaleString()+'</div>'
+          +'</div>'
+          +'<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">'
+          +'<i class="fa-solid fa-user" style="width:14px;"></i> '+esc(r.userName||'')+' &nbsp;'
+          +(lab.name?'<i class="fa-solid fa-flask" style="width:14px;"></i> '+esc(lab.name)+' &nbsp;':'')
+          +'<i class="fa-solid fa-calendar" style="width:14px;"></i> '+esc(r.fecha||'')
+          +'</div>'
+          +(r.foto?'<img src="'+r.foto+'" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px;cursor:pointer;" onclick="viewMarketingFoto(this.dataset.id)" data-id="'+r.id+'">':'')
+          +'</div>';
+      }).join('');
+  });
+}
+
+function viewMarketingFoto(id){
+  dbRef.ref('medvisit/marketing').orderByChild('id').equalTo(id).once('value',function(snap){
+    snap.forEach(function(child){
+      var r=child.val();
+      if(r&&r.foto){
+        var overlay=document.createElement('div');
+        overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;';
+        overlay.onclick=function(){document.body.removeChild(overlay);};
+        var img=document.createElement('img');
+        img.src=r.foto;
+        img.style.cssText='max-width:95%;max-height:90vh;border-radius:12px;';
+        overlay.appendChild(img);
+        document.body.appendChild(overlay);
+      }
+    });
+  });
+}
 function initFirebase(){
   firebase.initializeApp(FIREBASE_CONFIG);
   dbRef = firebase.database();
@@ -2414,6 +2489,7 @@ function switchAdminTab(tab,btn){
       renderInformes();
       setTimeout(function(){renderMarketingInformes('mktInformesContainer');},100);
     }
+    else if(tab==='marketing') renderAdminMarketing();
   }, 50);
 }
 function switchVisitorTab(tab,btn){
@@ -2425,6 +2501,7 @@ function switchVisitorTab(tab,btn){
   if(btn) btn.classList.add('active');
   if(tab==='semana') renderVisitorSemana();
   else if(tab==='perfil') renderVisitorPerfil();
+  else if(tab==='mkt') renderVisitorMarketing();
 }
 function switchSuperTab(tab,btn){
   currentSuperTab=tab;
@@ -2437,6 +2514,16 @@ function switchSuperTab(tab,btn){
   else if(tab==='sVisitas') renderSuperVisitas();
   else if(tab==='sFotos') renderSuperFotos();
   else if(tab==='sLabs') renderSuperLabs();
+  else if(tab==='sMkt'){
+    document.getElementById('superMarketingList').innerHTML='';
+    // Reusar renderAdminMarketing en el contenedor del super
+    var tmpEl=document.getElementById('adminMarketingList');
+    document.getElementById('adminMarketingList') && (document.getElementById('adminMarketingList').id='adminMarketingList_bak');
+    document.getElementById('superMarketingList').id='adminMarketingList';
+    renderAdminMarketing();
+    document.getElementById('adminMarketingList').id='superMarketingList';
+    document.getElementById('adminMarketingList_bak') && (document.getElementById('adminMarketingList_bak').id='adminMarketingList');
+  }
 }
 
 /* ==============================================================
@@ -3081,6 +3168,33 @@ function renderVisitorSemana(){
     html+='</div>';
   });
   el.innerHTML=html;
+}
+function renderVisitorMarketing(){
+  var el=document.getElementById('visitorMarketingList');
+  if(!el) return;
+  el.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px;">Cargando...</div>';
+  dbRef.ref('medvisit/marketing').orderByChild('userId').equalTo(currentUser.id).once('value',function(snap){
+    var items=[];
+    snap.forEach(function(child){items.push(child.val());});
+    items.reverse();
+    if(!items.length){
+      el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">No has cargado facturas aun</div>';
+      return;
+    }
+    var total=items.reduce(function(s,r){return s+(r.valor||0);},0);
+    el.innerHTML='<div style="background:var(--primary-50);border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;">'
+      +'<span style="font-size:12px;color:var(--muted);">'+items.length+' facturas</span>'
+      +'<span style="font-weight:800;color:var(--primary);">$'+total.toLocaleString()+'</span></div>'
+      +items.map(function(r){
+        return '<div class="card" style="margin-bottom:8px;">'
+          +'<div style="display:flex;justify-content:space-between;margin-bottom:4px;">'
+          +'<span style="font-weight:700;font-size:13px;">'+esc(r.lugar||'')+'</span>'
+          +'<span style="font-weight:800;color:var(--primary);">$'+(r.valor||0).toLocaleString()+'</span></div>'
+          +'<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">'+esc(r.fecha||'')+'</div>'
+          +(r.foto?'<img src="'+r.foto+'" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;">':'')
+          +'</div>';
+      }).join('');
+  });
 }
 function renderVisitorPerfil(){
   var el=document.getElementById('vProfileAvatar');
