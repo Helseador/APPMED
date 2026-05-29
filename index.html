@@ -1406,6 +1406,7 @@ function guardarMarketing(){
 }
 
 function generarExcelMarketing(periodo){
+  if(periodo&&typeof periodo==='object') periodo=periodo.dataset?periodo.dataset.p:periodo;
   // periodo: 'semana', '2semanas', 'mes', o {desde, hasta}
   var ahora=new Date();
   var desde=new Date();
@@ -1448,9 +1449,9 @@ function renderMarketingInformes(containerId){
   if(!el) return;
   el.innerHTML='<div style="font-weight:700;font-size:13px;margin-bottom:10px;">Informe de Marketing</div>'
     +'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">'
-    +'<button class="btn btn-sm btn-success" onclick="generarExcelMarketing('semana')"><i class="fa-solid fa-file-excel"></i> Esta semana</button>'
-    +'<button class="btn btn-sm btn-success" onclick="generarExcelMarketing('2semanas')"><i class="fa-solid fa-file-excel"></i> 2 semanas</button>'
-    +'<button class="btn btn-sm btn-success" onclick="generarExcelMarketing('mes')"><i class="fa-solid fa-file-excel"></i> Este mes</button>'
+    +'<button class="btn btn-sm btn-success" onclick="generarExcelMarketing(this.dataset.p)" data-p="semana"><i class="fa-solid fa-file-excel"></i> Esta semana</button>'
+    +'<button class="btn btn-sm btn-success" onclick="generarExcelMarketing(this.dataset.p)" data-p="2semanas"><i class="fa-solid fa-file-excel"></i> 2 semanas</button>'
+    +'<button class="btn btn-sm btn-success" onclick="generarExcelMarketing(this.dataset.p)" data-p="mes"><i class="fa-solid fa-file-excel"></i> Este mes</button>'
     +'</div>'
     +'<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Periodo personalizado:</div>'
     +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
