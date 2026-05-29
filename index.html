@@ -1405,6 +1405,12 @@ function guardarMarketing(){
   });
 }
 
+function exportarMktPersonalizado(){
+  var desde=document.getElementById('mktDesde').value;
+  var hasta=document.getElementById('mktHasta').value;
+  if(!desde||!hasta){toast('Selecciona las fechas','err');return;}
+  generarExcelMarketing({desde:desde,hasta:hasta});
+}
 function generarExcelMarketing(periodo){
   if(periodo&&typeof periodo==='object') periodo=periodo.dataset?periodo.dataset.p:periodo;
   // periodo: 'semana', '2semanas', 'mes', o {desde, hasta}
@@ -1457,7 +1463,7 @@ function renderMarketingInformes(containerId){
     +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
     +'<input type="date" id="mktDesde" class="form-input" style="flex:1;">'
     +'<input type="date" id="mktHasta" class="form-input" style="flex:1;">'
-    +'<button class="btn btn-sm btn-success" onclick="generarExcelMarketing({desde:document.getElementById('mktDesde').value,hasta:document.getElementById('mktHasta').value})"><i class="fa-solid fa-file-excel"></i> Exportar</button>'
+    +'<button class="btn btn-sm btn-success" onclick="exportarMktPersonalizado()"><i class="fa-solid fa-file-excel"></i> Exportar</button>'
     +'</div>';
 }
 
