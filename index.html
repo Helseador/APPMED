@@ -275,6 +275,7 @@
       <div class="sub" id="labSelectGreeting">Selecciona un laboratorio</div></div>
     <div style="display:flex;align-items:center;gap:6px;">
       <div class="header-conn online" id="labSelectConn"><span class="hdot"></span>Cloud</div>
+      <button id="visitorMktBtn" onclick="abrirMarketing()" style="display:none;background:#7C3AED;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-receipt"></i> Marketing</button>
       <div style="position:relative;"><button class="header-btn" onclick="toggleNotifDropdown()"><i class="fa-solid fa-bell"></i><div id="adminNotifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:10px;">0</div></button><div id="notifDropdown" style="display:none;position:absolute;top:48px;right:0;width:320px;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.2);z-index:200;max-height:400px;overflow-y:auto;"><div style="padding:14px;border-bottom:1px solid var(--border);font-weight:800;font-size:14px;color:var(--fg);display:flex;justify-content:space-between;align-items:center;"><span>Notificaciones</span><button onclick="toggleNotifDropdown()" style="background:none;border:none;cursor:pointer;color:var(--muted);"><i class="fa-solid fa-times"></i></button></div><div id="adminNotifList" style="padding:8px;font-size:13px;"></div></div></div><button class="header-btn" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
     </div>
   </div>
@@ -1138,7 +1139,8 @@ function renderPendientesSection(userId, containerEl, showResolved){
   var isAdminOrSuper=currentUser.role==='admin'||currentUser.role==='adminGeneral'||isSuper;
   // SuperAdmin ve todo incluyendo eliminados. Los demas no ven los eliminados.
   // Retrocompatible: datos viejos no tienen campo eliminado ni resuelto
-  var activos=all.filter(function(p){return !p.resuelto&&(isSuper?true:!p.eliminado);});
+  // Retrocompatible: datos sin campo = undefined = falsy = correcto comportamiento
+  var activos=all.filter(function(p){return !p.resuelto&&!p.eliminado;});
   var resueltos=all.filter(function(p){
     return p.resuelto===true&&(isSuper?true:!p.eliminado)&&(isAdminOrSuper?true:!p.ocultoVisitador);
   });
@@ -1991,7 +1993,8 @@ function renderAdmin(){
 /* ------------------------------------------------------------------
    VISITADOR – RUTAS (CAMBIO 3)
    ------------------------------------------------------------------ */
-function renderVisitor(){ var h=new Date().getHours(); var sal=h<12?'Buenos dias':h<18?'Buenas tardes':'Buenas noches'; document.getElementById('visitorGreeting').textContent=sal+', '+currentUser.name.split(' ')[0]+'!'; var d=new Date(); var days=['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado']; var months=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; document.getElementById('visitorDate').textContent=days[d.getDay()]+', '+d.getDate()+' de '+months[d.getMonth()]+' '+d.getFullYear(); renderVisitorToday();}
+function renderVisitor(){ var h=new Date().getHours(); var sal=h<12?'Buenos dias':h<18?'Buenas tardes':'Buenas noches'; document.getElementById('visitorGreeting').textContent=sal+', '+currentUser.name.split(' ')[0]+'!';
+  var mktBtn=document.getElementById('visitorMktBtn'); if(mktBtn) mktBtn.style.display='inline-block'; var d=new Date(); var days=['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado']; var months=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; document.getElementById('visitorDate').textContent=days[d.getDay()]+', '+d.getDate()+' de '+months[d.getMonth()]+' '+d.getFullYear(); renderVisitorToday();}
 function renderVisitorToday(){
   var el=document.getElementById('visitorTodayPoints');
   // Siempre renderizar pendientes
@@ -3302,32 +3305,35 @@ function renderInformes(){
   }).join('');
 }
 function getReportData(labId){
+  var isSuper=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral');
   var lab=LABS.find(function(l){return l.id===labId;})||{name:'Todos',color:'#0d9488'};
   var visits=(D.visits||[]).filter(function(v){
-    var matchLab=labId?v.labId===labId:true;
+    var matchLab=labId?v.labId===labId:(isSuper?true:v.labId===currentLabId);
     var matchDesde=rptDesde?v.date>=rptDesde:true;
     var matchHasta=rptHasta?v.date<=rptHasta:true;
-    return matchLab&&matchDesde&&matchHasta;
+    return matchLab&&matchDesde&&matchHasta&&v.status==='completed';
   });
   var rows=visits.map(function(v){
     var pt=(D.points||[]).find(function(p){return p.id===v.pointId;})||{};
-    var usr=(D.users||[]).find(function(u){return u.id===v.userId;})||{};
+    // visitorId es el campo correcto (no userId)
+    var usr=(D.users||[]).find(function(u){return u.id===(v.visitorId||v.userId);})||{};
+    var labV=LABS.find(function(l){return l.id===v.labId;})||lab;
     return {
       fecha:v.date||'',
       visitador:usr.name||v.visitorId||'',
-      punto:pt.name||v.pointName||'',
+      punto:pt.name||v.placeName||'',
       direccion:pt.address||'',
-      estado:v.status==='completed'?'Completada':v.status==='in-progress'?'En curso':'Pendiente',
+      estado:'Completada',
       tipo:v.type==='profesional'?'Visita Profesional':'Visita General',
-      medico:v.doctorName||'',
-      especialidad:v.specialty||'',
+      medico:v.placeName||'',
+      especialidad:v.speciality||v.specialty||'',
       puntoNombre:v.pointName||'',
       telefono:v.phone||'',
       direccionProf:v.address||'',
       obsequio:v.gift||'',
-      firma:v.firma?'Sí':'No',
+      firma:v.firma?'Si':'No',
       notas:v.notes||'',
-      laboratorio:lab.name
+      laboratorio:labV.name||lab.name
     };
   });
   return {lab:lab, rows:rows, desde:rptDesde, hasta:rptHasta};
