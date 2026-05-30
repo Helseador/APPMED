@@ -684,7 +684,12 @@
     <div class="modal-title">Cargar Factura de Marketing</div>
     <div class="form-group">
       <label class="form-label">Nombre del establecimiento <span style="color:var(--danger);">*</span></label>
-      <input class="form-input" id="mkt-lugar" placeholder="Ej: Exito, Jumbo, Office Depot...">
+      <input class="form-input" id="mkt-lugar" placeholder="Ej: Exito, Jumbo, Office Depot..." oninput="autocompletarNit(this.value)">
+    </div>
+    <div class="form-group" id="mkt-nit-group">
+      <label class="form-label">NIT del establecimiento</label>
+      <input class="form-input" id="mkt-nit" placeholder="Se completa automáticamente o escríbelo" readonly style="background:var(--bg);">
+      <div id="mkt-razon" style="font-size:11px;color:var(--muted);margin-top:4px;"></div>
     </div>
     <div class="form-group">
       <label class="form-label">Valor total de la factura <span style="color:var(--danger);">*</span></label>
@@ -1403,10 +1408,34 @@ function generarExcelMulti(){
    ============================================================== */
 var mktFotoData=null;
 
+function autocompletarNit(valor){
+  var nitEl=document.getElementById('mkt-nit');
+  var razonEl=document.getElementById('mkt-razon');
+  if(!nitEl||!razonEl) return;
+  var resultado=buscarNitEstablecimiento(valor);
+  if(resultado){
+    nitEl.value=resultado.nit;
+    nitEl.readOnly=true;
+    nitEl.style.background='var(--primary-50)';
+    razonEl.textContent=resultado.razon;
+    razonEl.style.color='var(--primary)';
+  } else {
+    nitEl.value='';
+    nitEl.readOnly=false;
+    nitEl.style.background='var(--bg)';
+    razonEl.textContent=valor.length>2?'No reconocido - puedes escribir el NIT manualmente':'';
+    razonEl.style.color='var(--muted)';
+  }
+}
+
 function abrirMarketing(){
   mktFotoData=null;
   document.getElementById('mkt-lugar').value='';
   document.getElementById('mkt-valor').value='';
+  document.getElementById('mkt-nit').value='';
+  document.getElementById('mkt-nit').readOnly=false;
+  document.getElementById('mkt-nit').style.background='var(--bg)';
+  document.getElementById('mkt-razon').textContent='';
   document.getElementById('mkt-foto-preview-wrap').style.display='none';
   document.getElementById('mkt-foto-input').value='';
   openModal('modalMarketing');
@@ -1439,12 +1468,16 @@ function guardarMarketing(){
   if(!lugar){toast('Escribe el nombre del establecimiento','err');return;}
   if(!valor){toast('Escribe el valor de la factura','err');return;}
   if(!mktFotoData){toast('Toma una foto de la factura','err');return;}
+  var nitVal=document.getElementById('mkt-nit').value.trim();
+  var razonVal=document.getElementById('mkt-razon').textContent.trim();
   var reg={
     id:'mkt_'+Date.now()+'_'+Math.random().toString(36).substr(2,4),
     userId:currentUser.id,
     userName:currentUser.name,
     labId:currentUser.labId||'',
     lugar:lugar,
+    nit:nitVal||'',
+    razonSocial:razonVal||'',
     valor:parseFloat(valor),
     foto:mktFotoData,
     fecha:today(),
@@ -1512,11 +1545,11 @@ function renderMarketingInformes(containerId){
     +'<button class="btn btn-sm btn-success" onclick="generarExcelMarketing(this.dataset.p)" data-p="semana"><i class="fa-solid fa-file-excel"></i> Excel semana</button>'
     +'<button class="btn btn-sm btn-success" onclick="generarExcelMarketing(this.dataset.p)" data-p="2semanas"><i class="fa-solid fa-file-excel"></i> Excel 2 sem.</button>'
     +'<button class="btn btn-sm btn-success" onclick="generarExcelMarketing(this.dataset.p)" data-p="mes"><i class="fa-solid fa-file-excel"></i> Excel mes</button>'
-    +'<button class="btn btn-sm btn-primary" onclick="generarPDFMarketing(this.dataset.p)" data-p="semana"><i class="fa-solid fa-file-pdf"></i> PDF semana</button>'
-    +'<button class="btn btn-sm btn-primary" onclick="generarPDFMarketing(this.dataset.p)" data-p="2semanas"><i class="fa-solid fa-file-pdf"></i> PDF 2 sem.</button>'
-    +'<button class="btn btn-sm btn-primary" onclick="generarPDFMarketing(this.dataset.p)" data-p="mes"><i class="fa-solid fa-file-pdf"></i> PDF mes</button>'
-    +'<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTXMarketing(this.dataset.p)" data-p="semana"><i class="fa-solid fa-file-powerpoint"></i> PPTX semana</button>'
-    +'<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTXMarketing(this.dataset.p)" data-p="mes"><i class="fa-solid fa-file-powerpoint"></i> PPTX mes</button>'
+    +'<button class="btn btn-sm btn-primary" onclick="generarPDFMarketing('semana')"><i class="fa-solid fa-file-pdf"></i> PDF semana</button>'
+    +'<button class="btn btn-sm btn-primary" onclick="generarPDFMarketing('2semanas')"><i class="fa-solid fa-file-pdf"></i> PDF 2 sem.</button>'
+    +'<button class="btn btn-sm btn-primary" onclick="generarPDFMarketing('mes')"><i class="fa-solid fa-file-pdf"></i> PDF mes</button>'
+    +'<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTXMarketing('semana')"><i class="fa-solid fa-file-powerpoint"></i> PPTX semana</button>'
+    +'<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTXMarketing('mes')"><i class="fa-solid fa-file-powerpoint"></i> PPTX mes</button>'
     +'</div>'
     +'<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Periodo personalizado:</div>'
     +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
@@ -1559,6 +1592,7 @@ function renderAdminMarketing(){
           +'<i class="fa-solid fa-user" style="width:14px;"></i> '+esc(r.userName||'')+' &nbsp;'
           +(lab.name?'<i class="fa-solid fa-flask" style="width:14px;"></i> '+esc(lab.name)+' &nbsp;':'')
           +'<i class="fa-solid fa-calendar" style="width:14px;"></i> '+esc(r.fecha||'')
+          +(r.nit?'<div style="font-size:10px;margin-top:3px;color:var(--muted);">NIT: '+esc(r.nit)+(r.razonSocial?' · '+esc(r.razonSocial):'')+'</div>':'')
           +'</div>'
           +(r.foto?'<img src="'+r.foto+'" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px;cursor:pointer;" onclick="viewMarketingFoto(this.dataset.id)" data-id="'+r.id+'">':'')
           +'</div>';
@@ -1582,6 +1616,41 @@ function viewMarketingFoto(id){
       }
     });
   });
+}
+
+var NIT_ESTABLECIMIENTOS=[
+  {nombres:['exito','éxito','almacenes exito','almacenes éxito','el exito','tiendas exito'],razon:'Almacenes Éxito S.A.',nit:'890.900.608-9'},
+  {nombres:['carulla','carullas','supermercado carulla'],razon:'Almacenes Éxito S.A.',nit:'890.900.608-9'},
+  {nombres:['jumbo','tiendas jumbo','supermercado jumbo','hipermercado jumbo'],razon:'Cencosud Colombia S.A.',nit:'900.155.107-1'},
+  {nombres:['metro','metro cencosud','supermercado metro','hipermercado metro'],razon:'Cencosud Colombia S.A.',nit:'900.155.107-1'},
+  {nombres:['ara','tiendas ara','supermercado ara'],razon:'Jerónimo Martins Colombia S.A.S.',nit:'900.480.569-1'},
+  {nombres:['d1','tiendas d1','almacen d1'],razon:'Koba Colombia S.A.S.',nit:'900.276.962-1'},
+  {nombres:['isimo','ísimo','tiendas isimo','tiendas ísimo'],razon:'Ísimo S.A.S.',nit:'901.644.943'},
+  {nombres:['zapatoca','mercado zapatoca','tiendas zapatoca','supermercado zapatoca'],razon:'Mercado Zapatoca S.A.',nit:'800.106.774-0'},
+  {nombres:['olimpica','olímpica','supertiendas olimpica','supertiendas olímpica','olimpica sa'],razon:'Supertiendas y Droguerías Olímpica S.A.',nit:'890.107.487-3'},
+  {nombres:['alkosto','almacenes alkosto'],razon:'Colombiana de Comercio S.A.',nit:'890.900.943-1'},
+  {nombres:['makro','makro supermayorista'],razon:'Makro Supermayorista S.A.',nit:'900.059.238-5'},
+  {nombres:['pricesmart','price smart'],razon:'PriceSmart Colombia S.A.S.',nit:'900.319.753-3'},
+  {nombres:['oxxo','tiendas oxxo'],razon:'Cadena Comercial Oxxo Colombia S.A.',nit:'900.236.520-7'},
+  {nombres:['colsubsidio','supermercado colsubsidio'],razon:'Caja Col. de Sub. Familiar',nit:'860.007.336-1'},
+];
+
+function buscarNitEstablecimiento(nombre){
+  var n=nombre.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // quitar tildes
+    .replace(/[^a-z0-9 ]/g,'').trim();
+  for(var i=0;i<NIT_ESTABLECIMIENTOS.length;i++){
+    var est=NIT_ESTABLECIMIENTOS[i];
+    for(var j=0;j<est.nombres.length;j++){
+      var ref=est.nombres[j].toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        .replace(/[^a-z0-9 ]/g,'').trim();
+      if(n===ref||n.indexOf(ref)>=0||ref.indexOf(n)>=0){
+        return est;
+      }
+    }
+  }
+  return null;
 }
 function initFirebase(){
   firebase.initializeApp(FIREBASE_CONFIG);
@@ -3695,438 +3764,161 @@ function generarPDF(labId){
 }
 
 function generarPDFMarketing(periodo){
+  if(typeof periodo==='object'&&periodo&&periodo.dataset) periodo=periodo.dataset.p||'mes';
   toast('Generando PDF Marketing...','info');
-  var {jsPDF}=window.jspdf;
-  var doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
-  var W=297,H=210;
-  function mktHex(h){h=(h||'0d9488').replace('#','');return[parseInt(h.substring(0,2),16),parseInt(h.substring(2,4),16),parseInt(h.substring(4,6),16)];}
-  function mktFill(h){var c=mktHex(h);doc.setFillColor(c[0],c[1],c[2]);}
-  function mktTxt(h){var c=mktHex(h);doc.setTextColor(c[0],c[1],c[2]);}
   var ahora=new Date();
   var desde=new Date();
   if(periodo==='semana') desde.setDate(ahora.getDate()-7);
   else if(periodo==='2semanas') desde.setDate(ahora.getDate()-14);
-  else if(periodo==='mes') desde.setMonth(ahora.getMonth()-1);
-  else if(periodo&&periodo.desde) desde=new Date(periodo.desde);
+  else desde.setMonth(ahora.getMonth()-1);
   var desdeStr=desde.toISOString().split('T')[0];
-  var hastaStr=periodo&&periodo.hasta?periodo.hasta:today();
+  var hastaStr=today();
 
   dbRef.ref('medvisit/marketing').once('value',function(snap){
-    var items=[];
-    snap.forEach(function(child){items.push(child.val());});
-    var isSuper=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral');
-    var filtered=items.filter(function(r){
-      return (isSuper?true:r.labId===currentLabId)&&r.fecha>=desdeStr&&r.fecha<=hastaStr;
-    });
-    var total=filtered.reduce(function(s,r){return s+(r.valor||0);},0);
-
-    // Portada
-    mktFill('#1B3A6B'); doc.rect(0,0,W,H,'F');
-    mktFill('#7C3AED'); doc.rect(0,H-18,W,18,'F');
-    doc.setFontSize(28); doc.setFont(undefined,'bold'); mktTxt('#FFFFFF');
-    doc.text('Informe de Marketing',14,45);
-    doc.setFontSize(14); doc.setFont(undefined,'normal'); mktTxt('#CADCFC');
-    doc.text('Periodo: '+desdeStr+' al '+hastaStr,14,58);
-    doc.setFontSize(11); setTxt('#8FAFD4');
-    doc.text('Generado: '+today()+' | Admin: '+currentUser.name,14,H-10);
-
-    if(!filtered.length){
-      doc.addPage();
-      doc.setFontSize(16); mktTxt('#333333');
-      doc.text('Sin registros en el periodo seleccionado.',W/2,H/2,{align:'center'});
-      doc.save('Marketing_APPMED_'+desdeStr+'_al_'+hastaStr+'.pdf');
-      return;
-    }
-
-    // Pagina de detalle
-    doc.addPage();
-    mktFill('#7C3AED'); doc.rect(0,0,W,22,'F');
-    doc.setFontSize(14); doc.setFont(undefined,'bold'); mktTxt('#FFFFFF');
-    doc.text('Detalle de facturas',10,14);
-    doc.setFontSize(9); doc.setFont(undefined,'normal'); mktTxt('#EDE9FE');
-    doc.text(filtered.length+' registros | Total: $'+total.toLocaleString(),10,20);
-
-    doc.autoTable({
-      head:[['Fecha','Visitador','Laboratorio','Establecimiento','Valor ($)']],
-      body:filtered.map(function(r){
-        var lab=LABS.find(function(l){return l.id===r.labId;})||{};
-        return [r.fecha||'',r.userName||'',lab.name||'',r.lugar||'','$'+(r.valor||0).toLocaleString()];
-      }),
-      startY:26,
-      styles:{fontSize:9,cellPadding:3},
-      headStyles:{fillColor:[124,58,237],textColor:255,fontStyle:'bold'},
-      alternateRowStyles:{fillColor:[237,233,254]},
-      foot:[['','','','TOTAL','$'+total.toLocaleString()]],
-      footStyles:{fillColor:[124,58,237],textColor:255,fontStyle:'bold'}
-    });
-    doc.save('Marketing_APPMED_'+desdeStr+'_al_'+hastaStr+'.pdf');
-  });
-}
-
-function generarExcel(labId){
-  if(labId&&typeof labId==='object') labId=labId.dataset?labId.dataset.id:labId;
-  toast('Generando Excel...','info');
-  try{
-    var data=getReportData(labId);
-    var wb=XLSX.utils.book_new();
-    var header=['Fecha','Visitador','Laboratorio','Tipo','Nombre del Punto','Profesional','Especialidad','Telefono','Direccion','Obsequio','Firma','Estado','Notas'];
-    var rows=data.rows.map(function(r){
-      return [r.fecha||'',r.visitador||'',r.laboratorio||'',r.tipo||'',
-        r.puntoNombre||'',r.medico||'',r.especialidad||'',r.telefono||'',
-        r.direccionProf||r.direccion||'',r.obsequio||'',r.firma||'',r.estado||'',r.notas||''];
-    });
-    var ws=XLSX.utils.aoa_to_sheet([header].concat(rows));
-    ws['!cols']=[{wch:12},{wch:20},{wch:14},{wch:14},{wch:22},{wch:22},{wch:16},{wch:14},{wch:28},{wch:12},{wch:8},{wch:12},{wch:28}];
-    XLSX.utils.book_append_sheet(wb,ws,'Visitas');
-
-    // Hoja resumen
-    var summary=[['Laboratorio','Total Visitas','Completadas','En Curso','Pendientes']];
-    var allLabs=labId?[LABS.find(function(l){return l.id===labId;})||{id:labId,name:labId}]:LABS;
-    allLabs.forEach(function(lab){
-      if(!lab) return;
-      var lv=data.rows.filter(function(r){return r.laboratorio===lab.name;});
-      summary.push([lab.name,lv.length,
-        lv.filter(function(r){return r.estado==='Completada';}).length,
-        lv.filter(function(r){return r.estado==='En curso';}).length,
-        lv.filter(function(r){return r.estado==='Pendiente';}).length]);
-    });
-    var ws2=XLSX.utils.aoa_to_sheet(summary);
-    XLSX.utils.book_append_sheet(wb,ws2,'Resumen');
-
-    // Hoja pendientes
-    var mesAtras=new Date(); mesAtras.setMonth(mesAtras.getMonth()-1);
-    var mesAtrasStr=mesAtras.toISOString().split('T')[0];
-    var pHeader=['Visitador','Laboratorio','Pendiente','Prioridad','Vence','Estado','Creado Por','Fecha Gestion'];
-    var pRows=(D.pendientes||[]).filter(function(p){
-      if(!p||!p.id) return false;
-      var u=userById(p.userId);
-      if(!u) return false;
-      var fullAccess=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral');
-      var matchLab=labId?u.labId===labId:(fullAccess?true:u.labId===currentLabId);
-      var fechaCreacion=p.creadoAt?p.creadoAt.split('T')[0]:'';
-      return matchLab&&(!fechaCreacion||fechaCreacion>=mesAtrasStr);
-    }).map(function(p){
-      var u=userById(p.userId)||{};
-      var lab=LABS.find(function(l){return l.id===u.labId;})||{};
-      var estado=p.eliminado?'Eliminado por '+(p.eliminadoPor||'Admin'):p.resuelto?'Resuelto':'Activo';
-      return [u.name||'',lab.name||'',p.texto||'',
-        p.prioridad==='urgente'?'Urgente':p.prioridad==='semana'?'Esta semana':'Normal',
-        p.fechaLimite||'',estado,p.creadoPorNombre||'',
-        p.resuelto&&p.resueltoAt?p.resueltoAt.split('T')[0]:p.eliminado&&p.eliminadoAt?p.eliminadoAt.split('T')[0]:''];
-    });
-    if(pRows.length>0){
-      var wsp=XLSX.utils.aoa_to_sheet([pHeader].concat(pRows));
-      wsp['!cols']=[{wch:22},{wch:14},{wch:40},{wch:12},{wch:14},{wch:12},{wch:20},{wch:14}];
-      XLSX.utils.book_append_sheet(wb,wsp,'Pendientes');
-    }
-    XLSX.writeFile(wb,'Informe_'+data.lab.name+'_'+today()+'.xlsx');
-  }catch(err){
-    console.error('Error generando Excel:',err);
-    toast('Error al generar Excel: '+err.message,'err');
-  }
-}
-
-function generarPPTX(labId){
-  if(labId&&typeof labId==='object') labId=labId.dataset?labId.dataset.id:labId;
-  toast('Generando PPTX...','info');
-  var pptx=new PptxGenJS();
-  pptx.layout='LAYOUT_WIDE';
-  pptx.author='APPMED by HELSE';
-
-  var isSuper=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral');
-  var labsToReport=labId==='__multi__'?(window._selectedLabs||LABS):labId?[LABS.find(function(l){return l.id===labId;})||{id:labId,name:labId,color:'#0d9488',icon:'fa-flask'}]
-    :(isSuper?LABS:LABS.filter(function(l){return l.id===currentLabId;}));
-
-  var periodoLabel=(rptDesde||'Todo')+' al '+(rptHasta||'Hoy');
-
-  // ── SLIDE 1: PORTADA ────────────────────────────────────────────
-  var s1=pptx.addSlide();
-  s1.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:'100%',fill:{color:'1B3A6B'}});
-  s1.addShape(pptx.ShapeType.rect,{x:0,y:4.8,w:'100%',h:0.6,fill:{color:'152F5A'}});
-  s1.addText('INFORME DE GESTIÓN · VISITADORES MÉDICOS',{x:0.5,y:0.4,w:7,h:0.4,fontSize:10,color:'8FAFD4',bold:false,charSpacing:2});
-  s1.addText(labId?(LABS.find(function(l){return l.id===labId;})||{name:'General'}).name:'Todos los laboratorios',{x:0.5,y:0.9,w:7,h:1.1,fontSize:32,color:'FFFFFF',bold:true});
-  s1.addText('Visitadores médicos · '+periodoLabel,{x:0.5,y:2.1,w:7,h:0.4,fontSize:13,color:'8FAFD4'});
-  s1.addShape(pptx.ShapeType.rect,{x:7.8,y:0.5,w:1.5,h:1.5,fill:{color:'FFFFFF'},rounding:0.1});
-  s1.addText('HELSE  Enjoy Life',{x:7.8,y:0.7,w:1.5,h:1.1,fontSize:10,color:'1B3A6B',bold:true,align:'center'});
-  s1.addText('Generado: '+today()+' · Admin: '+currentUser.name,{x:0.5,y:5.0,w:8,h:0.3,fontSize:9,color:'8FAFD4'});
-  s1.addText('Powered by APPMED',{x:0.5,y:5.3,w:8,h:0.2,fontSize:8,color:'5A7FAA'});
-
-  // ── Por cada laboratorio a reportar ─────────────────────────────
-  labsToReport.forEach(function(lab){
-    if(!lab) return;
-    var labVisits=(D.visits||[]).filter(function(v){
-      var matchLab=lab.id?v.labId===lab.id:true;
-      var matchDesde=rptDesde?v.date>=rptDesde:true;
-      var matchHasta=rptHasta?v.date<=rptHasta:true;
-      return matchLab&&matchDesde&&matchHasta;
-    });
-    var completed=labVisits.filter(function(v){return v.status==='completed';});
-    var labUsers=(D.users||[]).filter(function(u){return u.role==='visitor'&&(lab.id?u.labId===lab.id:true);});
-    var labPts=(D.points||[]).filter(function(p){return lab.id?p.labId===lab.id:true;});
-    var totalPts=labPts.length||1;
-    var cumplimiento=Math.round((completed.length/Math.max(totalPts,1))*100);
-    var mesAtrasPptx=new Date(); mesAtrasPptx.setMonth(mesAtrasPptx.getMonth()-1);
-    var mesAtrasPptxStr=mesAtrasPptx.toISOString().split('T')[0];
-    var labPends=(D.pendientes||[]).filter(function(p){
-      if(!p||!p.id) return false;
-      var u=userById(p.userId);
-      var fechaP=p.creadoAt?p.creadoAt.split('T')[0]:'';
-      return u&&(lab.id?u.labId===lab.id:true)&&(!fechaP||fechaP>=mesAtrasPptxStr);
-    });
-    var pActivos=labPends.filter(function(p){return !p.resuelto&&!p.eliminado;});
-    var pResueltos=labPends.filter(function(p){return p.resuelto===true&&!p.eliminado;});
-    var pEliminados=labPends.filter(function(p){return p.eliminado===true;});
-    var pVencidos=pActivos.filter(function(p){
-      if(!p.creadoAt) return false;
-      return (Date.now()-new Date(p.creadoAt).getTime())>7*86400000;
-    });
-
-    // ── SLIDE 2: RESUMEN ──────────────────────────────────────────
-    var s2=pptx.addSlide();
-    s2.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:0.9,fill:{color:'1B3A6B'}});
-    s2.addText('Resumen general · '+lab.name,{x:0.3,y:0.15,w:7,h:0.4,fontSize:16,color:'FFFFFF',bold:true});
-    s2.addText(periodoLabel,{x:0.3,y:0.55,w:7,h:0.25,fontSize:9,color:'8FAFD4'});
-    // 4 metric boxes
-    var metrics=[
-      {val:cumplimiento+'%',lbl:'Cumplimiento',col:'1D9E75'},
-      {val:completed.length,lbl:'Visitas completadas',col:'185FA5'},
-      {val:pActivos.length,lbl:'Pendientes activos',col:'E24B4A'},
-      {val:pResueltos.length,lbl:'Resueltos',col:'059669'}
-    ];
-    metrics.forEach(function(m,i){
-      var x=0.3+i*2.35;
-      s2.addShape(pptx.ShapeType.rect,{x:x,y:1.1,w:2.2,h:1.0,fill:{color:'F0F4F8'},line:{color:'E0E8F0',pt:1}});
-      s2.addText(String(m.val),{x:x,y:1.2,w:2.2,h:0.55,fontSize:26,bold:true,color:m.col,align:'center'});
-      s2.addText(m.lbl,{x:x,y:1.75,w:2.2,h:0.3,fontSize:9,color:'666666',align:'center'});
-    });
-    // Per-visitor bars
-    s2.addText('Cumplimiento por visitador',{x:0.3,y:2.3,w:9,h:0.3,fontSize:10,bold:true,color:'333333'});
-    labUsers.slice(0,8).forEach(function(u,i){
-      var userVisits=completed.filter(function(v){return v.visitorId===u.id;});
-      var userPts=labPts.filter(function(p){return p.assignedTo===u.id;}).length||1;
-      var pct=Math.min(100,Math.round((userVisits.length/userPts)*100));
-      var y=2.7+i*0.42;
-      s2.addText(u.name,{x:0.3,y:y,w:1.8,h:0.3,fontSize:9,color:'333333'});
-      s2.addShape(pptx.ShapeType.rect,{x:2.2,y:y+0.05,w:6.5,h:0.2,fill:{color:'E8EDF2'}});
-      s2.addShape(pptx.ShapeType.rect,{x:2.2,y:y+0.05,w:Math.max(0.05,6.5*pct/100),h:0.2,fill:{color:pct>=80?'1D9E75':pct>=60?'BA7517':'E24B4A'}});
-      s2.addText(pct+'%',{x:8.8,y:y,w:0.6,h:0.3,fontSize:9,color:'666666',align:'right'});
-    });
-
-    // ── SLIDE 3: DETALLE DE VISITAS ───────────────────────────────
-    var s3=pptx.addSlide();
-    s3.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:0.9,fill:{color:'1B3A6B'}});
-    s3.addText('Detalle de visitas · '+lab.name,{x:0.3,y:0.15,w:7,h:0.4,fontSize:16,color:'FFFFFF',bold:true});
-    s3.addText('Puntos visitados · tiempo por visita',{x:0.3,y:0.55,w:7,h:0.25,fontSize:9,color:'8FAFD4'});
-    // Table headers
-    var hdrs=['Punto visitado','Visitador','Tipo','Tiempo','Fecha'];
-    var colW=[3.2,1.8,1.2,0.9,1.0];
-    var colX=[0.2];
-    colW.forEach(function(w,i){if(i>0)colX.push(colX[i-1]+colW[i-1]);});
-    hdrs.forEach(function(h,i){
-      s3.addShape(pptx.ShapeType.rect,{x:colX[i],y:1.0,w:colW[i],h:0.35,fill:{color:'1B3A6B'}});
-      s3.addText(h,{x:colX[i]+0.05,y:1.0,w:colW[i]-0.1,h:0.35,fontSize:8,color:'FFFFFF',bold:true});
-    });
-    var totalTime=0,countTime=0;
-    completed.slice(0,14).forEach(function(v,i){
-      var u=userById(v.visitorId)||{name:''};
-      var pt=pointById(v.pointId)||{};
-      var mins=0;
-      if(v.arrivedAt&&v.completedAt){
-        mins=Math.round((new Date(v.completedAt)-new Date(v.arrivedAt))/60000);
-        if(mins>0){totalTime+=mins;countTime++;}
-      }
-      var isProf=v.type==='profesional';
-      var rowBg=i%2===0?'FFFFFF':'F5F8FA';
-      var y=1.4+i*0.28;
-      colW.forEach(function(w,ci){s3.addShape(pptx.ShapeType.rect,{x:colX[ci],y:y,w:w,h:0.26,fill:{color:rowBg}});});
-      var ptLabel=isProf?(v.pointName?v.pointName+' · ':'')+esc2(v.placeName||''):esc2(pt.name||v.placeName||'Visita');
-      s3.addText(ptLabel,{x:colX[0]+0.05,y:y,w:colW[0]-0.1,h:0.26,fontSize:7.5,color:'222222'});
-      s3.addText(u.name.split(' ')[0]||'',{x:colX[1]+0.05,y:y,w:colW[1]-0.1,h:0.26,fontSize:7.5,color:'444444'});
-      s3.addText(isProf?'Profesional':'General',{x:colX[2]+0.05,y:y,w:colW[2]-0.1,h:0.26,fontSize:7.5,color:isProf?'534AB7':'0F6E56'});
-      s3.addText(mins>0?mins+' min':'—',{x:colX[3]+0.05,y:y,w:colW[3]-0.1,h:0.26,fontSize:7.5,color:'444444'});
-      s3.addText(v.date||'',{x:colX[4]+0.05,y:y,w:colW[4]-0.1,h:0.26,fontSize:7.5,color:'444444'});
-    });
-    var avgTime=countTime>0?Math.round(totalTime/countTime):0;
-    var profTime=0,profCount=0;
-    completed.forEach(function(v){
-      if(v.type==='profesional'&&v.arrivedAt&&v.completedAt){
-        var m=Math.round((new Date(v.completedAt)-new Date(v.arrivedAt))/60000);
-        if(m>0){profTime+=m;profCount++;}
-      }
-    });
-    s3.addShape(pptx.ShapeType.rect,{x:0.2,y:5.3,w:9.1,h:0.4,fill:{color:'E8F5F0'}});
-    s3.addText('Promedio general: '+avgTime+' min  ·  Promedio visita profesional: '+(profCount>0?Math.round(profTime/profCount):0)+' min  ·  Total visitas: '+completed.length,{x:0.3,y:5.32,w:9,h:0.35,fontSize:9,color:'0F6E56',bold:true});
-
-    // ── SLIDE 4: PENDIENTES ───────────────────────────────────────
-    var s4=pptx.addSlide();
-    s4.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:0.9,fill:{color:'1B3A6B'}});
-    s4.addText('Gestión de pendientes · '+lab.name,{x:0.3,y:0.15,w:7,h:0.4,fontSize:16,color:'FFFFFF',bold:true});
-    s4.addText('Activos · resueltos · vencidos sin gestión',{x:0.3,y:0.55,w:7,h:0.25,fontSize:9,color:'8FAFD4'});
-    // Summary boxes
-    [{val:pActivos.length,lbl:'Activos',col:'E24B4A',bg:'FCEBEB'},{val:pResueltos.length,lbl:'Resueltos',col:'1D9E75',bg:'E1F5EE'},{val:pEliminados.length,lbl:'Gestionados',col:'6B7280',bg:'F3F4F6'}].forEach(function(m,i){
-      var x=0.3+i*3.1;
-      s4.addShape(pptx.ShapeType.rect,{x:x,y:1.0,w:2.8,h:0.8,fill:{color:m.bg},line:{color:m.col,pt:1}});
-      s4.addText(String(m.val),{x:x,y:1.05,w:2.8,h:0.45,fontSize:22,bold:true,color:m.col,align:'center'});
-      s4.addText(m.lbl,{x:x,y:1.52,w:2.8,h:0.25,fontSize:9,color:m.col,align:'center'});
-    });
-    // Active pendientes list
-    s4.addText('Pendientes activos',{x:0.3,y:2.0,w:4.5,h:0.3,fontSize:10,bold:true,color:'333333'});
-    pActivos.slice(0,6).forEach(function(p,i){
-      var u=userById(p.userId)||{name:''};
-      var col=p.prioridad==='urgente'?'E24B4A':p.prioridad==='semana'?'BA7517':'888780';
-      s4.addShape(pptx.ShapeType.rect,{x:0.3,y:2.35+i*0.48,w:4.3,h:0.42,fill:{color:'F8F9FA'},line:{color:'E0E0E0',pt:1}});
-      s4.addShape(pptx.ShapeType.rect,{x:0.3,y:2.35+i*0.48,w:0.08,h:0.42,fill:{color:col}});
-      s4.addText(p.texto||'',{x:0.5,y:2.38+i*0.48,w:3.5,h:0.22,fontSize:8,color:'222222'});
-      s4.addText(u.name+' · '+(p.prioridad==='urgente'?'Urgente':p.prioridad==='semana'?'Esta semana':'Normal')+(p.fechaLimite?' · '+p.fechaLimite:''),{x:0.5,y:2.6+i*0.48,w:4,h:0.18,fontSize:7,color:'666666'});
-    });
-    // Vencidos list
-    s4.addText('Vencidos sin gestión ⚠',{x:5.0,y:2.0,w:4.3,h:0.3,fontSize:10,bold:true,color:'A32D2D'});
-    if(pVencidos.length===0){
-      s4.addShape(pptx.ShapeType.rect,{x:5.0,y:2.35,w:4.3,h:0.5,fill:{color:'E1F5EE'}});
-      s4.addText('Sin pendientes vencidos ✓',{x:5.0,y:2.45,w:4.3,h:0.3,fontSize:10,color:'1D9E75',align:'center'});
-    } else {
-      pVencidos.slice(0,5).forEach(function(p,i){
-        var u=userById(p.userId)||{name:''};
-        var dias=Math.round((Date.now()-new Date(p.creadoAt).getTime())/86400000);
-        s4.addShape(pptx.ShapeType.rect,{x:5.0,y:2.35+i*0.52,w:4.3,h:0.46,fill:{color:'FCEBEB'},line:{color:'F09595',pt:1}});
-        s4.addText(p.texto||'',{x:5.1,y:2.38+i*0.52,w:4.1,h:0.22,fontSize:8,color:'A32D2D',bold:true});
-        s4.addText(u.name+' · Hace '+dias+' días sin resolver',{x:5.1,y:2.60+i*0.52,w:4.1,h:0.18,fontSize:7,color:'A32D2D'});
+    try{
+      var items=[];
+      snap.forEach(function(child){if(child.val()) items.push(child.val());});
+      var isSuper=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral');
+      var filtered=items.filter(function(r){
+        if(!r||!r.fecha) return false;
+        return (isSuper?true:r.labId===currentLabId)&&r.fecha>=desdeStr&&r.fecha<=hastaStr;
       });
+      var total=filtered.reduce(function(s,r){return s+(parseFloat(r.valor)||0);},0);
+
+      var win=window.jspdf;
+      var doc=new win.jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+      var W=297,H=210;
+
+      // Portada
+      doc.setFillColor(27,58,107); doc.rect(0,0,W,H,'F');
+      doc.setFillColor(124,58,237); doc.rect(0,H-18,W,18,'F');
+      doc.setFontSize(28); doc.setFont(undefined,'bold');
+      doc.setTextColor(255,255,255);
+      doc.text('Informe de Marketing',14,45);
+      doc.setFontSize(14); doc.setFont(undefined,'normal');
+      doc.setTextColor(202,220,252);
+      doc.text('Periodo: '+desdeStr+' al '+hastaStr,14,58);
+      doc.setFontSize(16); doc.setFont(undefined,'bold');
+      doc.setTextColor(237,233,254);
+      doc.text('Total: $'+total.toLocaleString()+' | '+filtered.length+' facturas',14,72);
+      doc.setFontSize(10); doc.setFont(undefined,'normal');
+      doc.setTextColor(143,175,212);
+      doc.text('Generado: '+today()+' | Admin: '+currentUser.name,14,H-10);
+
+      if(!filtered.length){
+        doc.addPage();
+        doc.setFontSize(16); doc.setTextColor(100,100,100);
+        doc.text('Sin registros en el periodo seleccionado.',W/2,H/2,{align:'center'});
+        doc.save('Marketing_APPMED_'+desdeStr+'_al_'+hastaStr+'.pdf');
+        return;
+      }
+
+      // Pagina detalle
+      doc.addPage();
+      doc.setFillColor(124,58,237); doc.rect(0,0,W,22,'F');
+      doc.setFontSize(14); doc.setFont(undefined,'bold'); doc.setTextColor(255,255,255);
+      doc.text('Detalle de facturas',10,14);
+      doc.setFontSize(9); doc.setFont(undefined,'normal'); doc.setTextColor(237,233,254);
+      doc.text(filtered.length+' registros | Total: $'+total.toLocaleString(),10,20);
+
+      doc.autoTable({
+        head:[['Fecha','Visitador','Laboratorio','Establecimiento','NIT','Valor ($)']],
+        body:filtered.map(function(r){
+          var lab=LABS.find(function(l){return l.id===r.labId;})||{};
+          return [r.fecha||'',r.userName||'',lab.name||'',r.lugar||'',r.nit||'','$'+(parseFloat(r.valor)||0).toLocaleString()];
+        }),
+        startY:26,
+        styles:{fontSize:8,cellPadding:2.5},
+        headStyles:{fillColor:[124,58,237],textColor:255,fontStyle:'bold'},
+        alternateRowStyles:{fillColor:[237,233,254]},
+        foot:[['','','','','TOTAL','$'+total.toLocaleString()]],
+        footStyles:{fillColor:[124,58,237],textColor:255,fontStyle:'bold'},
+        columnStyles:{5:{halign:'right'}}
+      });
+
+      doc.save('Marketing_APPMED_'+desdeStr+'_al_'+hastaStr+'.pdf');
+    }catch(err){
+      console.error('Error PDF Marketing:',err);
+      toast('Error al generar PDF: '+err.message,'err');
     }
   });
-
-  // ── SLIDE 5: COMPARATIVA (solo si hay múltiples labs) ───────────
-  if(labsToReport.length>1){
-    var s5=pptx.addSlide();
-    s5.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:0.9,fill:{color:'1B3A6B'}});
-    s5.addText('Comparativa entre laboratorios',{x:0.3,y:0.15,w:7,h:0.4,fontSize:16,color:'FFFFFF',bold:true});
-    s5.addText(periodoLabel,{x:0.3,y:0.55,w:7,h:0.25,fontSize:9,color:'8FAFD4'});
-    var labColors=['1D9E75','185FA5','BA7517','534AB7','E24B4A','0F6E56'];
-    var cardW=Math.min(2.8,9.1/labsToReport.length);
-    labsToReport.forEach(function(lab,i){
-      if(!lab) return;
-      var lv=(D.visits||[]).filter(function(v){return v.labId===lab.id&&v.status==='completed'&&(!rptDesde||v.date>=rptDesde)&&(!rptHasta||v.date<=rptHasta);});
-      var lpts=(D.points||[]).filter(function(p){return p.labId===lab.id;}).length||1;
-      var pct=Math.min(100,Math.round((lv.length/lpts)*100));
-      var lpends=(D.pendientes||[]).filter(function(p){var u=userById(p.userId);return u&&u.labId===lab.id&&!p.resuelto;});
-      var lvenc=lpends.filter(function(p){return p.creadoAt&&(Date.now()-new Date(p.creadoAt).getTime())>7*86400000;});
-      var col=labColors[i%labColors.length];
-      var x=0.2+i*cardW;
-      s5.addShape(pptx.ShapeType.rect,{x:x,y:1.0,w:cardW-0.15,h:1.4,fill:{color:'F5F8FA'},line:{color:col,pt:1}});
-      s5.addText(lab.name,{x:x+0.1,y:1.05,w:cardW-0.3,h:0.28,fontSize:10,bold:true,color:col});
-      s5.addText(pct+'%',{x:x+0.1,y:1.35,w:cardW-0.3,h:0.45,fontSize:22,bold:true,color:col});
-      s5.addText(lv.length+' visitas',{x:x+0.1,y:1.82,w:cardW-0.3,h:0.2,fontSize:8,color:'666666'});
-      s5.addText(lvenc.length+' vencidos',{x:x+0.1,y:2.02,w:cardW-0.3,h:0.2,fontSize:8,color:lvenc.length>0?'E24B4A':'1D9E75'});
-    });
-    s5.addText('% Cumplimiento comparativo',{x:0.3,y:2.7,w:9,h:0.3,fontSize:10,bold:true,color:'333333'});
-    var sorted=labsToReport.filter(Boolean).map(function(lab){
-      var lv=(D.visits||[]).filter(function(v){return v.labId===lab.id&&v.status==='completed'&&(!rptDesde||v.date>=rptDesde)&&(!rptHasta||v.date<=rptHasta);});
-      var lpts=(D.points||[]).filter(function(p){return p.labId===lab.id;}).length||1;
-      return {name:lab.name,pct:Math.min(100,Math.round((lv.length/lpts)*100))};
-    }).sort(function(a,b){return b.pct-a.pct;});
-    sorted.forEach(function(l,i){
-      var col=labColors[i%labColors.length];
-      s5.addText(l.name,{x:0.3,y:3.1+i*0.42,w:1.8,h:0.3,fontSize:9,color:'333333'});
-      s5.addShape(pptx.ShapeType.rect,{x:2.2,y:3.15+i*0.42,w:6.5,h:0.2,fill:{color:'E8EDF2'}});
-      s5.addShape(pptx.ShapeType.rect,{x:2.2,y:3.15+i*0.42,w:Math.max(0.05,6.5*l.pct/100),h:0.2,fill:{color:col}});
-      s5.addText(l.pct+'%',{x:8.8,y:3.1+i*0.42,w:0.6,h:0.3,fontSize:9,color:'666666',align:'right'});
-    });
-  }
-
-  function esc2(s){return String(s||'').substring(0,60);}
-
-  pptx.writeFile({fileName:'Informe_APPMED_'+(labId||'General')+'_'+today()+'.pptx'});
 }
 
 function generarPPTXMarketing(periodo){
+  if(typeof periodo==='object'&&periodo&&periodo.dataset) periodo=periodo.dataset.p||'mes';
   toast('Generando PPTX Marketing...','info');
   var ahora=new Date();
   var desde=new Date();
   if(periodo==='semana') desde.setDate(ahora.getDate()-7);
   else if(periodo==='2semanas') desde.setDate(ahora.getDate()-14);
-  else if(periodo==='mes') desde.setMonth(ahora.getMonth()-1);
-  else if(periodo&&periodo.desde) desde=new Date(periodo.desde);
+  else desde.setMonth(ahora.getMonth()-1);
   var desdeStr=desde.toISOString().split('T')[0];
-  var hastaStr=periodo&&periodo.hasta?periodo.hasta:today();
+  var hastaStr=today();
 
   dbRef.ref('medvisit/marketing').once('value',function(snap){
-    var items=[];
-    snap.forEach(function(child){items.push(child.val());});
-    var isSuper=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral');
-    var filtered=items.filter(function(r){
-      return (isSuper?true:r.labId===currentLabId)&&r.fecha>=desdeStr&&r.fecha<=hastaStr;
-    });
-    var total=filtered.reduce(function(s,r){return s+(r.valor||0);},0);
-    var pptx=new PptxGenJS();
-    pptx.layout='LAYOUT_WIDE';
-
-    // Slide 1: Portada
-    var s1=pptx.addSlide();
-    s1.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:'100%',fill:{color:'1B3A6B'}});
-    s1.addShape(pptx.ShapeType.rect,{x:0,y:4.8,w:'100%',h:0.6,fill:{color:'7C3AED'}});
-    s1.addText('Informe de Marketing',{x:0.5,y:0.8,w:9,h:1,fontSize:36,bold:true,color:'FFFFFF',fontFace:'Arial Black'});
-    s1.addText('Periodo: '+desdeStr+' al '+hastaStr,{x:0.5,y:1.9,w:9,h:0.4,fontSize:14,color:'CADCFC'});
-    s1.addText('Total del periodo: $'+total.toLocaleString(),{x:0.5,y:2.5,w:9,h:0.6,fontSize:22,bold:true,color:'EDE9FE'});
-    s1.addText('Registros: '+filtered.length+' facturas',{x:0.5,y:3.1,w:9,h:0.4,fontSize:14,color:'CADCFC'});
-    s1.addText('Generado: '+today()+' | '+currentUser.name,{x:0.5,y:5.0,w:9,h:0.3,fontSize:9,color:'8FAFD4'});
-
-    // Slide 2: Tabla de facturas
-    if(filtered.length>0){
-      var s2=pptx.addSlide();
-      s2.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:0.9,fill:{color:'7C3AED'}});
-      s2.addText('Detalle de facturas',{x:0.3,y:0.15,w:9,h:0.4,fontSize:16,bold:true,color:'FFFFFF'});
-      s2.addText(filtered.length+' registros | Total: $'+total.toLocaleString(),{x:0.3,y:0.55,w:9,h:0.25,fontSize:9,color:'EDE9FE'});
-      var tableRows=[[
-        {text:'Fecha',options:{bold:true,fill:'7C3AED',color:'FFFFFF'}},
-        {text:'Visitador',options:{bold:true,fill:'7C3AED',color:'FFFFFF'}},
-        {text:'Laboratorio',options:{bold:true,fill:'7C3AED',color:'FFFFFF'}},
-        {text:'Establecimiento',options:{bold:true,fill:'7C3AED',color:'FFFFFF'}},
-        {text:'Valor',options:{bold:true,fill:'7C3AED',color:'FFFFFF'}}
-      ]];
-      filtered.slice(0,20).forEach(function(r,i){
-        var lab=LABS.find(function(l){return l.id===r.labId;})||{};
-        var bg=i%2===0?'F5F3FF':'FFFFFF';
-        tableRows.push([
-          {text:r.fecha||'',options:{fill:bg}},
-          {text:r.userName||'',options:{fill:bg}},
-          {text:lab.name||'',options:{fill:bg}},
-          {text:r.lugar||'',options:{fill:bg}},
-          {text:'$'+(r.valor||0).toLocaleString(),options:{fill:bg,bold:true,color:'7C3AED'}}
-        ]);
+    try{
+      var items=[];
+      snap.forEach(function(child){if(child.val()) items.push(child.val());});
+      var isSuper=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral');
+      var filtered=items.filter(function(r){
+        if(!r||!r.fecha) return false;
+        return (isSuper?true:r.labId===currentLabId)&&r.fecha>=desdeStr&&r.fecha<=hastaStr;
       });
-      // Fila total
-      tableRows.push([
-        {text:'',options:{fill:'7C3AED'}},
-        {text:'',options:{fill:'7C3AED'}},
-        {text:'',options:{fill:'7C3AED'}},
-        {text:'TOTAL',options:{fill:'7C3AED',bold:true,color:'FFFFFF'}},
-        {text:'$'+total.toLocaleString(),options:{fill:'7C3AED',bold:true,color:'FFFFFF'}}
-      ]);
-      s2.addTable(tableRows,{x:0.3,y:1.0,w:12.7,colW:[1.5,2.5,2.0,4.0,2.7],fontSize:9});
+      var total=filtered.reduce(function(s,r){return s+(parseFloat(r.valor)||0);},0);
+
+      var pptx=new PptxGenJS();
+      pptx.layout='LAYOUT_WIDE';
+
+      // Slide 1 portada
+      var s1=pptx.addSlide();
+      s1.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:'100%',fill:{color:'1B3A6B'}});
+      s1.addShape(pptx.ShapeType.rect,{x:0,y:4.8,w:'100%',h:0.825,fill:{color:'7C3AED'}});
+      s1.addText('Informe de Marketing',{x:0.5,y:0.8,w:9,h:1,fontSize:36,bold:true,color:'FFFFFF',fontFace:'Arial Black'});
+      s1.addText('Periodo: '+desdeStr+' al '+hastaStr,{x:0.5,y:1.9,w:9,h:0.4,fontSize:14,color:'CADCFC'});
+      s1.addText('Total del periodo: $'+total.toLocaleString(),{x:0.5,y:2.5,w:9,h:0.6,fontSize:22,bold:true,color:'EDE9FE'});
+      s1.addText(filtered.length+' facturas registradas',{x:0.5,y:3.2,w:9,h:0.4,fontSize:14,color:'CADCFC'});
+      s1.addText('Generado: '+today()+' | '+currentUser.name,{x:0.5,y:5.05,w:9,h:0.3,fontSize:9,color:'8FAFD4'});
+
+      // Slide 2 tabla
+      if(filtered.length>0){
+        var s2=pptx.addSlide();
+        s2.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:0.9,fill:{color:'7C3AED'}});
+        s2.addText('Detalle de facturas',{x:0.3,y:0.15,w:9,h:0.4,fontSize:16,bold:true,color:'FFFFFF'});
+        s2.addText(filtered.length+' registros | Total: $'+total.toLocaleString(),{x:0.3,y:0.55,w:9,h:0.25,fontSize:9,color:'EDE9FE'});
+
+        var rows=[[
+          {text:'Fecha',options:{bold:true,fill:'7C3AED',color:'FFFFFF',fontSize:8}},
+          {text:'Visitador',options:{bold:true,fill:'7C3AED',color:'FFFFFF',fontSize:8}},
+          {text:'Laboratorio',options:{bold:true,fill:'7C3AED',color:'FFFFFF',fontSize:8}},
+          {text:'Establecimiento',options:{bold:true,fill:'7C3AED',color:'FFFFFF',fontSize:8}},
+          {text:'NIT',options:{bold:true,fill:'7C3AED',color:'FFFFFF',fontSize:8}},
+          {text:'Valor',options:{bold:true,fill:'7C3AED',color:'FFFFFF',fontSize:8}}
+        ]];
+        filtered.slice(0,18).forEach(function(r,i){
+          var lab=LABS.find(function(l){return l.id===r.labId;})||{};
+          var bg=i%2===0?'F5F3FF':'FFFFFF';
+          rows.push([
+            {text:r.fecha||'',options:{fill:bg,fontSize:8}},
+            {text:r.userName||'',options:{fill:bg,fontSize:8}},
+            {text:lab.name||'',options:{fill:bg,fontSize:8}},
+            {text:r.lugar||'',options:{fill:bg,fontSize:8}},
+            {text:r.nit||'',options:{fill:bg,fontSize:8}},
+            {text:'$'+(parseFloat(r.valor)||0).toLocaleString(),options:{fill:bg,fontSize:8,bold:true,color:'7C3AED'}}
+          ]);
+        });
+        rows.push([
+          {text:'',options:{fill:'7C3AED'}},{text:'',options:{fill:'7C3AED'}},
+          {text:'',options:{fill:'7C3AED'}},{text:'',options:{fill:'7C3AED'}},
+          {text:'TOTAL',options:{fill:'7C3AED',bold:true,color:'FFFFFF',fontSize:9}},
+          {text:'$'+total.toLocaleString(),options:{fill:'7C3AED',bold:true,color:'FFFFFF',fontSize:9}}
+        ]);
+        s2.addTable(rows,{x:0.2,y:1.0,w:12.9,colW:[1.4,2.2,1.8,3.2,1.8,2.5],fontSize:8});
+      }
+      pptx.writeFile({fileName:'Marketing_APPMED_'+desdeStr+'_al_'+hastaStr+'.pptx'});
+    }catch(err){
+      console.error('Error PPTX Marketing:',err);
+      toast('Error al generar PPTX: '+err.message,'err');
     }
-    pptx.writeFile({fileName:'Marketing_APPMED_'+desdeStr+'_al_'+hastaStr+'.pptx'});
   });
 }
-
-/* ==============================================================
-   ARRANQUE DE LA APLICACION
-   - Registra listeners de teclado (Enter, Escape)
-   - Detecta actividad del usuario para la sesion
-   - Llama a initFirebase para iniciar la conexion
-   ============================================================== */
-/* ==============================================================
-   ARRANQUE DE LA APLICACION
-   Registra listeners de teclado (Enter para login, Escape para cerrar modales). Detecta actividad del usuario (click, scroll, teclas) para mantener la sesion activa. Llama a initFirebase para iniciar la conexion con la base de datos.
-   ============================================================== */
-/* ------------------------------------------------------------------
-   EVENT LISTENERS Y ARRANQUE
-   ------------------------------------------------------------------ */
-document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
-document.getElementById('loginUser').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginPass').focus();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.modal-overlay.open').forEach(m=>closeModal(m.id)); cancelConfirm();}});
-['click','touchstart','keydown','scroll'].forEach(ev=>document.addEventListener(ev,()=>{ if(currentUser && sessionEnd) sessionEnd=Date.now()+SESSION_MINUTES*60*1000; },{passive:true}));
-initFirebase();
-</script>
-
-</body>
-</html>
+>
