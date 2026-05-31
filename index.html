@@ -1522,15 +1522,15 @@ function generarExcelMarketing(periodo){
     });
     if(!filtered.length){toast('No hay registros en ese periodo','err');return;}
     var wb=XLSX.utils.book_new();
-    var header=['Fecha','Visitador','Laboratorio','Establecimiento','Valor ($)'];
+    var header=['Fecha','Visitador','Laboratorio','Establecimiento','NIT Empresa','Razon Social','Valor ($)'];
     var rows=filtered.map(function(r){
       var lab=LABS.find(function(l){return l.id===r.labId;})||{};
-      return [r.fecha||'',r.userName||'',lab.name||r.labId||'',r.lugar||'',r.valor||0];
+      return [r.fecha||'',r.userName||'',lab.name||r.labId||'',r.lugar||'',r.nit||'',r.razonSocial||'',r.valor||0];
     });
-    // Total row
-    var total=filtered.reduce(function(s,r){return s+(r.valor||0);},0);
-    rows.push(['','','','TOTAL','$'+total.toLocaleString()]);
+    var total=filtered.reduce(function(s,r){return s+(parseFloat(r.valor)||0);},0);
+    rows.push(['','','','','','TOTAL','$'+total.toLocaleString()]);
     var ws=XLSX.utils.aoa_to_sheet([header].concat(rows));
+    ws['!cols']=[{wch:12},{wch:22},{wch:14},{wch:28},{wch:16},{wch:30},{wch:14}];
     ws['!cols']=[{wch:14},{wch:22},{wch:14},{wch:28},{wch:14}];
     XLSX.utils.book_append_sheet(wb,ws,'Marketing');
     XLSX.writeFile(wb,'Marketing_APPMED_'+desdeStr+'_al_'+hastaStr+'.xlsx');
