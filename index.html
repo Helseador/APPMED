@@ -1528,11 +1528,14 @@ function generarExcelMarketing(periodo){
   dbRef.ref('medvisit/marketing').once('value',function(snap){
     var allMkt=[];
     snap.forEach(function(child){allMkt.push(child.val());});
-    var isSuper=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral');
+    var isSuper=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral'||currentUser.role==='contador');
+    var cntLab=document.getElementById('cntFiltroLab')?document.getElementById('cntFiltroLab').value:'';
+    var cntVis=document.getElementById('cntFiltroVisitador')?document.getElementById('cntFiltroVisitador').value:'';
     var filtered=allMkt.filter(function(r){
-      var matchLab=isSuper?true:r.labId===currentLabId;
+      var matchLab=isSuper?(cntLab?r.labId===cntLab:true):r.labId===currentLabId;
+      var matchVis=cntVis?r.userId===cntVis:true;
       var matchFecha=r.fecha>=desdeStr&&r.fecha<=hastaStr;
-      return matchLab&&matchFecha;
+      return matchLab&&matchVis&&matchFecha;
     });
     if(!filtered.length){toast('No hay registros en ese periodo','err');return;}
     var wb=XLSX.utils.book_new();
@@ -1685,25 +1688,56 @@ function renderContador(){
   // Lista de registros
   var listEl=document.getElementById('contadorMarketingList');
   if(!listEl) return;
-  listEl.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px;">Cargando registros...</div>';
+  // Filtros
+  listEl.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">'
+    +'<select id="cntFiltroLab" class="form-input" style="flex:1;min-width:140px;" onchange="renderContadorLista()">'
+    +'<option value="">Todos los laboratorios</option>'
+    +LABS.map(function(l){return '<option value="'+l.id+'">'+esc(l.name)+'</option>';}).join('')
+    +'</select>'
+    +'<select id="cntFiltroVisitador" class="form-input" style="flex:1;min-width:140px;" onchange="renderContadorLista()">'
+    +'<option value="">Todos los visitadores</option>'
+    +(D.users||[]).filter(function(u){return u.role==="visitor";}).map(function(u){return '<option value="'+u.id+'">'+esc(u.name)+'</option>';}).join('')
+    +'</select>'
+    +'<input type="date" id="cntDesde" class="form-input" style="flex:1;" onchange="renderContadorLista()">'
+    +'<input type="date" id="cntHasta" class="form-input" style="flex:1;" onchange="renderContadorLista()">'
+    +'</div>'
+    +'<div id="cntListaItems"></div>';
+  renderContadorLista();
+}
+
+function renderContadorLista(){
+  var listEl=document.getElementById('cntListaItems');
+  if(!listEl) return;
+  listEl.innerHTML='<div style="text-align:center;padding:10px;color:var(--muted);font-size:12px;">Cargando...</div>';
+  var labF=document.getElementById('cntFiltroLab')?document.getElementById('cntFiltroLab').value:'';
+  var visF=document.getElementById('cntFiltroVisitador')?document.getElementById('cntFiltroVisitador').value:'';
+  var desdeF=document.getElementById('cntDesde')?document.getElementById('cntDesde').value:'';
+  var hastaF=document.getElementById('cntHasta')?document.getElementById('cntHasta').value:'';
 
   dbRef.ref('medvisit/marketing').orderByChild('fecha').once('value',function(snap){
     var items=[];
     snap.forEach(function(child){if(child.val()) items.push(child.val());});
     items.reverse();
+    var filtered=items.filter(function(r){
+      if(labF&&r.labId!==labF) return false;
+      if(visF&&r.userId!==visF) return false;
+      if(desdeF&&r.fecha<desdeF) return false;
+      if(hastaF&&r.fecha>hastaF) return false;
+      return true;
+    });
 
-    if(!items.length){
-      listEl.innerHTML='<div class="empty-state"><i class="fa-solid fa-receipt"></i><p>Sin registros de marketing</p></div>';
+    if(!filtered.length){
+      listEl.innerHTML='<div class="empty-state"><i class="fa-solid fa-receipt"></i><p>Sin registros para este filtro</p></div>';
       return;
     }
 
-    var total=items.reduce(function(s,r){return s+(parseFloat(r.valor)||0);},0);
+    var total=filtered.reduce(function(s,r){return s+(parseFloat(r.valor)||0);},0);
 
     listEl.innerHTML='<div style="background:var(--primary-50);border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">'
-      +'<div style="font-size:13px;color:var(--muted);">'+items.length+' registros totales</div>'
+      +'<div style="font-size:13px;color:var(--muted);">'+filtered.length+' registros</div>'
       +'<div style="font-weight:800;font-size:16px;color:var(--primary);">Total: $'+total.toLocaleString()+'</div>'
       +'</div>'
-      +items.map(function(r){
+      +filtered.map(function(r){
         var lab=LABS.find(function(l){return l.id===r.labId;})||{};
         return '<div class="card" style="margin-bottom:10px;">'
           +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
@@ -3855,10 +3889,14 @@ function generarPDFMarketing(periodo){
     try{
       var items=[];
       snap.forEach(function(child){if(child.val()) items.push(child.val());});
-      var isSuper=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral');
+      var isSuper=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral'||currentUser.role==='contador');
+      var cntLabF=document.getElementById('cntFiltroLab')?document.getElementById('cntFiltroLab').value:'';
+      var cntVisF=document.getElementById('cntFiltroVisitador')?document.getElementById('cntFiltroVisitador').value:'';
       var filtered=items.filter(function(r){
         if(!r||!r.fecha) return false;
-        return (isSuper?true:r.labId===currentLabId)&&r.fecha>=desdeStr&&r.fecha<=hastaStr;
+        var matchLab=isSuper?(cntLabF?r.labId===cntLabF:true):r.labId===currentLabId;
+        var matchVis=cntVisF?r.userId===cntVisF:true;
+        return matchLab&&matchVis&&r.fecha>=desdeStr&&r.fecha<=hastaStr;
       });
       var total=filtered.reduce(function(s,r){return s+(parseFloat(r.valor)||0);},0);
 
@@ -3936,10 +3974,14 @@ function generarPPTXMarketing(periodo){
     try{
       var items=[];
       snap.forEach(function(child){if(child.val()) items.push(child.val());});
-      var isSuper=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral');
+      var isSuper=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral'||currentUser.role==='contador');
+      var cntLabF=document.getElementById('cntFiltroLab')?document.getElementById('cntFiltroLab').value:'';
+      var cntVisF=document.getElementById('cntFiltroVisitador')?document.getElementById('cntFiltroVisitador').value:'';
       var filtered=items.filter(function(r){
         if(!r||!r.fecha) return false;
-        return (isSuper?true:r.labId===currentLabId)&&r.fecha>=desdeStr&&r.fecha<=hastaStr;
+        var matchLab=isSuper?(cntLabF?r.labId===cntLabF:true):r.labId===currentLabId;
+        var matchVis=cntVisF?r.userId===cntVisF:true;
+        return matchLab&&matchVis&&r.fecha>=desdeStr&&r.fecha<=hastaStr;
       });
       var total=filtered.reduce(function(s,r){return s+(parseFloat(r.valor)||0);},0);
 
