@@ -4091,7 +4091,6 @@ function tryRestoreSession(){
     currentUser={id:u.id,username:u.username,role:u.role,name:u.name,
       labId:u.labId||'',freeVisit:u.freeVisit===true,active:u.active};
     currentLabId=u.role==='admin'?u.labId||null:null;
-    startSession();
     if(u.role==='super'){showScreen('superScreen');renderSuperAdmin();}
     else if(u.role==='adminGeneral'){currentLabId=null;showScreen('adminScreen');renderAdmin();}
     else if(u.role==='admin'){showScreen('adminScreen');renderAdmin();}
