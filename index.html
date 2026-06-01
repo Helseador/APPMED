@@ -1828,12 +1828,18 @@ function initFirebase(){
     showSyncIndicator();
     scheduleRender();
   });
+  var _sessionRestored=false;
   dbRef.ref('medvisit/users').on('value',function(snap){
     var remote=snap.val();
     var newUsers=toArray(remote);
     if(JSON.stringify(newUsers)===JSON.stringify(D.users)) return;
     D.users=newUsers;
     saveLocal(D);
+    // Intentar restaurar sesion la primera vez que llegan los usuarios
+    if(!_sessionRestored&&!currentUser){
+      _sessionRestored=true;
+      tryRestoreSession();
+    }
     scheduleRender();
   });
   dbRef.ref('medvisit/points').on('value',function(snap){
@@ -4061,29 +4067,38 @@ function _generarPPTXMarketing(periodo){
 // Arranque
 window.addEventListener('DOMContentLoaded', function(){
   initFirebase();
-  // Restaurar sesion si existe
-  setTimeout(function(){
-    try{
-      var sess=localStorage.getItem('appmed_session');
-      if(!sess) return;
-      var s=JSON.parse(sess);
-      if(!s||!s.userId) return;
-      if(!D||!D.users||!D.users.length) return;
-      var u=(D.users||[]).find(function(x){return x.id===s.userId&&x.active!==false;});
-      if(!u) return;
-      // Restaurar currentUser
-      currentUser={id:u.id,username:u.username,role:u.role,name:u.name,
-        labId:u.labId||'',freeVisit:u.freeVisit===true,active:u.active};
-      currentLabId=u.role==='admin'?u.labId||null:null;
-      startSession();
-      if(u.role==='super'){showScreen('superScreen');renderSuperAdmin();}
-      else if(u.role==='adminGeneral'){currentLabId=null;showScreen('adminScreen');renderAdmin();}
-      else if(u.role==='admin'){showScreen('adminScreen');renderAdmin();}
-      else if(u.role==='contador'){showScreen('contadorScreen');renderContador();}
-      else if(u.role==='visitor'){showGpsPermOverlay();}
-    }catch(e){console.error('Session restore error:',e);}
-  }, 1500); // esperar a que Firebase cargue los usuarios
 });
+
+// Restaurar sesion cuando Firebase confirme que los usuarios llegaron
+function tryRestoreSession(){
+  try{
+    var sess=localStorage.getItem('appmed_session');
+    if(!sess) return;
+    var s=JSON.parse(sess);
+    if(!s||!s.userId) return;
+    // Buscar usuario en D.users que ya llego desde Firebase
+    var u=(D.users||[]).find(function(x){return x.id===s.userId&&x.active!==false;});
+    if(!u){
+      // Si no encontro, intentar desde localStorage como fallback
+      var local=localStorage.getItem('medvisit_v5');
+      if(local){
+        var localD=JSON.parse(local);
+        u=(localD.users||[]).find(function(x){return x.id===s.userId&&x.active!==false;});
+        if(u) Object.assign(D,localD);
+      }
+    }
+    if(!u) return;
+    currentUser={id:u.id,username:u.username,role:u.role,name:u.name,
+      labId:u.labId||'',freeVisit:u.freeVisit===true,active:u.active};
+    currentLabId=u.role==='admin'?u.labId||null:null;
+    startSession();
+    if(u.role==='super'){showScreen('superScreen');renderSuperAdmin();}
+    else if(u.role==='adminGeneral'){currentLabId=null;showScreen('adminScreen');renderAdmin();}
+    else if(u.role==='admin'){showScreen('adminScreen');renderAdmin();}
+    else if(u.role==='contador'){showScreen('contadorScreen');renderContador();}
+    else if(u.role==='visitor'){showGpsPermOverlay();}
+  }catch(e){console.error('Session restore error:',e);}
+}
 </script>
 
 </body>
