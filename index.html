@@ -2180,7 +2180,13 @@ function doLogin(){
     toast(getGreeting()+', '+user.name.split(' ')[0]+'!');
   } else {
     gpsPermission='unknown';
-    showGpsPermOverlay();
+    if(localStorage.getItem('appmed_gps')==='granted'){
+      gpsPermission='granted';
+      showScreen('visitorScreen');
+      renderVisitor();
+    } else {
+      showGpsPermOverlay();
+    }
     toast(getGreeting()+', '+user.name.split(' ')[0]+'!');
   }
 }
@@ -2614,8 +2620,15 @@ function showGpsPermOverlay(){
 function requestGpsAndInit(){
   document.getElementById('gpsPermOverlay').classList.remove('open');
   navigator.geolocation.getCurrentPosition(
-    function(){gpsPermission='granted'; showScreen('visitorScreen'); renderVisitor();},
-    function(){gpsPermission='denied'; showScreen('visitorScreen'); renderVisitor();}
+    function(){
+      gpsPermission='granted';
+      localStorage.setItem('appmed_gps','granted');
+      showScreen('visitorScreen'); renderVisitor();
+    },
+    function(){
+      gpsPermission='denied';
+      showScreen('visitorScreen'); renderVisitor();
+    }
   );
 }
 function skipGpsAndInit(){
