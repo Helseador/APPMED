@@ -1157,12 +1157,10 @@ function resolverPendiente(pid){
   if(idx<0) return;
   D.pendientes[idx].resuelto=true;
   D.pendientes[idx].resueltoAt=new Date().toISOString();
-  // Auto-ocultar de la vista del visitador al resolver
-  if(currentUser&&currentUser.role==='visitor'){
-    D.pendientes[idx].ocultoVisitador=true;
-  }
+  D.pendientes[idx].ocultoVisitador=true; // siempre ocultar al resolver para todos
   savePendiente(D.pendientes[idx]);
-  // Rerenderizar solo la seccion de pendientes sin recargar toda la pantalla
+  saveLocal(D);
+  // Rerenderizar inmediatamente
   var pendEl=document.getElementById('visitorPendientesSection');
   if(pendEl) renderPendientesSection(currentUser.id, pendEl, false);
   toast('Pendiente resuelto ✓');
@@ -1208,12 +1206,20 @@ function renderPendientesSection(userId, containerEl, showResolved){
   // SuperAdmin ve todo incluyendo eliminados. Los demas no ven los eliminados.
   // Retrocompatible: datos viejos no tienen campo eliminado ni resuelto
   // Retrocompatible: datos sin campo = undefined = falsy = correcto comportamiento
-  var activos=all.filter(function(p){return !p.resuelto&&!p.eliminado;});
+  // Retrocompatible: campos undefined = false
+  var activos=all.filter(function(p){
+    if(p.resuelto===true) return false;   // ya resuelto - no mostrar como activo
+    if(p.eliminado===true) return false;  // eliminado - no mostrar
+    if(p.ocultoVisitador===true&&!isAdminOrSuper) return false; // oculto por visitador
+    return true;
+  });
   var resueltos=all.filter(function(p){
-    // Admin y super siempre ven resueltos aunque el visitador los haya ocultado
-    if(isAdminOrSuper) return p.resuelto===true&&!p.eliminado;
-    // Visitador solo ve los que no ha ocultado
-    return p.resuelto===true&&!p.eliminado&&!p.ocultoVisitador;
+    if(p.resuelto!==true) return false;
+    if(p.eliminado===true&&!isSuper) return false;
+    // Admin y super siempre ven resueltos
+    if(isAdminOrSuper) return true;
+    // Visitador solo ve los no ocultos
+    return !p.ocultoVisitador;
   });
   var eliminados=isSuper?all.filter(function(p){return p.eliminado===true;}):[];
 
@@ -3494,7 +3500,11 @@ function renderVisitorSemana(){
   var html='';
   routeNames.forEach(function(rn){
     var pts=allMyPts.filter(function(p){return (p.routeName||'Sin ruta')===rn;}).sort(function(a,b){return a.order-b.order;});
-    var done=(D.visits||[]).filter(function(v){return v.userId===currentUser.id && pts.some(function(p){return p.id===v.pointId;}) && v.status==='completed';}).length;
+    var done=(D.visits||[]).filter(function(v){
+      var matchVisitor=(v.visitorId||v.userId)===currentUser.id;
+      var matchPunto=pts.some(function(p){return p.id===v.pointId;});
+      return matchVisitor&&matchPunto&&v.status==='completed';
+    }).length;
     var pct=pts.length?Math.round(done/pts.length*100):0;
     html+='<div style="background:var(--surface);border-radius:14px;padding:18px 20px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow);" onclick="setVisitRoute(this.dataset.rn)" data-rn="'+encodeURIComponent(rn)+'">';
     html+='<div style="display:flex;justify-content:space-between;align-items:center;">';
