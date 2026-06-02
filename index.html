@@ -1611,28 +1611,42 @@ function renderAdminMarketing(){
           +'<i class="fa-solid fa-calendar" style="width:14px;"></i> '+esc(r.fecha||'')
           +(r.nit?'<div style="font-size:10px;margin-top:3px;color:var(--muted);">NIT: '+esc(r.nit)+(r.razonSocial?' · '+esc(r.razonSocial):'')+'</div>':'')
           +'</div>'
-          +(r.foto?'<img src="'+r.foto+'" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px;cursor:pointer;" onclick="viewMarketingFoto(this.dataset.id)" data-id="'+r.id+'">':'')
+          +(r.foto?'<img src="'+r.foto+'" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px;cursor:pointer;" onclick="abrirFotoOverlay(this.src)">':'')
           +'</div>';
       }).join('');
   });
 }
 
-function viewMarketingFoto(id){
-  dbRef.ref('medvisit/marketing').orderByChild('id').equalTo(id).once('value',function(snap){
-    snap.forEach(function(child){
-      var r=child.val();
-      if(r&&r.foto){
-        var overlay=document.createElement('div');
-        overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;';
-        overlay.onclick=function(){document.body.removeChild(overlay);};
-        var img=document.createElement('img');
-        img.src=r.foto;
-        img.style.cssText='max-width:95%;max-height:90vh;border-radius:12px;';
-        overlay.appendChild(img);
-        document.body.appendChild(overlay);
-      }
+function viewMarketingFoto(src){
+  // src puede ser el id o directamente el src de la imagen
+  // Si es una URL base64 o https, mostrar directo
+  if(src&&(src.startsWith('data:')||src.startsWith('http'))){
+    abrirFotoOverlay(src);
+    return;
+  }
+  // Si es un id, buscar en Firebase
+  if(dbRef){
+    dbRef.ref('medvisit/marketing').orderByChild('id').equalTo(src).once('value',function(snap){
+      snap.forEach(function(child){
+        var r=child.val();
+        if(r&&r.foto) abrirFotoOverlay(r.foto);
+      });
     });
-  });
+  }
+}
+function abrirFotoOverlay(src){
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;';
+  overlay.onclick=function(){document.body.removeChild(overlay);};
+  var img=document.createElement('img');
+  img.src=src;
+  img.style.cssText='max-width:95%;max-height:85vh;border-radius:12px;';
+  var hint=document.createElement('div');
+  hint.textContent='Toca para cerrar';
+  hint.style.cssText='color:rgba(255,255,255,0.5);font-size:12px;margin-top:10px;';
+  overlay.appendChild(img);
+  overlay.appendChild(hint);
+  document.body.appendChild(overlay);
 }
 
 var NIT_ESTABLECIMIENTOS=[
@@ -1753,13 +1767,37 @@ function renderContadorLista(){
           +(lab.name?' &nbsp;<i class="fa-solid fa-flask" style="width:14px;"></i> '+esc(lab.name):'')
           +' &nbsp;<i class="fa-solid fa-calendar" style="width:14px;"></i> '+esc(r.fecha||'')
           +'</div>'
-          +(r.foto?'<img src="'+r.foto+'" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px;margin-top:8px;">':'')
+          +(r.foto?'<img src="'+r.foto+'" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px;margin-top:8px;cursor:pointer;" onclick="abrirFotoOverlay(this.src)">':'')
           +'</div>';
       }).join('');
   });
 }
 
 function initFirebase(){
+  // Cargar datos locales inmediatamente para login offline
+  try{
+    var local=localStorage.getItem('medvisit_v5');
+    if(local){
+      var localD=JSON.parse(local);
+      // Limpiar visitas de mas de 30 dias para ahorrar memoria
+      var hace30=new Date();
+      hace30.setDate(hace30.getDate()-30);
+      var hace30str=hace30.toISOString().split('T')[0];
+      if(localD.visits&&localD.visits.length>0){
+        var antes=localD.visits.length;
+        localD.visits=localD.visits.filter(function(v){
+          return v.date&&v.date>=hace30str;
+        });
+        if(localD.visits.length<antes){
+          console.log('Visitas limpiadas del cache: '+(antes-localD.visits.length)+' eliminadas');
+        }
+      }
+      D=ensureData(localD);
+      // Guardar version limpia
+      try{localStorage.setItem('medvisit_v5',JSON.stringify(D));}catch(e){}
+    }
+  }catch(e){}
+
   firebase.initializeApp(FIREBASE_CONFIG);
   dbRef = firebase.database();
 
@@ -1821,10 +1859,23 @@ function initFirebase(){
   dbRef.ref('medvisit/visits').on('value',function(snap){
     var remote=snap.val();
     var newVisits=toArray(remote);
-    // Solo actualizar si hubo cambios reales
-    if(JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
-    D.visits=newVisits;
-    saveLocal(D);
+    // Para visitadores, solo mantener en memoria las visitas de hoy
+    // Las demas se guardan en localStorage pero no en D.visits
+    if(currentUser&&currentUser.role==='visitor'){
+      var hoy=today();
+      var visitasHoy=newVisits.filter(function(v){
+        return v.visitorId===currentUser.id&&v.date===hoy;
+      });
+      if(JSON.stringify(visitasHoy)===JSON.stringify(D.visits)) return;
+      D.visits=visitasHoy;
+    } else {
+      if(JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
+      D.visits=newVisits;
+    }
+    // Guardar todas en localStorage para el admin
+    var localD=JSON.parse(localStorage.getItem('medvisit_v5')||'{}');
+    localD.visits=newVisits;
+    try{localStorage.setItem('medvisit_v5',JSON.stringify(localD));}catch(e){}
     showSyncIndicator();
     scheduleRender();
   });
@@ -1845,10 +1896,19 @@ function initFirebase(){
   dbRef.ref('medvisit/points').on('value',function(snap){
     var remote=snap.val();
     var newPts=toArray(remote);
-    if(JSON.stringify(newPts)===JSON.stringify(D.points)) return;
-    D.points=newPts;
-    saveLocal(D);
-    // Points changes don't need full re-render unless visitor is viewing routes
+    // Para visitadores solo mantener sus propios puntos en memoria
+    if(currentUser&&currentUser.role==='visitor'){
+      var myPts=newPts.filter(function(p){return p.assignedTo===currentUser.id;});
+      if(JSON.stringify(myPts)===JSON.stringify(D.points)) return;
+      D.points=myPts;
+    } else {
+      if(JSON.stringify(newPts)===JSON.stringify(D.points)) return;
+      D.points=newPts;
+    }
+    // Guardar todos en localStorage para el admin
+    var localD2=JSON.parse(localStorage.getItem('medvisit_v5')||'{}');
+    localD2.points=newPts;
+    try{localStorage.setItem('medvisit_v5',JSON.stringify(localD2));}catch(e){}
     if(currentUser&&currentUser.role==='visitor') scheduleRender();
   });
   dbRef.ref('medvisit/labs').on('value',function(snap){
@@ -2141,6 +2201,10 @@ function doLogin(){
       err=document.getElementById('loginError'),
       att=document.getElementById('loginAttempts');
   if(!u||!p){err.textContent='Ingresa usuario y contrasena';return;}
+  // Si no hay Firebase pero hay datos locales, permitir login offline
+  if(!firebaseOnline&&(!D.users||!D.users.length)){
+    err.textContent='Sin conexion. Espera un momento e intenta de nuevo.';return;
+  }
   if(p===SUPER_ADMIN_KEY){
     currentUser={id:'__super__',username:'superadmin',role:'super',name:'Super Administrador'};
     err.textContent=''; loginAttempts=0; att.style.display='none'; resetSession(); showScreen('superScreen'); renderSuperAdmin(); toast('Modo Super Admin'); return;
@@ -3259,7 +3323,7 @@ function handlePhotoTaken(e){
     // Comprimir imagen antes de mostrar y guardar
     var img=new Image();
     img.onload=function(){
-      var MAX=1200; // máximo 1200px en el lado más largo
+      var MAX=800; // maximo 800px para ahorrar memoria
       var w=img.width, h=img.height;
       if(w>MAX||h>MAX){
         if(w>h){h=Math.round(h*MAX/w);w=MAX;}
@@ -3269,7 +3333,7 @@ function handlePhotoTaken(e){
       canvas.width=w; canvas.height=h;
       var ctx=canvas.getContext('2d');
       ctx.drawImage(img,0,0,w,h);
-      var compressed=canvas.toDataURL('image/jpeg',0.65); // 65% calidad
+      var compressed=canvas.toDataURL('image/jpeg',0.50); // 50% calidad
       var preview=document.getElementById('photoPreview');
       preview.src=compressed;
       preview.style.display='block';
@@ -3296,6 +3360,22 @@ function completeVisit(){
   if(notes) D.visits[idx].notes=notes;
   saveVisit(D.visits[idx]);
   closeModal('modalCloseVisit'); renderVisitorToday(); toast('Visita completada ✓');
+}
+function toggleVisitPhoto(btn, vid){
+  var container=document.getElementById('visitPhoto_'+vid);
+  if(!container) return;
+  if(container.style.display==='none'){
+    var visit=(D.visits||[]).find(function(v){return v.id===vid;});
+    if(visit&&visit.photo){
+      container.innerHTML='<img src="'+visit.photo+'" style="width:100%;border-radius:10px;cursor:pointer;" onclick="abrirFotoOverlay(this.src)">';
+      container.style.display='block';
+      btn.innerHTML='<i class="fa-solid fa-eye-slash"></i> Ocultar foto';
+    }
+  } else {
+    container.innerHTML='';
+    container.style.display='none';
+    btn.innerHTML='<i class="fa-solid fa-image"></i> Ver foto';
+  }
 }
 function viewVisitPhoto(vid){
   if(vid && typeof vid==='object') vid=vid.dataset?vid.dataset.id:vid;
@@ -3436,7 +3516,7 @@ function renderVisitorMarketing(){
           +'<span style="font-weight:700;font-size:13px;">'+esc(r.lugar||'')+'</span>'
           +'<span style="font-weight:800;color:var(--primary);">$'+(r.valor||0).toLocaleString()+'</span></div>'
           +'<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">'+esc(r.fecha||'')+'</div>'
-          +(r.foto?'<img src="'+r.foto+'" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;">':'')
+          +(r.foto?'<img src="'+r.foto+'" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="abrirFotoOverlay(this.src)">':'')
           +'</div>';
       }).join('');
   });
@@ -4080,6 +4160,24 @@ function _generarPPTXMarketing(periodo){
 // Arranque
 window.addEventListener('DOMContentLoaded', function(){
   initFirebase();
+});
+
+// Pausar Firebase cuando pantalla apagada, reanudar al volver
+document.addEventListener('visibilitychange', function(){
+  if(!dbRef) return;
+  if(document.hidden){
+    // Pantalla apagada - pausar sincronizacion
+    try{ dbRef.goOffline(); }catch(e){}
+  } else {
+    // Pantalla activa - reanudar sincronizacion
+    try{
+      dbRef.goOnline();
+      // Forzar render cuando vuelve
+      setTimeout(function(){
+        if(currentUser) renderCurrentScreen();
+      }, 1000);
+    }catch(e){}
+  }
 });
 
 // Restaurar sesion cuando Firebase confirme que los usuarios llegaron
