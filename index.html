@@ -256,11 +256,11 @@
     <h1>APPMED</h1>                                 <!-- CAMBIO -->
     <p class="sub" id="loginGreeting">By HELSE</p>    <!-- CAMBIO -->
     <div id="labChip" class="lab-chip" style="display:none;"><i class="fa-solid fa-flask" style="font-size:9px;"></i> <span id="labChipName"></span></div>
-    <div id="loginConnBadge" class="conn-badge offline"><span class="conn-dot"></span> Verificando conexion...</div>
+    <div id="loginConnBadge" class="conn-badge offline"><span class="conn-dot"></span> Offline</div>
     <div style="display:flex;flex-direction:column;gap:14px;">
       <input class="login-input" type="text" id="loginUser" placeholder="Usuario" autocomplete="username" autocapitalize="off">
       <input class="login-input" type="password" id="loginPass" placeholder="Contrasena" autocomplete="current-password">
-      <button class="login-btn" id="loginBtn" onclick="doLogin()" disabled><span class="spinner-sm" style="border-color:rgba(255,255,255,0.3);border-top-color:#fff;"></span> Conectando...</button>
+      <button class="login-btn" id="loginBtn" onclick="doLogin()">Iniciar Sesion</button>
     </div>
     <div class="login-error" id="loginError"></div>
     <div class="login-attempts" id="loginAttempts"></div>
@@ -4159,6 +4159,37 @@ function _generarPPTXMarketing(periodo){
 
 // Arranque
 window.addEventListener('DOMContentLoaded', function(){
+  // Intentar restaurar sesion desde localStorage ANTES de Firebase
+  // Esto hace que el usuario entre instantaneo sin esperar red
+  try{
+    var sess=localStorage.getItem('appmed_session');
+    var local=localStorage.getItem('medvisit_v5');
+    if(sess&&local){
+      var s=JSON.parse(sess);
+      var localD=JSON.parse(local);
+      if(s&&s.userId&&localD&&localD.users){
+        var u=(localD.users||[]).find(function(x){return x.id===s.userId&&x.active!==false;});
+        if(u){
+          // Cargar datos locales inmediatamente
+          D=ensureData(localD);
+          currentUser={id:u.id,username:u.username,role:u.role,name:u.name,
+            labId:u.labId||'',freeVisit:u.freeVisit===true,active:u.active};
+          currentLabId=u.role==='admin'?u.labId||null:null;
+          // Mostrar pantalla correcta SIN esperar Firebase
+          if(u.role==='super'){showScreen('superScreen');renderSuperAdmin();}
+          else if(u.role==='adminGeneral'){currentLabId=null;showScreen('adminScreen');renderAdmin();}
+          else if(u.role==='admin'){showScreen('adminScreen');renderAdmin();}
+          else if(u.role==='contador'){showScreen('contadorScreen');renderContador();}
+          else if(u.role==='visitor'){
+            if(localStorage.getItem('appmed_gps')==='granted'){
+              gpsPermission='granted';showScreen('visitorScreen');renderVisitor();
+            } else { showGpsPermOverlay(); }
+          }
+        }
+      }
+    }
+  }catch(e){console.error('Quick restore error:',e);}
+  // Iniciar Firebase en segundo plano para sincronizar
   initFirebase();
 });
 
