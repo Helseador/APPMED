@@ -2201,9 +2201,19 @@ function doLogin(){
       err=document.getElementById('loginError'),
       att=document.getElementById('loginAttempts');
   if(!u||!p){err.textContent='Ingresa usuario y contrasena';return;}
-  // Si no hay Firebase pero hay datos locales, permitir login offline
-  if(!firebaseOnline&&(!D.users||!D.users.length)){
-    err.textContent='Sin conexion. Espera un momento e intenta de nuevo.';return;
+
+  // Intentar login desde cache local primero (funciona sin internet)
+  var usersToCheck=D.users&&D.users.length?D.users:[];
+  if(!usersToCheck.length){
+    // Intentar cargar desde localStorage directamente
+    try{
+      var local=localStorage.getItem('medvisit_v5');
+      if(local) usersToCheck=JSON.parse(local).users||[];
+    }catch(e){}
+  }
+  if(!usersToCheck.length){
+    err.textContent='Sin datos disponibles. Conectate a internet la primera vez.';
+    return;
   }
   if(p===SUPER_ADMIN_KEY){
     currentUser={id:'__super__',username:'superadmin',role:'super',name:'Super Administrador'};
@@ -2225,6 +2235,8 @@ function doLogin(){
     labId: user.role==='admin'?user.labId||null:null,
     ts: Date.now()
   }));
+  // Asegurar que D esta sincronizado con localStorage
+  saveLocal(D);
 
   if(user.role==='contador'){
     showScreen('contadorScreen');
