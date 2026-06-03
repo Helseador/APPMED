@@ -4181,37 +4181,6 @@ function _generarPPTXMarketing(periodo){
 
 // Arranque
 window.addEventListener('DOMContentLoaded', function(){
-  // Intentar restaurar sesion desde localStorage ANTES de Firebase
-  // Esto hace que el usuario entre instantaneo sin esperar red
-  try{
-    var sess=localStorage.getItem('appmed_session');
-    var local=localStorage.getItem('medvisit_v5');
-    if(sess&&local){
-      var s=JSON.parse(sess);
-      var localD=JSON.parse(local);
-      if(s&&s.userId&&localD&&localD.users){
-        var u=(localD.users||[]).find(function(x){return x.id===s.userId&&x.active!==false;});
-        if(u){
-          // Cargar datos locales inmediatamente
-          D=ensureData(localD);
-          currentUser={id:u.id,username:u.username,role:u.role,name:u.name,
-            labId:u.labId||'',freeVisit:u.freeVisit===true,active:u.active};
-          currentLabId=u.role==='admin'?u.labId||null:null;
-          // Mostrar pantalla correcta SIN esperar Firebase
-          if(u.role==='super'){showScreen('superScreen');renderSuperAdmin();}
-          else if(u.role==='adminGeneral'){currentLabId=null;showScreen('adminScreen');renderAdmin();}
-          else if(u.role==='admin'){showScreen('adminScreen');renderAdmin();}
-          else if(u.role==='contador'){showScreen('contadorScreen');renderContador();}
-          else if(u.role==='visitor'){
-            if(localStorage.getItem('appmed_gps')==='granted'){
-              gpsPermission='granted';showScreen('visitorScreen');renderVisitor();
-            } else { showGpsPermOverlay(); }
-          }
-        }
-      }
-    }
-  }catch(e){console.error('Quick restore error:',e);}
-  // Iniciar Firebase en segundo plano para sincronizar
   initFirebase();
 });
 
