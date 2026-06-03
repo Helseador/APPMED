@@ -1865,23 +1865,9 @@ function initFirebase(){
   dbRef.ref('medvisit/visits').on('value',function(snap){
     var remote=snap.val();
     var newVisits=toArray(remote);
-    // Para visitadores, solo mantener en memoria las visitas de hoy
-    // Las demas se guardan en localStorage pero no en D.visits
-    if(currentUser&&currentUser.role==='visitor'){
-      var hoy=today();
-      var visitasHoy=newVisits.filter(function(v){
-        return v.visitorId===currentUser.id&&v.date===hoy;
-      });
-      if(JSON.stringify(visitasHoy)===JSON.stringify(D.visits)) return;
-      D.visits=visitasHoy;
-    } else {
-      if(JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
-      D.visits=newVisits;
-    }
-    // Guardar todas en localStorage para el admin
-    var localD=JSON.parse(localStorage.getItem('medvisit_v5')||'{}');
-    localD.visits=newVisits;
-    try{localStorage.setItem('medvisit_v5',JSON.stringify(localD));}catch(e){}
+    if(JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
+    D.visits=newVisits;
+    saveLocal(D);
     showSyncIndicator();
     scheduleRender();
   });
@@ -1902,19 +1888,9 @@ function initFirebase(){
   dbRef.ref('medvisit/points').on('value',function(snap){
     var remote=snap.val();
     var newPts=toArray(remote);
-    // Para visitadores solo mantener sus propios puntos en memoria
-    if(currentUser&&currentUser.role==='visitor'){
-      var myPts=newPts.filter(function(p){return p.assignedTo===currentUser.id;});
-      if(JSON.stringify(myPts)===JSON.stringify(D.points)) return;
-      D.points=myPts;
-    } else {
-      if(JSON.stringify(newPts)===JSON.stringify(D.points)) return;
-      D.points=newPts;
-    }
-    // Guardar todos en localStorage para el admin
-    var localD2=JSON.parse(localStorage.getItem('medvisit_v5')||'{}');
-    localD2.points=newPts;
-    try{localStorage.setItem('medvisit_v5',JSON.stringify(localD2));}catch(e){}
+    if(JSON.stringify(newPts)===JSON.stringify(D.points)) return;
+    D.points=newPts;
+    saveLocal(D);
     if(currentUser&&currentUser.role==='visitor') scheduleRender();
   });
   dbRef.ref('medvisit/labs').on('value',function(snap){
@@ -2209,7 +2185,7 @@ function doLogin(){
   if(!u||!p){err.textContent='Ingresa usuario y contrasena';return;}
 
   // Intentar login desde cache local primero (funciona sin internet)
-  var usersToCheck=D.users&&D.users.length?D.users:[];
+
   if(!usersToCheck.length){
     // Intentar cargar desde localStorage directamente
     try{
@@ -2217,10 +2193,7 @@ function doLogin(){
       if(local) usersToCheck=JSON.parse(local).users||[];
     }catch(e){}
   }
-  if(!usersToCheck.length){
-    err.textContent='Sin datos disponibles. Conectate a internet la primera vez.';
-    return;
-  }
+
   if(p===SUPER_ADMIN_KEY){
     currentUser={id:'__super__',username:'superadmin',role:'super',name:'Super Administrador'};
     err.textContent=''; loginAttempts=0; att.style.display='none'; resetSession(); showScreen('superScreen'); renderSuperAdmin(); toast('Modo Super Admin'); return;
