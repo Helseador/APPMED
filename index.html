@@ -225,6 +225,9 @@
     .gps-chip{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--primary-50);border:1px solid rgba(3,3,181,0.15);border-radius:10px;font-size:12px;color:var(--primary);font-weight:600;margin-bottom:10px;}
     @media(min-width:640px){.app-body{padding:20px 24px 90px;}.stat-grid{grid-template-columns:repeat(4,1fr);}.canvas-grid{grid-template-columns:1fr 1fr;}.modal-sheet{border-radius:20px;margin-bottom:20px;}.gallery-grid{grid-template-columns:repeat(4,1fr);}}
   </style>
+  <link rel="preconnect" href="https://appmed-helse-default-rtdb.firebaseio.com">
+  <link rel="preconnect" href="https://www.googleapis.com">
+  <link rel="dns-prefetch" href="https://appmed-helse-default-rtdb.firebaseio.com">
 </head>
 <body>
 
@@ -256,7 +259,7 @@
     <h1>APPMED</h1>                                 <!-- CAMBIO -->
     <p class="sub" id="loginGreeting">By HELSE</p>    <!-- CAMBIO -->
     <div id="labChip" class="lab-chip" style="display:none;"><i class="fa-solid fa-flask" style="font-size:9px;"></i> <span id="labChipName"></span></div>
-    <div id="loginConnBadge" class="conn-badge offline"><span class="conn-dot"></span> Offline</div>
+    <div id="loginConnBadge" style="display:none;"></div>
     <div style="display:flex;flex-direction:column;gap:14px;">
       <input class="login-input" type="text" id="loginUser" placeholder="Usuario" autocomplete="username" autocapitalize="off">
       <input class="login-input" type="password" id="loginPass" placeholder="Contrasena" autocomplete="current-password">
@@ -2186,6 +2189,7 @@ function doLogin(){
 
   if(p===SUPER_ADMIN_KEY){
     currentUser={id:'__super__',username:'superadmin',role:'super',name:'Super Administrador'};
+    localStorage.setItem('appmed_session',JSON.stringify({userId:'__super__',ts:Date.now()}));
     err.textContent=''; loginAttempts=0; att.style.display='none'; resetSession(); showScreen('superScreen'); renderSuperAdmin(); toast('Modo Super Admin'); return;
   }
   var user=(D.users||[]).find(x=>x.username===u && x.password===p && x.active);
@@ -2204,7 +2208,6 @@ function doLogin(){
     labId: user.role==='admin'?user.labId||null:null,
     ts: Date.now()
   }));
-  // Asegurar que D esta sincronizado con localStorage
   saveLocal(D);
 
   if(user.role==='contador'){
@@ -4172,26 +4175,44 @@ function tryRestoreSession(){
     if(!sess) return;
     var s=JSON.parse(sess);
     if(!s||!s.userId) return;
-    // Buscar usuario en D.users que ya llego desde Firebase
-    var u=(D.users||[]).find(function(x){return x.id===s.userId&&x.active!==false;});
-    if(!u){
-      // Si no encontro, intentar desde localStorage como fallback
-      var local=localStorage.getItem('medvisit_v5');
-      if(local){
-        var localD=JSON.parse(local);
-        u=(localD.users||[]).find(function(x){return x.id===s.userId&&x.active!==false;});
-        if(u) Object.assign(D,localD);
-      }
+
+    // Manejar superadmin separado
+    if(s.userId==='__super__'){
+      currentUser={id:'__super__',username:'superadmin',role:'super',name:'Super Administrador'};
+      showScreen('superScreen'); renderSuperAdmin(); return;
     }
-    if(!u) return;
+
+    // Buscar en D.users primero
+    var u=(D.users||[]).find(function(x){return x.id===s.userId;});
+    // Si no, buscar en localStorage
+    if(!u){
+      try{
+        var local=localStorage.getItem('medvisit_v5');
+        if(local){
+          var ld=JSON.parse(local);
+          u=(ld.users||[]).find(function(x){return x.id===s.userId;});
+          if(u) Object.assign(D,ensureData(ld));
+        }
+      }catch(e){}
+    }
+    if(!u||u.active===false) return;
+
     currentUser={id:u.id,username:u.username,role:u.role,name:u.name,
       labId:u.labId||'',freeVisit:u.freeVisit===true,active:u.active};
     currentLabId=u.role==='admin'?u.labId||null:null;
+
     if(u.role==='super'){showScreen('superScreen');renderSuperAdmin();}
     else if(u.role==='adminGeneral'){currentLabId=null;showScreen('adminScreen');renderAdmin();}
     else if(u.role==='admin'){showScreen('adminScreen');renderAdmin();}
     else if(u.role==='contador'){showScreen('contadorScreen');renderContador();}
-    else if(u.role==='visitor'){showGpsPermOverlay();}
+    else if(u.role==='visitor'){
+      // Visitador entra directo sin pedir GPS de nuevo
+      if(localStorage.getItem('appmed_gps')==='granted'){
+        gpsPermission='granted';showScreen('visitorScreen');renderVisitor();
+      } else {
+        showGpsPermOverlay();
+      }
+    }
   }catch(e){console.error('Session restore error:',e);}
 }
 </script>
