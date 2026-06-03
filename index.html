@@ -2184,16 +2184,6 @@ function doLogin(){
       att=document.getElementById('loginAttempts');
   if(!u||!p){err.textContent='Ingresa usuario y contrasena';return;}
 
-  // Intentar login desde cache local primero (funciona sin internet)
-
-  if(!usersToCheck.length){
-    // Intentar cargar desde localStorage directamente
-    try{
-      var local=localStorage.getItem('medvisit_v5');
-      if(local) usersToCheck=JSON.parse(local).users||[];
-    }catch(e){}
-  }
-
   if(p===SUPER_ADMIN_KEY){
     currentUser={id:'__super__',username:'superadmin',role:'super',name:'Super Administrador'};
     err.textContent=''; loginAttempts=0; att.style.display='none'; resetSession(); showScreen('superScreen'); renderSuperAdmin(); toast('Modo Super Admin'); return;
