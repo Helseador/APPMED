@@ -1784,10 +1784,12 @@ function renderContadorLista(){
 }
 
 function initFirebase(){
-  // Cargar datos locales inmediatamente para login offline
+  // Cargar datos locales inmediatamente para login instantaneo
+  var localLoaded=false;
   try{
     var local=localStorage.getItem('medvisit_v5');
     if(local){
+      localLoaded=true;
       var localD=JSON.parse(local);
       // Limpiar visitas de mas de 30 dias para ahorrar memoria
       var hace30=new Date();
@@ -1803,10 +1805,36 @@ function initFirebase(){
         }
       }
       D=ensureData(localD);
-      // Guardar version limpia
       try{localStorage.setItem('medvisit_v5',JSON.stringify(D));}catch(e){}
     }
   }catch(e){}
+
+  // Si hay datos locales, el login funciona instantaneo aunque Firebase no responda
+  if(localLoaded){
+    var badge=document.getElementById('loginConnBadge');
+    if(badge){
+      badge.style.display='none';
+    }
+  }
+
+  // Timeout de 10 segundos: si Firebase no conecta, mostrar mensaje pero permitir login con cache
+  setTimeout(function(){
+    if(!firebaseReady){
+      var badge=document.getElementById('loginConnBadge');
+      if(badge){
+        badge.style.display='block';
+        badge.className='conn-badge offline';
+        badge.innerHTML='<span class="hdot"></span>Modo local';
+      }
+      if(!D.users||!D.users.length){
+        var err=document.getElementById('loginError');
+        if(err){
+          err.textContent='Sin conexion. Verifica tu internet e intenta de nuevo.';
+          err.style.color='#DC2626';
+        }
+      }
+    }
+  }, 10000);
 
   firebase.initializeApp(FIREBASE_CONFIG);
   dbRef = firebase.database();
@@ -2187,13 +2215,24 @@ function doLogin(){
       err=document.getElementById('loginError'),
       att=document.getElementById('loginAttempts');
   if(!u||!p){err.textContent='Ingresa usuario y contrasena';return;}
-  // Si no hay datos aun, esperar
+  err.style.color='';
+  // Si no hay usuarios en memoria, intentar cargar del cache local
   if(!D.users||!D.users.length){
-    err.textContent='Conectando... espera un momento e intenta de nuevo';
-    err.style.color='#F59E0B';
+    try{
+      var local=localStorage.getItem('medvisit_v5');
+      if(local){
+        var ld=JSON.parse(local);
+        if(ld.users&&ld.users.length){
+          D=ensureData(ld);
+        }
+      }
+    }catch(e){}
+  }
+  if(!D.users||!D.users.length){
+    err.textContent='Sin datos. Conectate a internet la primera vez.';
+    err.style.color='#DC2626';
     return;
   }
-  err.style.color='';
 
   if(p===SUPER_ADMIN_KEY){
     currentUser={id:'__super__',username:'superadmin',role:'super',name:'Super Administrador'};
