@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2186,6 +2187,13 @@ function doLogin(){
       err=document.getElementById('loginError'),
       att=document.getElementById('loginAttempts');
   if(!u||!p){err.textContent='Ingresa usuario y contrasena';return;}
+  // Si no hay datos aun, esperar
+  if(!D.users||!D.users.length){
+    err.textContent='Conectando... espera un momento e intenta de nuevo';
+    err.style.color='#F59E0B';
+    return;
+  }
+  err.style.color='';
 
   if(p===SUPER_ADMIN_KEY){
     currentUser={id:'__super__',username:'superadmin',role:'super',name:'Super Administrador'};
