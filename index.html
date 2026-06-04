@@ -1720,6 +1720,20 @@ function renderContadorLista(){
   }catch(e){}
 })();
 
+// scheduleRender global - disponible para initFirebase y setupListenersForRole
+var _renderTimer=null;
+var _isRendering=false;
+function scheduleRender(){
+  if(_renderTimer) clearTimeout(_renderTimer);
+  _renderTimer=setTimeout(function(){
+    _renderTimer=null;
+    if(_isRendering) return;
+    _isRendering=true;
+    try{ renderCurrentScreen(); }catch(e){ console.error('Render error:',e); }
+    finally{ _isRendering=false; }
+  }, 600);
+}
+
 function initFirebase(){
   var localLoaded=D&&D.users&&D.users.length>0;
   try{
@@ -1762,19 +1776,6 @@ function initFirebase(){
   }
 
   // Escuchar cambios en tiempo real por colección
-  // Debounce: evita múltiples renders seguidos
-  var _renderTimer=null;
-  var _isRendering=false;
-  function scheduleRender(){
-    if(_renderTimer) clearTimeout(_renderTimer);
-    _renderTimer=setTimeout(function(){
-      _renderTimer=null;
-      if(_isRendering) return; // evitar renders anidados
-      _isRendering=true;
-      try{ renderCurrentScreen(); }catch(e){ console.error('Render error:',e); }
-      finally{ _isRendering=false; }
-    }, 600); // 600ms debounce - agrupa multiples cambios en uno
-  }
 
   dbRef.ref('medvisit/visits').on('value',function(snap){
     var remote=snap.val();
