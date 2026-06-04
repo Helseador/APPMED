@@ -2027,7 +2027,18 @@ function doLogin(){
     }catch(e){}
   }
   if(!D.users||!D.users.length){
-    err.textContent='Primera conexion: espera a que cargue (max 30s)';
+    // Intentar appmed_users_cache como ultimo recurso
+    try{
+      var uc=localStorage.getItem('appmed_users_cache');
+      if(uc){
+        var ucParsed=JSON.parse(uc);
+        if(ucParsed&&ucParsed.length){ D.users=ucParsed; }
+      }
+    }catch(e){}
+  }
+  // Si sigue vacio, es primera vez sin internet
+  if(!D.users||!D.users.length){
+    err.textContent='Verifica tu conexion a internet';
     err.style.color='#F59E0B';
     return;
   }
