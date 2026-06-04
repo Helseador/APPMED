@@ -260,7 +260,7 @@
     <h1>APPMED</h1>                                 <!-- CAMBIO -->
     <p class="sub" id="loginGreeting">By HELSE</p>    <!-- CAMBIO -->
     <div id="labChip" class="lab-chip" style="display:none;"><i class="fa-solid fa-flask" style="font-size:9px;"></i> <span id="labChipName"></span></div>
-    <div id="loginConnBadge" style="display:none;"></div>
+    
     <div style="display:flex;flex-direction:column;gap:14px;">
       <input class="login-input" type="text" id="loginUser" placeholder="Usuario" autocomplete="username" autocapitalize="off">
       <input class="login-input" type="password" id="loginPass" placeholder="Contrasena" autocomplete="current-password">
@@ -1746,87 +1746,23 @@ function initFirebase(){
 
   // Si hay datos locales, el login funciona instantaneo aunque Firebase no responda
   if(localLoaded){
-    var badge=document.getElementById('loginConnBadge');
-    if(badge){
-      badge.style.display='none';
-    }
-  }
-
-  // Timeout de 10 segundos: si Firebase no conecta, mostrar mensaje pero permitir login con cache
-  setTimeout(function(){
-    if(!firebaseReady){
-      var badge=document.getElementById('loginConnBadge');
-      if(badge){
-        badge.style.display='block';
-        badge.className='conn-badge offline';
-        badge.innerHTML='<span class="hdot"></span>Modo local';
-      }
-      if(!D.users||!D.users.length){
-        var err=document.getElementById('loginError');
-        if(err){
-          err.textContent='Sin conexion. Verifica tu internet e intenta de nuevo.';
-          err.style.color='#DC2626';
-        }
-      }
-    }
-  }, 10000);
-
-  firebase.initializeApp(FIREBASE_CONFIG);
-  dbRef = firebase.database();
-
-  dbRef.ref('.info/connected').on('value',function(snap){
-    firebaseOnline=snap.val()===true;
-    updateConnBadge();
-    updateHeaderConn();
-  });
-
-  dbRef.ref('medvisit').once('value')
-    .then(function(snap){
-      var remote=snap.val();
-      if(remote && remote.users && remote.users.length){
-        D=ensureData(remote);
-        myLastWriteId=remote._writeId||null;
-      }else{
-        D=defaultData();
-        myLastWriteId=sessionPrefix+'_init';
-        D._writeId=myLastWriteId;
-        dbRef.ref('medvisit').set(D);
-      }
-      if(!D.labs) D.labs=[];
-      refreshLabs();
-      saveLocal(D);
-      firebaseReady=true;
-      firebaseOnline=true;
-      document.getElementById('loginBtn').disabled=false;
-      document.getElementById('loginBtn').innerHTML='Iniciar Sesión';
-      updateConnBadge();
-      updateHeaderConn();
-    })
-    .catch(function(err){
-      console.error('Error al leer la BD',err);
-      try{var local=JSON.parse(localStorage.getItem('medvisit_v5'));if(local && local.users)D=ensureData(local);}catch(e){}
-      if(!D.labs) D.labs=[];
-      refreshLabs();
-      saveLocal(D);
-      firebaseReady=false;
-      firebaseOnline=false;
-      document.getElementById('loginBtn').disabled=false;
-      document.getElementById('loginBtn').innerHTML='Iniciar Sesión';
-      var badge=document.getElementById('loginConnBadge');
-      badge.className='conn-badge offline';
-      badge.innerHTML='<span class="conn-dot"></span> Sin conexión – modo local';
+    
       updateHeaderConn();
     });
 
   // Escuchar cambios en tiempo real por colección
   // Debounce: evita múltiples renders seguidos
   var _renderTimer=null;
+  var _isRendering=false;
   function scheduleRender(){
     if(_renderTimer) clearTimeout(_renderTimer);
     _renderTimer=setTimeout(function(){
       _renderTimer=null;
-      renderCurrentScreen();
-    }, 400); // espera 400ms antes de renderizar
+      if(_isRendering) return; // evitar renders anidados
+      _isRendering=true;
+      try{ renderCurrentScreen(); }catch(e){ console.error('Render error:',e); }
+      finally{ _isRendering=false; }
+    }, 600); // 600ms debounce - agrupa multiples cambios en uno
   }
 
   dbRef.ref('medvisit/visits').on('value',function(snap){
@@ -1983,11 +1919,7 @@ function pushVisit(visit){
 }
 
 function updateConnBadge(){
-  var badge=document.getElementById('loginConnBadge');
-  if(!badge) return;
-  if(firebaseOnline){
-    badge.className='conn-badge online';
-    badge.innerHTML='<span class="conn-dot"></span> Conectado';
+  
   }else{
     badge.className='conn-badge offline';
     badge.innerHTML='<span class="conn-dot"></span> Sin conexión – modo local';
@@ -2998,6 +2930,7 @@ function populateVisitFilter(){
   var myUsers=(D.users||[]).filter(u=>u.labId===currentLabId&&u.role==='visitor');
   sel.innerHTML='<option value="">Todos</option>'+myUsers.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('');
 }
+var _adminVisitasPage=0; // paginacion de visitas en panel admin
 function renderAdminVisitas(){
   var el=document.getElementById('adminVisitsList');
   if(!el) return;
