@@ -2103,6 +2103,7 @@ function doLogin(){
   if(p===SUPER_ADMIN_KEY){
     currentUser={id:'__super__',username:'superadmin',role:'super',name:'Super Administrador'};
     localStorage.setItem('appmed_session',JSON.stringify({userId:'__super__',ts:Date.now()}));
+    setupListenersForRole();
     err.textContent=''; loginAttempts=0; att.style.display='none'; resetSession(); showScreen('superScreen'); renderSuperAdmin(); toast('Modo Super Admin'); return;
   }
   var user=(D.users||[]).find(x=>x.username===u && x.password===p && x.active);
@@ -2122,6 +2123,7 @@ function doLogin(){
     ts: Date.now()
   }));
   saveLocal(D);
+  setupListenersForRole();
 
   if(user.role==='contador'){
     showScreen('contadorScreen');
@@ -3929,6 +3931,83 @@ document.addEventListener('visibilitychange', function(){
 });
 
 // Restaurar sesion cuando Firebase confirme que los usuarios llegaron
+
+// Reiniciar listeners despues del login con filtros por rol
+function setupListenersForRole(){
+  if(!dbRef||!currentUser) return;
+
+  // Detener listeners actuales (si los hay) y crear nuevos filtrados
+  try{ dbRef.ref('medvisit/visits').off(); }catch(e){}
+  try{ dbRef.ref('medvisit/points').off(); }catch(e){}
+  try{ dbRef.ref('medvisit/pendientes').off(); }catch(e){}
+
+  if(currentUser.role==='visitor'){
+    // Visitador solo escucha SUS visitas
+    dbRef.ref('medvisit/visits').orderByChild('visitorId').equalTo(currentUser.id).on('value',function(snap){
+      var remote=snap.val();
+      var newVisits=toArray(remote);
+      if(JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
+      D.visits=newVisits;
+      saveLocal(D);
+      scheduleRender();
+    });
+    // Visitador solo escucha SUS puntos
+    dbRef.ref('medvisit/points').orderByChild('assignedTo').equalTo(currentUser.id).on('value',function(snap){
+      var remote=snap.val();
+      var newPts=toArray(remote);
+      if(JSON.stringify(newPts)===JSON.stringify(D.points)) return;
+      D.points=newPts;
+      saveLocal(D);
+      scheduleRender();
+    });
+    // Visitador solo escucha SUS pendientes
+    dbRef.ref('medvisit/pendientes').orderByChild('userId').equalTo(currentUser.id).on('value',function(snap){
+      var remote=snap.val();
+      var newPends=toArray(remote||[]);
+      if(JSON.stringify(newPends)===JSON.stringify(D.pendientes)) return;
+      D.pendientes=newPends;
+      scheduleRender();
+    });
+  } else if(currentUser.role==='admin'&&currentLabId){
+    // Admin solo escucha datos de su lab
+    dbRef.ref('medvisit/visits').orderByChild('labId').equalTo(currentLabId).on('value',function(snap){
+      var newVisits=toArray(snap.val());
+      if(JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
+      D.visits=newVisits;
+      saveLocal(D);
+      scheduleRender();
+    });
+    // Admin necesita todos los puntos de su lab y todos los pendientes/visitadores
+    dbRef.ref('medvisit/points').on('value',function(snap){
+      var newPts=toArray(snap.val());
+      if(JSON.stringify(newPts)===JSON.stringify(D.points)) return;
+      D.points=newPts; saveLocal(D); scheduleRender();
+    });
+    dbRef.ref('medvisit/pendientes').on('value',function(snap){
+      var newPends=toArray(snap.val()||[]);
+      if(JSON.stringify(newPends)===JSON.stringify(D.pendientes)) return;
+      D.pendientes=newPends; scheduleRender();
+    });
+  } else {
+    // SuperAdmin y AdminGeneral escuchan todo
+    dbRef.ref('medvisit/visits').on('value',function(snap){
+      var newVisits=toArray(snap.val());
+      if(JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
+      D.visits=newVisits; saveLocal(D); scheduleRender();
+    });
+    dbRef.ref('medvisit/points').on('value',function(snap){
+      var newPts=toArray(snap.val());
+      if(JSON.stringify(newPts)===JSON.stringify(D.points)) return;
+      D.points=newPts; saveLocal(D); scheduleRender();
+    });
+    dbRef.ref('medvisit/pendientes').on('value',function(snap){
+      var newPends=toArray(snap.val()||[]);
+      if(JSON.stringify(newPends)===JSON.stringify(D.pendientes)) return;
+      D.pendientes=newPends; scheduleRender();
+    });
+  }
+}
+
 function tryRestoreSession(){
   try{
     var sess=localStorage.getItem('appmed_session');
@@ -3966,13 +4045,14 @@ function tryRestoreSession(){
     else if(u.role==='admin'){showScreen('adminScreen');renderAdmin();}
     else if(u.role==='contador'){showScreen('contadorScreen');renderContador();}
     else if(u.role==='visitor'){
-      // Visitador entra directo sin pedir GPS de nuevo
       if(localStorage.getItem('appmed_gps')==='granted'){
         gpsPermission='granted';showScreen('visitorScreen');renderVisitor();
       } else {
         showGpsPermOverlay();
       }
     }
+    // Reiniciar listeners para el rol restaurado
+    setupListenersForRole();
   }catch(e){console.error('Session restore error:',e);}
 }
 </script>
