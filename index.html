@@ -1750,6 +1750,17 @@ function initFirebase(){
     updateHeaderConn();
   }
 
+  // Inicializar Firebase
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    dbRef=firebase.database();
+    firebaseReady=true;
+  }catch(e){
+    console.error('Firebase init error:',e);
+    firebaseReady=false;
+    return;
+  }
+
   // Escuchar cambios en tiempo real por colección
   // Debounce: evita múltiples renders seguidos
   var _renderTimer=null;
