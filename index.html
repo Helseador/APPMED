@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0303B5">
@@ -1746,9 +1747,8 @@ function initFirebase(){
 
   // Si hay datos locales, el login funciona instantaneo aunque Firebase no responda
   if(localLoaded){
-    
-      updateHeaderConn();
-    });
+    updateHeaderConn();
+  }
 
   // Escuchar cambios en tiempo real por colección
   // Debounce: evita múltiples renders seguidos
@@ -1919,11 +1919,7 @@ function pushVisit(visit){
 }
 
 function updateConnBadge(){
-  
-  }else{
-    badge.className='conn-badge offline';
-    badge.innerHTML='<span class="conn-dot"></span> Sin conexión – modo local';
-  }
+  // Badge oculto - no mostrar mensajes de conexion
 }
 function updateHeaderConn(){
   var ids=['adminConn','visitorConn','superConn','labSelectConn','contadorConn'];
