@@ -1,17 +1,13 @@
 const CACHE = 'appmed-v1';
-const ASSETS = [
-  '/',
-  '/index.html',
-  'https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js',
-  'https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css',
-];
 
-// Instalar - cachear assets principales
+// Instalar - cachear el index.html principal
 self.addEventListener('install', function(e){
   e.waitUntil(
     caches.open(CACHE).then(function(cache){
-      return cache.addAll(ASSETS).catch(function(){});
+      return cache.addAll([
+        self.registration.scope,
+        self.registration.scope + 'index.html'
+      ]).catch(function(){});
     })
   );
   self.skipWaiting();
@@ -30,21 +26,25 @@ self.addEventListener('activate', function(e){
   self.clients.claim();
 });
 
-// Fetch - cache first para assets, network first para Firebase
+// Fetch - cache first para assets, red para Firebase
 self.addEventListener('fetch', function(e){
   var url = e.request.url;
   
-  // Firebase siempre va a la red (datos en tiempo real)
-  if(url.includes('firebaseio.com') || url.includes('googleapis.com/identitytoolkit')){
+  // Firebase y APIs externas siempre van a la red
+  if(url.includes('firebaseio.com') || 
+     url.includes('googleapis.com') || 
+     url.includes('firebaseapp.com') ||
+     url.includes('cdnjs') ||
+     url.includes('cdn.') ||
+     url.includes('unpkg.com')){
     return;
   }
-  
+
   e.respondWith(
     caches.match(e.request).then(function(cached){
       if(cached) return cached;
       return fetch(e.request).then(function(response){
-        // Cachear solo respuestas validas
-        if(response&&response.status===200&&response.type==='basic'){
+        if(response&&response.status===200){
           var clone = response.clone();
           caches.open(CACHE).then(function(cache){
             cache.put(e.request, clone);
@@ -52,9 +52,8 @@ self.addEventListener('fetch', function(e){
         }
         return response;
       }).catch(function(){
-        // Sin red y sin cache - retornar index.html como fallback
         if(e.request.mode==='navigate'){
-          return caches.match('/index.html');
+          return caches.match(self.registration.scope);
         }
       });
     })
