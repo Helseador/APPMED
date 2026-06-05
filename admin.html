@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0303B5">
+  <title>APPMED Admin</title>
+  <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://appmed-helse-default-rtdb.firebaseio.com">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <style>
+    :root{
+      --primary:#0303B5;
+      --primary-dark:#020280;
+      --primary-light:#3B3FD8;
+      --primary-50:#EEEEFF;
+      --bg:#F8FAFC;
+      --card:#FFFFFF;
+      --fg:#0F172A;
+      --muted:#64748B;
+      --border:#E2E8F0;
+      --danger:#DC2626;
+      --success:#16A34A;
+      --warning:#D97706;
+      --radius:14px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--fg);min-height:100vh;}
+
+    /* HEADER */
+    .app-header{
+      background:var(--primary);
+      color:#fff;
+      padding:0 16px;
+      height:56px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      position:sticky;
+      top:0;
+      z-index:100;
+      box-shadow:0 2px 12px rgba(3,3,181,0.3);
+    }
+    .app-header h1{font-size:18px;font-weight:800;letter-spacing:0.5px;flex:1;}
+    .header-badge{background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+    .header-btn{background:rgba(255,255,255,0.15);border:none;color:#fff;width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+    .header-btn:hover{background:rgba(255,255,255,0.25);}
+
+    /* LOGIN */
+    .login-wrap{
+      min-height:100vh;
+      background:linear-gradient(160deg,#0303B5 0%,#020280 50%,#1B3A6B 100%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    .login-card{
+      background:#fff;
+      border-radius:24px;
+      padding:40px 32px;
+      width:100%;
+      max-width:380px;
+      box-shadow:0 25px 60px rgba(3,3,181,0.3);
+    }
+    .login-logo{text-align:center;margin-bottom:28px;}
+    .login-logo .logo-text{font-size:36px;font-weight:900;color:var(--primary);letter-spacing:-1px;}
+    .login-logo .logo-sub{font-size:13px;color:var(--muted);margin-top:2px;}
+    .login-logo .admin-badge{display:inline-block;background:var(--primary-50);color:var(--primary);font-size:11px;font-weight:700;padding:3px 12px;border-radius:20px;margin-top:6px;}
+    .form-group{margin-bottom:16px;}
+    .form-label{display:block;font-size:13px;font-weight:600;color:var(--fg);margin-bottom:6px;}
+    .form-input{width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:12px;font-size:15px;outline:none;transition:border-color 0.2s;}
+    .form-input:focus{border-color:var(--primary);}
+    .login-btn{width:100%;padding:14px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;transition:background 0.2s;}
+    .login-btn:hover{background:var(--primary-dark);}
+    .login-error{color:var(--danger);font-size:13px;text-align:center;margin-top:10px;min-height:20px;}
+
+    /* LAYOUT */
+    .screen{display:none;}
+    .screen.active{display:block;}
+    .app-body{padding:16px;max-width:1200px;margin:0 auto;}
+
+    /* TABS */
+    .tabs{display:flex;gap:4px;padding:0 16px;background:var(--primary-dark);overflow-x:auto;}
+    .tab-btn{
+      background:transparent;border:none;color:rgba(255,255,255,0.65);
+      padding:12px 16px;font-size:13px;font-weight:600;cursor:pointer;
+      border-bottom:3px solid transparent;white-space:nowrap;
+      transition:all 0.2s;display:flex;align-items:center;gap:6px;
+    }
+    .tab-btn:hover{color:#fff;}
+    .tab-btn.active{color:#fff;border-bottom-color:#fff;}
+    .tab-content{display:none;padding:16px 0;}
+    .tab-content.active{display:block;}
+
+    /* CARDS */
+    .card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-bottom:12px;}
+    .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+    .card-title{font-size:15px;font-weight:700;}
+
+    /* STATS */
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
+    .stat-card{
+      background:var(--card);border-radius:var(--radius);padding:16px;
+      box-shadow:0 1px 4px rgba(0,0,0,0.06);text-align:center;
+      border-top:4px solid var(--primary);
+    }
+    .stat-num{font-size:32px;font-weight:900;color:var(--primary);}
+    .stat-label{font-size:12px;color:var(--muted);margin-top:2px;}
+
+    /* TABLA */
+    .data-table{width:100%;border-collapse:collapse;font-size:13px;}
+    .data-table th{background:var(--primary);color:#fff;padding:10px 12px;text-align:left;font-weight:600;}
+    .data-table td{padding:10px 12px;border-bottom:1px solid var(--border);}
+    .data-table tr:hover td{background:var(--primary-50);}
+    .table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);}
+
+    /* FILTROS */
+    .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+    .filters select,.filters input{
+      padding:8px 12px;border:2px solid var(--border);border-radius:10px;
+      font-size:13px;outline:none;background:var(--card);
+    }
+    .filters select:focus,.filters input:focus{border-color:var(--primary);}
+
+    /* BADGES */
+    .badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+    .badge-ok{background:#DCFCE7;color:#16A34A;}
+    .badge-warn{background:#FEF3C7;color:#D97706;}
+    .badge-err{background:#FEE2E2;color:#DC2626;}
+    .badge-info{background:var(--primary-50);color:var(--primary);}
+
+    /* BUTTONS */
+    .btn{padding:8px 16px;border-radius:10px;border:none;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;}
+    .btn-primary{background:var(--primary);color:#fff;}
+    .btn-primary:hover{background:var(--primary-dark);}
+    .btn-success{background:#16A34A;color:#fff;}
+    .btn-outline{background:transparent;border:2px solid var(--border);color:var(--fg);}
+    .btn-sm{padding:6px 12px;font-size:12px;}
+
+    /* AVATAR */
+    .avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;flex-shrink:0;}
+
+    /* EMPTY */
+    .empty{text-align:center;padding:40px;color:var(--muted);}
+    .empty i{font-size:40px;margin-bottom:12px;opacity:0.3;}
+
+    /* FOTO OVERLAY */
+    .foto-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;}
+    .foto-overlay.open{display:flex;}
+    .foto-overlay img{max-width:95%;max-height:85vh;border-radius:12px;}
+    .foto-overlay .close-hint{color:rgba(255,255,255,0.5);font-size:12px;margin-top:10px;}
+
+    /* LOADING */
+    .loading{text-align:center;padding:40px;color:var(--muted);}
+    .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* RESPONSIVE */
+    @media(max-width:600px){
+      .stats-grid{grid-template-columns:repeat(2,1fr);}
+      .app-body{padding:12px;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- FOTO OVERLAY -->
+<div class="foto-overlay" id="fotoOverlay" onclick="this.classList.remove('open')">
+  <img id="fotoOverlayImg" src="" alt="">
+  <div class="close-hint">Toca para cerrar</div>
+</div>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-text">APPMED</div>
+      <div class="logo-sub">by HELSE Colombia</div>
+      <div class="admin-badge"><i class="fa-solid fa-shield-halved"></i> Panel Administrativo</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Usuario</label>
+      <input class="form-input" id="loginUser" type="text" placeholder="Tu usuario" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contraseña</label>
+      <input class="form-input" id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="login-btn" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> Ingresar</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- PANEL ADMIN -->
+<div class="screen" id="adminScreen">
+  <div class="app-header">
+    <div style="flex:1;">
+      <div style="font-weight:800;font-size:16px;">APPMED Admin</div>
+      <div style="font-size:11px;opacity:0.7;" id="userLabel">Cargando...</div>
+    </div>
+    <div class="header-badge" id="connBadge"><i class="fa-solid fa-circle" style="font-size:8px;"></i> Online</div>
+    <button class="header-btn" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
+  </div>
+  <div class="tabs" id="adminTabs"></div>
+  <div class="app-body">
+    <div id="tabContent"></div>
+  </div>
+</div>
+
+<script>
+var FIREBASE_CONFIG={apiKey:"AIzaSyAx8FiXFZutVSDqHrh5ANKfoZlBZTRB2ic",authDomain:"appmed-helse.firebaseapp.com",databaseURL:"https://appmed-helse-default-rtdb.firebaseio.com",projectId:"appmed-helse",storageBucket:"appmed-helse.firebasestorage.app",messagingSenderId:"116820385584",appId:"1:116820385584:web:4857ff3653ac5bdfbf72f5"};
+var SUPER_KEY='TesJua2024!';
+var BASE_LABS=[
+  {id:'nestle',name:'Nestlé',color:'#E2001A'},
+  {id:'abamia',name:'Abamia',color:'#0066CC'},
+  {id:'fresenius',name:'Fresenius',color:'#009036'},
+  {id:'ketolance',name:'Ketolance',color:'#F59E0B'},
+  {id:'abbott',name:'Abbott',color:'#009CDE'}
+];
+var LABS=BASE_LABS.slice();
+var AV_COLORS=['#0303B5','#D97706','#DC2626','#7C3AED','#DB2777','#EA580C','#4F46E5','#0891B2'];
+
+var db=null, currentUser=null, currentLabId=null;
+var D={users:[],visits:[],points:[],pendientes:[],labs:[],marketing:[]};
+
+// ── UTILS ──────────────────────────────────────────────────────
+function esc(s){if(!s) return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function today(){return new Date().toISOString().split('T')[0];}
+function toArray(obj){
+  if(!obj) return [];
+  if(Array.isArray(obj)) return obj.filter(function(x){return x!=null;});
+  return Object.keys(obj).map(function(k){var v=obj[k];if(v&&typeof v==='object') v._fbKey=k;return v;}).filter(function(x){return x!=null;});
+}
+function initials(n){if(!n) return '?';var p=n.trim().split(/\s+/);return p.length>=2?(p[0][0]+p[p.length-1][0]).toUpperCase():n.substring(0,2).toUpperCase();}
+function avatarColor(s){var h=0;for(var i=0;i<(s||'').length;i++) h=(h*31+s.charCodeAt(i))%AV_COLORS.length;return AV_COLORS[Math.abs(h)%AV_COLORS.length];}
+function fmtDate(d){if(!d) return '-';var p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
+function getLabName(labId){var l=LABS.find(function(x){return x.id===labId;});return l?l.name:labId||'-';}
+function getUserName(uid){var u=D.users.find(function(x){return x.id===uid;});return u?u.name:uid||'-';}
+function openFoto(src){document.getElementById('fotoOverlayImg').src=src;document.getElementById('fotoOverlay').classList.add('open');}
+
+// ── FIREBASE ──────────────────────────────────────────────────
+function initFirebase(){
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    db=firebase.database();
+    // Detectar online/offline
+    db.ref('.info/connected').on('value',function(snap){
+      var badge=document.getElementById('connBadge');
+      if(!badge) return;
+      if(snap.val()){
+        badge.innerHTML='<i class="fa-solid fa-circle" style="font-size:8px;color:#4ADE80;"></i> Online';
+      } else {
+        badge.innerHTML='<i class="fa-solid fa-circle" style="font-size:8px;color:#FCA5A5;"></i> Offline';
+      }
+    });
+    // Cargar datos
+    db.ref('medvisit/users').on('value',function(snap){D.users=toArray(snap.val());render();});
+    db.ref('medvisit/visits').on('value',function(snap){D.visits=toArray(snap.val());render();});
+    db.ref('medvisit/points').on('value',function(snap){D.points=toArray(snap.val());render();});
+    db.ref('medvisit/pendientes').on('value',function(snap){D.pendientes=toArray(snap.val()||[]);render();});
+    db.ref('medvisit/labs').on('value',function(snap){
+      var extra=toArray(snap.val());
+      LABS=BASE_LABS.slice().concat(extra.filter(function(l){return !BASE_LABS.some(function(b){return b.id===l.id;});}));
+      render();
+    });
+    db.ref('medvisit/marketing').on('value',function(snap){D.marketing=toArray(snap.val());render();});
+  }catch(e){console.error('Firebase error:',e);}
+}
+
+// ── RENDER DEBOUNCE ───────────────────────────────────────────
+var _rt=null;
+function render(){
+  if(_rt) clearTimeout(_rt);
+  _rt=setTimeout(function(){
+    _rt=null;
+    if(currentUser) renderCurrentTab();
+  },500);
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────
+function doLogin(){
+  var u=document.getElementById('loginUser').value.trim();
+  var p=document.getElementById('loginPass').value;
+  var err=document.getElementById('loginError');
+  err.textContent='';
+  if(!u||!p){err.textContent='Ingresa usuario y contraseña';return;}
+
+  // SuperAdmin
+  if(u==='superadmin'&&p===SUPER_KEY){
+    currentUser={id:'__super__',role:'super',name:'Super Administrador',username:'superadmin'};
+    enterAdmin();return;
+  }
+  // Buscar en usuarios
+  var found=D.users.find(function(x){return x.username===u&&x.password===p&&x.active!==false;});
+  if(!found){err.textContent='Usuario o contraseña incorrectos';return;}
+  // Solo roles admin
+  if(['visitor'].indexOf(found.role)>=0){err.textContent='Este panel es solo para administradores';return;}
+  currentUser={id:found.id,role:found.role,name:found.name,username:found.username,labId:found.labId||''};
+  currentLabId=found.role==='admin'?found.labId||null:null;
+  // Guardar sesion
+  try{localStorage.setItem('appmed_admin_session',JSON.stringify({userId:currentUser.id,ts:Date.now()}));}catch(e){}
+  enterAdmin();
+}
+
+function enterAdmin(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('adminScreen').classList.add('active');
+  document.getElementById('userLabel').textContent=currentUser.name+' · '+getRoleLabel(currentUser.role);
+  buildTabs();
+}
+
+function getRoleLabel(r){
+  return r==='super'?'Super Admin':r==='adminGeneral'?'Admin General':r==='admin'?'Administrador':r==='contador'?'Contador':'Usuario';
+}
+
+function doLogout(){
+  try{localStorage.removeItem('appmed_admin_session');}catch(e){}
+  currentUser=null;currentLabId=null;
+  document.getElementById('adminScreen').classList.remove('active');
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass').value='';
+}
+
+// ── TABS ──────────────────────────────────────────────────────
+var _currentTab='visitas';
+var _tabs={
+  super:   [{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'usuarios',icon:'fa-user-gear',label:'Usuarios'}],
+  adminGeneral:[{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'}],
+  admin:   [{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'}],
+  contador:[{id:'marketing',icon:'fa-receipt',label:'Marketing'}]
+};
+
+function buildTabs(){
+  var role=currentUser.role;
+  var tabs=_tabs[role]||_tabs.admin;
+  var html=tabs.map(function(t){
+    return '<button class="tab-btn'+(t.id===_currentTab?' active':'')+'" onclick="switchTab(\''+t.id+'\')">'
+      +'<i class="fa-solid '+t.icon+'"></i>'+t.label+'</button>';
+  }).join('');
+  document.getElementById('adminTabs').innerHTML=html;
+  // Si el tab actual no existe para este rol, ir al primero
+  if(!tabs.find(function(t){return t.id===_currentTab;})){
+    _currentTab=tabs[0].id;
+    buildTabs();return;
+  }
+  renderCurrentTab();
+}
+
+function switchTab(id){
+  _currentTab=id;
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('.tab-btn').forEach(function(b){if(b.textContent.trim().toLowerCase()===id||b.onclick.toString().includes("'"+id+"'")) b.classList.add('active');});
+  buildTabs();
+}
+
+function renderCurrentTab(){
+  var el=document.getElementById('tabContent');
+  if(!el) return;
+  if(_currentTab==='visitas') el.innerHTML=renderVisitas();
+  else if(_currentTab==='visitadores') el.innerHTML=renderVisitadores();
+  else if(_currentTab==='pendientes') el.innerHTML=renderPendientes();
+  else if(_currentTab==='marketing') el.innerHTML=renderMarketing();
+  else if(_currentTab==='usuarios') el.innerHTML=renderUsuarios();
+}
+
+// ── TAB VISITAS ───────────────────────────────────────────────
+function renderVisitas(){
+  var visits=D.visits.filter(function(v){
+    if(currentLabId) return v.labId===currentLabId;
+    return true;
+  });
+  // Stats hoy
+  var hoy=today();
+  var hoyVisitas=visits.filter(function(v){return v.date===hoy;});
+  var completadas=hoyVisitas.filter(function(v){return v.status==='completed';}).length;
+  var enCurso=hoyVisitas.filter(function(v){return v.status==='in-progress';}).length;
+
+  var html='<div class="stats-grid">'
+    +'<div class="stat-card"><div class="stat-num">'+completadas+'</div><div class="stat-label">Completadas hoy</div></div>'
+    +'<div class="stat-card"><div class="stat-num">'+enCurso+'</div><div class="stat-label">En curso</div></div>'
+    +'<div class="stat-card"><div class="stat-num">'+hoyVisitas.length+'</div><div class="stat-label">Iniciadas hoy</div></div>'
+    +'<div class="stat-card"><div class="stat-num">'+visits.length+'</div><div class="stat-label">Total registros</div></div>'
+    +'</div>';
+
+  // Filtros
+  html+='<div class="filters">'
+    +'<input type="date" id="fDesde" value="'+hoy+'" onchange="renderCurrentTab()">'
+    +'<input type="date" id="fHasta" value="'+hoy+'" onchange="renderCurrentTab()">';
+  if(!currentLabId){
+    html+='<select id="fLab" onchange="renderCurrentTab()"><option value="">Todos los labs</option>'
+      +LABS.map(function(l){return '<option value="'+l.id+'">'+esc(l.name)+'</option>';}).join('')+'</select>';
+  }
+  html+='<select id="fVisitador" onchange="renderCurrentTab()"><option value="">Todos los visitadores</option>'
+    +D.users.filter(function(u){return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId);})
+    .map(function(u){return '<option value="'+u.id+'">'+esc(u.name)+'</option>';}).join('')
+    +'</select></div>';
+
+  // Filtrar
+  var desde=document.getElementById('fDesde')?document.getElementById('fDesde').value:'';
+  var hasta=document.getElementById('fHasta')?document.getElementById('fHasta').value:'';
+  var lab=document.getElementById('fLab')?document.getElementById('fLab').value:'';
+  var vis=document.getElementById('fVisitador')?document.getElementById('fVisitador').value:'';
+  var filtradas=visits.filter(function(v){
+    if(desde&&v.date<desde) return false;
+    if(hasta&&v.date>hasta) return false;
+    if(lab&&v.labId!==lab) return false;
+    if(vis&&(v.visitorId||v.userId)!==vis) return false;
+    return true;
+  });
+
+  if(!filtradas.length) return html+'<div class="empty"><i class="fa-solid fa-route"></i><p>Sin visitas en el periodo</p></div>';
+
+  html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
+    +'<th>Visitador</th><th>Laboratorio</th><th>Punto</th><th>Fecha</th><th>Estado</th><th>Foto</th>'
+    +'</tr></thead><tbody>'
+    +filtradas.map(function(v){
+      var visName=getUserName(v.visitorId||v.userId);
+      var labName=getLabName(v.labId);
+      var punto=v.pointName||v.placeName||'-';
+      var estado=v.status==='completed'?'<span class="badge badge-ok">Completada</span>':v.status==='in-progress'?'<span class="badge badge-warn">En curso</span>':'<span class="badge badge-info">Pendiente</span>';
+      var foto=v.photo?'<button class="btn btn-sm btn-outline" onclick="openFoto(\''+v.photo+'\')"><i class="fa-solid fa-image"></i></button>':'-';
+      return '<tr><td><b>'+esc(visName)+'</b></td><td>'+esc(labName)+'</td><td>'+esc(punto)+'</td><td>'+fmtDate(v.date)+'</td><td>'+estado+'</td><td>'+foto+'</td></tr>';
+    }).join('')
+    +'</tbody></table></div>';
+
+  return html;
+}
+
+// ── TAB VISITADORES ───────────────────────────────────────────
+function renderVisitadores(){
+  var visitors=D.users.filter(function(u){
+    return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId);
+  });
+  if(!visitors.length) return '<div class="empty"><i class="fa-solid fa-users"></i><p>Sin visitadores</p></div>';
+
+  var hoy=today();
+  var html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;">';
+  visitors.forEach(function(v){
+    var visitas=D.visits.filter(function(x){return (x.visitorId||x.userId)===v.id;});
+    var hoyV=visitas.filter(function(x){return x.date===hoy;});
+    var completadasHoy=hoyV.filter(function(x){return x.status==='completed';}).length;
+    var totalPuntos=D.points.filter(function(p){return p.assignedTo===v.id;}).length;
+    var pct=totalPuntos>0?Math.round(completadasHoy*100/totalPuntos):0;
+    var labObj=LABS.find(function(l){return l.id===v.labId;})||{name:v.labId||'-',color:'#64748B'};
+    var color=avatarColor(v.name||'');
+
+    html+='<div class="card">'
+      +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">'
+      +'<div class="avatar" style="background:'+color+'">'+initials(v.name)+'</div>'
+      +'<div><div style="font-weight:700;">'+esc(v.name)+'</div>'
+      +'<div style="font-size:12px;color:var(--muted);">'+esc(v.username)+' · <span style="color:'+labObj.color+';font-weight:600;">'+esc(labObj.name)+'</span></div></div>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;">'
+      +'<div style="background:var(--primary-50);border-radius:10px;padding:8px;"><div style="font-size:20px;font-weight:900;color:var(--primary);">'+completadasHoy+'</div><div style="font-size:10px;color:var(--muted);">Hoy</div></div>'
+      +'<div style="background:#F0FDF4;border-radius:10px;padding:8px;"><div style="font-size:20px;font-weight:900;color:#16A34A;">'+visitas.length+'</div><div style="font-size:10px;color:var(--muted);">Total</div></div>'
+      +'<div style="background:#FEF3C7;border-radius:10px;padding:8px;"><div style="font-size:20px;font-weight:900;color:#D97706;">'+pct+'%</div><div style="font-size:10px;color:var(--muted);">Cumpl.</div></div>'
+      +'</div></div>';
+  });
+  html+='</div>';
+  return html;
+}
+
+// ── TAB PENDIENTES ────────────────────────────────────────────
+function renderPendientes(){
+  var pends=D.pendientes.filter(function(p){
+    return p&&p.id&&!p.eliminado&&(!currentLabId||p.labId===currentLabId);
+  });
+  var activos=pends.filter(function(p){return !p.resuelto;});
+  var resueltos=pends.filter(function(p){return p.resuelto===true;});
+
+  var html='<div class="stats-grid">'
+    +'<div class="stat-card"><div class="stat-num">'+activos.length+'</div><div class="stat-label">Activos</div></div>'
+    +'<div class="stat-card"><div class="stat-num">'+resueltos.length+'</div><div class="stat-label">Resueltos</div></div>'
+    +'</div>';
+
+  if(!activos.length) return html+'<div class="empty"><i class="fa-solid fa-list-check"></i><p>Sin pendientes activos</p></div>';
+
+  html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
+    +'<th>Visitador</th><th>Pendiente</th><th>Prioridad</th><th>Creado por</th><th>Fecha límite</th>'
+    +'</tr></thead><tbody>'
+    +activos.map(function(p){
+      var visName=getUserName(p.userId);
+      var prio=p.prioridad==='alta'?'<span class="badge badge-err">Alta</span>':p.prioridad==='baja'?'<span class="badge badge-ok">Baja</span>':'<span class="badge badge-warn">Normal</span>';
+      return '<tr><td><b>'+esc(visName)+'</b></td><td>'+esc(p.texto)+'</td><td>'+prio+'</td><td>'+esc(p.creadoPorNombre||'-')+'</td><td>'+fmtDate(p.fechaLimite)+'</td></tr>';
+    }).join('')
+    +'</tbody></table></div>';
+  return html;
+}
+
+// ── TAB MARKETING ─────────────────────────────────────────────
+var _mktFiltros={lab:'',vis:'',desde:'',hasta:''};
+function renderMarketing(){
+  var filtered=D.marketing.filter(function(r){
+    if(!r||!r.fecha) return false;
+    if(_mktFiltros.lab&&r.labId!==_mktFiltros.lab) return false;
+    if(_mktFiltros.vis&&r.userId!==_mktFiltros.vis) return false;
+    if(_mktFiltros.desde&&r.fecha<_mktFiltros.desde) return false;
+    if(_mktFiltros.hasta&&r.fecha>_mktFiltros.hasta) return false;
+    if(currentLabId&&r.labId!==currentLabId) return false;
+    return true;
+  });
+  filtered.sort(function(a,b){return (b.fecha||'').localeCompare(a.fecha||'');});
+  var total=filtered.reduce(function(s,r){return s+(parseFloat(r.valor)||0);},0);
+
+  var html='<div class="filters">';
+  if(!currentLabId){
+    html+='<select onchange="_mktFiltros.lab=this.value;renderCurrentTab()"><option value="">Todos los labs</option>'
+      +LABS.map(function(l){return '<option value="'+l.id+'"'+(l.id===_mktFiltros.lab?' selected':'')+'>'+esc(l.name)+'</option>';}).join('')+'</select>';
+  }
+  html+='<select onchange="_mktFiltros.vis=this.value;renderCurrentTab()"><option value="">Todos los visitadores</option>'
+    +D.users.filter(function(u){return u.role==='visitor';}).map(function(u){return '<option value="'+u.id+'"'+(u.id===_mktFiltros.vis?' selected':'')+'>'+esc(u.name)+'</option>';}).join('')+'</select>'
+    +'<input type="date" value="'+_mktFiltros.desde+'" onchange="_mktFiltros.desde=this.value;renderCurrentTab()" placeholder="Desde">'
+    +'<input type="date" value="'+_mktFiltros.hasta+'" onchange="_mktFiltros.hasta=this.value;renderCurrentTab()" placeholder="Hasta">'
+    +'</div>';
+
+  html+='<div style="background:var(--primary-50);border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">'
+    +'<span style="color:var(--muted);font-size:13px;">'+filtered.length+' registros</span>'
+    +'<span style="font-weight:900;font-size:18px;color:var(--primary);">$'+total.toLocaleString('es-CO')+'</span>'
+    +'</div>';
+
+  // Botones de exportar Excel
+  html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">'
+    +'<button class="btn btn-success btn-sm" onclick="exportarExcelMarketing()"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>'
+    +'</div>';
+
+  if(!filtered.length) return html+'<div class="empty"><i class="fa-solid fa-receipt"></i><p>Sin registros</p></div>';
+
+  html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
+    +'<th>Fecha</th><th>Visitador</th><th>Lab</th><th>Establecimiento</th><th>NIT</th><th>Valor</th><th>Foto</th>'
+    +'</tr></thead><tbody>'
+    +filtered.map(function(r){
+      var foto=r.foto?'<button class="btn btn-sm btn-outline" onclick="openFoto(\''+r.foto+'\')"><i class="fa-solid fa-image"></i></button>':'-';
+      return '<tr>'
+        +'<td>'+fmtDate(r.fecha)+'</td>'
+        +'<td>'+esc(r.userName||getUserName(r.userId))+'</td>'
+        +'<td>'+esc(getLabName(r.labId))+'</td>'
+        +'<td><b>'+esc(r.lugar||'-')+'</b>'+(r.razonSocial?'<div style="font-size:10px;color:var(--muted);">'+esc(r.razonSocial)+'</div>':'')+'</td>'
+        +'<td>'+esc(r.nit||'-')+'</td>'
+        +'<td style="font-weight:700;color:var(--primary);">$'+(parseFloat(r.valor)||0).toLocaleString('es-CO')+'</td>'
+        +'<td>'+foto+'</td>'
+        +'</tr>';
+    }).join('')
+    +'</tbody></table></div>';
+  return html;
+}
+
+// ── TAB USUARIOS ──────────────────────────────────────────────
+function renderUsuarios(){
+  var users=D.users;
+  if(!users.length) return '<div class="empty"><i class="fa-solid fa-users"></i><p>Sin usuarios</p></div>';
+
+  var html='<div class="table-wrap"><table class="data-table"><thead><tr>'
+    +'<th>Nombre</th><th>Usuario</th><th>Rol</th><th>Lab</th><th>Estado</th>'
+    +'</tr></thead><tbody>'
+    +users.map(function(u){
+      var rol=getRoleLabel(u.role);
+      var lab=getLabName(u.labId);
+      var estado=u.active===false?'<span class="badge badge-err">Inactivo</span>':'<span class="badge badge-ok">Activo</span>';
+      var color=avatarColor(u.name||'');
+      return '<tr>'
+        +'<td><div style="display:flex;align-items:center;gap:8px;"><div class="avatar" style="background:'+color+';width:28px;height:28px;font-size:11px;">'+initials(u.name)+'</div><b>'+esc(u.name)+'</b></div></td>'
+        +'<td>'+esc(u.username)+'</td>'
+        +'<td><span class="badge badge-info">'+rol+'</span></td>'
+        +'<td>'+esc(lab)+'</td>'
+        +'<td>'+estado+'</td>'
+        +'</tr>';
+    }).join('')
+    +'</tbody></table></div>';
+  return html;
+}
+
+// ── EXPORTAR EXCEL MARKETING ──────────────────────────────────
+function exportarExcelMarketing(){
+  var filtered=D.marketing.filter(function(r){
+    if(!r||!r.fecha) return false;
+    if(_mktFiltros.lab&&r.labId!==_mktFiltros.lab) return false;
+    if(_mktFiltros.vis&&r.userId!==_mktFiltros.vis) return false;
+    if(_mktFiltros.desde&&r.fecha<_mktFiltros.desde) return false;
+    if(_mktFiltros.hasta&&r.fecha>_mktFiltros.hasta) return false;
+    if(currentLabId&&r.labId!==currentLabId) return false;
+    return true;
+  });
+  if(!filtered.length){alert('Sin datos para exportar');return;}
+
+  // Cargar XLSX si no está
+  if(typeof XLSX==='undefined'){
+    var s=document.createElement('script');
+    s.src='https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js';
+    s.onload=function(){_doExportMkt(filtered);};
+    document.head.appendChild(s);
+  } else {
+    _doExportMkt(filtered);
+  }
+}
+function _doExportMkt(rows){
+  var header=['Fecha','Visitador','Laboratorio','Establecimiento','NIT','Razon Social','Valor ($)'];
+  var data=rows.map(function(r){
+    return [r.fecha||'',r.userName||getUserName(r.userId),getLabName(r.labId),r.lugar||'',r.nit||'',r.razonSocial||'',parseFloat(r.valor)||0];
+  });
+  var total=data.reduce(function(s,r){return s+r[6];},0);
+  data.push(['','','','','','TOTAL','$'+total.toLocaleString('es-CO')]);
+  var ws=XLSX.utils.aoa_to_sheet([header].concat(data));
+  ws['!cols']=[{wch:12},{wch:22},{wch:14},{wch:28},{wch:16},{wch:30},{wch:14}];
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,'Marketing',ws);
+  XLSX.writeFile(wb,'Marketing_APPMED_'+today()+'.xlsx');
+}
+
+// ── SESSION RESTORE ───────────────────────────────────────────
+function tryRestoreSession(){
+  try{
+    var sess=localStorage.getItem('appmed_admin_session');
+    if(!sess) return;
+    var s=JSON.parse(sess);
+    if(!s||!s.userId) return;
+    if(s.userId==='__super__'){
+      currentUser={id:'__super__',role:'super',name:'Super Administrador',username:'superadmin'};
+      enterAdmin();return;
+    }
+    var u=D.users.find(function(x){return x.id===s.userId&&x.active!==false;});
+    if(!u) return;
+    currentUser={id:u.id,role:u.role,name:u.name,username:u.username,labId:u.labId||''};
+    currentLabId=u.role==='admin'?u.labId||null:null;
+    enterAdmin();
+  }catch(e){console.error('Session restore:',e);}
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+var _usersLoaded=false;
+window.addEventListener('DOMContentLoaded',function(){
+  initFirebase();
+  // Intentar restaurar sesion cuando lleguen los usuarios
+  db && db.ref('medvisit/users').once('value',function(snap){
+    D.users=toArray(snap.val());
+    if(!_usersLoaded){_usersLoaded=true;tryRestoreSession();}
+  });
+});
+</script>
+</body>
+</html>
