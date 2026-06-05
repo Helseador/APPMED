@@ -18,8 +18,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     :root{--primary:#0303B5;--primary-light:#2D2DCC;--primary-50:#EEEEFF;--primary-100:#CCCCFF;--accent:#F59E0B;--accent-light:#FEF3C7;--danger:#DC2626;--danger-light:#FEE2E2;--success:#16A34A;--success-light:#DCFCE7;--info:#0303B5;--info-light:#DBEAFE;--bg:#F1F5F9;--card:#FFFFFF;--fg:#0F172A;--muted:#64748B;--border:#E2E8F0;--radius:14px;}
@@ -231,6 +229,23 @@
   <link rel="dns-prefetch" href="https://appmed-helse-default-rtdb.firebaseio.com">
 </head>
 <body>
+<script>
+// Capturar errores globales y mostrarlos en pantalla (útil para depuración en móvil)
+window.onerror = function(msg, url, line, col, err) {
+  var d=document.getElementById('debugError');
+  if(!d){
+    d=document.createElement('div');
+    d.id='debugError';
+    d.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#DC2626;color:#fff;padding:12px;font-size:12px;z-index:99999;font-family:monospace;white-space:pre-wrap;max-height:50vh;overflow-y:auto;';
+    document.body.appendChild(d);
+  }
+  d.innerHTML = '<b>Error:</b> ' + (msg||'') + '<br><small>' + (url||'') + ':' + (line||'') + '</small><br><small>' + (err&&err.stack||'') + '</small><hr>' + d.innerHTML;
+  return false;
+};
+window.addEventListener('unhandledrejection', function(e) {
+  window.onerror(e.reason && e.reason.message || 'Promise error', '', 0, 0, e.reason);
+});
+</script>
 
 <div class="toast-wrap" id="toastWrap"></div>
 <div class="sync-indicator" id="syncIndicator" style="display:none;"><i class="fa-solid fa-arrows-rotate"></i> Sincronizando...</div>
@@ -1737,6 +1752,20 @@ function scheduleRender(){
 }
 
 function initFirebase(){
+  // Esperar a que Firebase SDK esté disponible (scripts defer pueden tardar)
+  if(typeof firebase === 'undefined'){
+    if(!window._fbRetry) window._fbRetry=0;
+    window._fbRetry++;
+    if(window._fbRetry > 30){ // 15s máximo
+      var errEl=document.getElementById('loginError');
+      if(errEl) errEl.textContent='Error al cargar el SDK. Verifica tu conexión o recarga.';
+      var st=document.getElementById('loginStatus');
+      if(st) st.innerHTML='<span style="color:#FCA5A5;">✖ Error de conexión</span>';
+      return;
+    }
+    setTimeout(initFirebase, 500);
+    return;
+  }
   var localLoaded=D&&D.users&&D.users.length>0;
   try{
     var local=localStorage.getItem('medvisit_v5');
@@ -3762,6 +3791,8 @@ function tryRestoreSession(){
 </script>
 
 <!-- Scripts diferidos: no bloquean el render inicial -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
