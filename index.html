@@ -371,7 +371,7 @@
       <div class="card" style="margin-bottom:14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div style="font-size:14px;font-weight:800;"><i class="fa-solid fa-globe" style="color:var(--primary);"></i> Informe General   Todos los laboratorios</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-sm btn-primary" onclick="generarPDF(null)"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+          
           <button class="btn btn-sm btn-success" onclick="generarExcel(null)"><i class="fa-solid fa-file-excel"></i> Excel</button>
           <button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTX(null)"><i class="fa-solid fa-file-powerpoint"></i> PPTX</button>
         </div>
@@ -1504,9 +1504,9 @@ function renderMarketingInformes(containerId){
     +'<button class="btn btn-sm btn-success" onclick="generarExcelMarketing(this.dataset.p)" data-p="semana"><i class="fa-solid fa-file-excel"></i> Excel semana</button>'
     +'<button class="btn btn-sm btn-success" onclick="generarExcelMarketing(this.dataset.p)" data-p="2semanas"><i class="fa-solid fa-file-excel"></i> Excel 2 sem.</button>'
     +'<button class="btn btn-sm btn-success" onclick="generarExcelMarketing(this.dataset.p)" data-p="mes"><i class="fa-solid fa-file-excel"></i> Excel mes</button>'
-    +'<button class="btn btn-sm btn-primary" onclick="generarPDFMarketing(this.dataset.p)" data-p="semana"><i class="fa-solid fa-file-pdf"></i> PDF semana</button>'
-    +'<button class="btn btn-sm btn-primary" onclick="generarPDFMarketing(this.dataset.p)" data-p="2semanas"><i class="fa-solid fa-file-pdf"></i> PDF 2 sem.</button>'
-    +'<button class="btn btn-sm btn-primary" onclick="generarPDFMarketing(this.dataset.p)" data-p="mes"><i class="fa-solid fa-file-pdf"></i> PDF mes</button>'
+
+
+
     +'<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTXMarketing(this.dataset.p)" data-p="semana"><i class="fa-solid fa-file-powerpoint"></i> PPTX semana</button>'
     +'<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTXMarketing(this.dataset.p)" data-p="mes"><i class="fa-solid fa-file-powerpoint"></i> PPTX mes</button>'
     +'</div>'
@@ -1722,7 +1722,7 @@ function renderContadorLista(){
   }catch(e){}
 })();
 
-// scheduleRender global - disponible para initFirebase y setupListenersForRole
+// scheduleRender global
 var _renderTimer=null;
 var _isRendering=false;
 function scheduleRender(){
@@ -1954,8 +1954,6 @@ function showSyncIndicator(){
 }
 function renderCurrentScreen(){
   if(!currentUser) return;
-  // Skip render if tab is hidden (saves battery and CPU on mobile)
-  if(document.hidden) return;
   if(currentUser.role==='super'){
     if(currentSuperTab==='users') renderSuperUsers();
     else if(currentSuperTab==='sVisitas') renderSuperVisitas();
@@ -2943,7 +2941,6 @@ function populateVisitFilter(){
   var myUsers=(D.users||[]).filter(function(u){return u.labId===currentLabId&&u.role==='visitor';});
   sel.innerHTML='<option value="">Todos</option>'+myUsers.map(function(u){return '<option value="'+u.id+'">'+esc(u.name)+'</option>';}).join('');
 }
-var _adminVisitasPage=0; // paginacion de visitas en panel admin
 function renderAdminVisitas(){
   var el=document.getElementById('adminVisitsList');
   if(!el) return;
@@ -3385,7 +3382,7 @@ function renderInformes(){
       }).join('')
       +'</div>'
       +'<div style="display:flex;gap:8px;margin-top:10px;">'
-      +'<button class="btn btn-sm btn-primary" onclick="generarPDFMulti()"><i class="fa-solid fa-file-pdf"></i> PDF seleccionados</button>'
+
       +'<button class="btn btn-sm btn-success" onclick="generarPPTXMulti()"><i class="fa-solid fa-file-powerpoint"></i> PPTX seleccionados</button>'
       +'<button class="btn btn-sm btn-success" onclick="generarExcelMulti()"><i class="fa-solid fa-file-excel"></i> Excel seleccionados</button>'
       +'</div>';
@@ -3399,7 +3396,7 @@ function renderInformes(){
       +'<div style="font-weight:800;">Informe General — Todos los laboratorios</div>'
       +'</div>'
       +'<div style="display:flex;gap:8px;flex-wrap:wrap;">'
-      +'<button class="btn btn-sm btn-primary" onclick="generarPDF(this.dataset.id)" data-id=""><i class="fa-solid fa-file-pdf"></i> PDF</button>'
+
       +'<button class="btn btn-sm btn-success" onclick="generarExcel(this.dataset.id)" data-id=""><i class="fa-solid fa-file-excel"></i> Excel</button>'
       +'<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTX(this.dataset.id)" data-id=""><i class="fa-solid fa-file-powerpoint"></i> PPTX</button>'
       +'</div></div>';
@@ -3423,7 +3420,7 @@ function renderInformes(){
       +'<div style="font-size:13px;color:var(--muted);">'+visits.length+' visitas completadas</div>'
       +'<div style="font-size:13px;color:var(--muted);margin-top:2px;">Pendientes: <span style="color:#E24B4A;font-weight:700;">'+pActivos+' activos</span> · <span style="color:#0303B5;">'+pResueltos+' resueltos</span></div>'
       +'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">'
-      +'<button class="btn btn-sm btn-primary" onclick="generarPDF(this.dataset.id)" data-id="'+lab.id+'"><i class="fa-solid fa-file-pdf"></i> PDF</button>'
+
       +'<button class="btn btn-sm btn-success" onclick="generarExcel(this.dataset.id)" data-id="'+lab.id+'"><i class="fa-solid fa-file-excel"></i> Excel</button>'
       +'<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTX(this.dataset.id)" data-id="'+lab.id+'"><i class="fa-solid fa-file-powerpoint"></i> PPTX</button>'
       +'</div></div>';
@@ -3464,211 +3461,9 @@ function getReportData(labId){
   return {lab:lab, rows:rows, desde:rptDesde, hasta:rptHasta};
 }
 
-function generarPDF(labId){
-  if(labId&&typeof labId==='object') labId=labId.dataset?labId.dataset.id:labId;
-  toast('Generando PDF...','info');
-  ensurePDF(function(){_generarPDF(labId);});
-}
-function _generarPDF(labId){
-  var {jsPDF}=window.jspdf;
-  var doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
-  var W=297,H=210;
-  var isSuper=currentUser&&(currentUser.role==='super'||currentUser.role==='adminGeneral');
-  var labsToReport=labId==='__multi__'?(window._selectedLabs||LABS):labId?[LABS.find(function(l){return l.id===labId;})||{id:labId,name:labId,color:'#0303B5'}]
-    :(isSuper?LABS:LABS.filter(function(l){return l.id===currentLabId;}));
-  var periodoLabel=(rptDesde||'Todo')+' al '+(rptHasta||'Hoy');
-
-  function hexToRgb(h){h=String(h||'0303B5').replace('#','').replace(/[^0-9a-fA-F]/g,'');if(h.length<6)h='0303B5';return[parseInt(h.substring(0,2),16),parseInt(h.substring(2,4),16),parseInt(h.substring(4,6),16)];}
-  function setFill(h){var c=hexToRgb(h);doc.setFillColor(c[0],c[1],c[2]);}
-  function setTxt(h){var c=hexToRgb(h);doc.setTextColor(c[0],c[1],c[2]);}
-
-  // ── PORTADA ───────────────────────────────────────────────────
-  setFill('#1B3A6B'); doc.rect(0,0,W,H,'F');
-  setFill('#152F5A'); doc.rect(0,H-18,W,18,'F');
-  doc.setFontSize(9); setTxt('#8FAFD4'); doc.text('INFORME DE GESTIÓN · VISITADORES MÉDICOS',14,20);
-  doc.setFontSize(28); doc.setFont(undefined,'bold'); setTxt('#FFFFFF');
-  doc.text(labId?(LABS.find(function(l){return l.id===labId;})||{name:'General'}).name:'Todos los laboratorios',14,45);
-  doc.setFontSize(12); doc.setFont(undefined,'normal'); setTxt('#8FAFD4');
-  doc.text('Visitadores médicos · '+periodoLabel,14,58);
-  setFill('#FFFFFF'); doc.roundedRect(W-42,12,30,20,2,2,'F');
-  doc.setFontSize(9); doc.setFont(undefined,'bold'); setTxt('#1B3A6B'); doc.text('HELSE',W-27,20,{align:'center'});
-  doc.setFontSize(7); doc.setFont(undefined,'normal'); doc.text('Enjoy Life',W-27,26,{align:'center'});
-  doc.setFontSize(8); setTxt('#8FAFD4');
-  doc.text('Generado: '+today()+' · Admin: '+currentUser.name,14,H-10);
-  doc.text('Powered by APPMED by HELSE',W-14,H-10,{align:'right'});
-
-  labsToReport.forEach(function(lab,labIdx){
-    if(!lab) return;
-    try{
-    var labVisits=(D.visits||[]).filter(function(v){
-      var matchLab=lab.id?v.labId===lab.id:true;
-      var matchDesde=rptDesde?v.date>=rptDesde:true;
-      var matchHasta=rptHasta?v.date<=rptHasta:true;
-      return matchLab&&matchDesde&&matchHasta;
-    });
-    var completed=labVisits.filter(function(v){return v.status==='completed';});
-    var labUsers=(D.users||[]).filter(function(u){return u.role==='visitor'&&(lab.id?u.labId===lab.id:true);});
-    var labPts=(D.points||[]).filter(function(p){return lab.id?p.labId===lab.id:true;});
-    var cumplimiento=Math.round((completed.length/Math.max(labPts.length,1))*100);
-    var mesAtrasPptx=new Date(); mesAtrasPptx.setMonth(mesAtrasPptx.getMonth()-1);
-    var mesAtrasPptxStr=mesAtrasPptx.toISOString().split('T')[0];
-    var labPends=(D.pendientes||[]).filter(function(p){
-      if(!p||!p.id) return false;
-      var u=userById(p.userId);
-      var fechaP=p.creadoAt?p.creadoAt.split('T')[0]:'';
-      return u&&(lab.id?u.labId===lab.id:true)&&(!fechaP||fechaP>=mesAtrasPptxStr);
-    });
-    var pActivos=labPends.filter(function(p){return !p.resuelto&&!p.eliminado;});
-    var pResueltos=labPends.filter(function(p){return p.resuelto===true&&!p.eliminado;});
-    var pEliminados=labPends.filter(function(p){return p.eliminado===true;});
-    var pVencidos=pActivos.filter(function(p){return p.creadoAt&&(Date.now()-new Date(p.creadoAt).getTime())>7*86400000;});
-
-    // ── PÁGINA RESUMEN ────────────────────────────────────────────
-    doc.addPage();
-    setFill('#1B3A6B'); doc.rect(0,0,W,22,'F');
-    doc.setFontSize(14); doc.setFont(undefined,'bold'); setTxt('#FFFFFF');
-    doc.text('Resumen general · '+lab.name,10,14);
-    doc.setFontSize(8); doc.setFont(undefined,'normal'); setTxt('#8FAFD4');
-    doc.text(periodoLabel,10,20);
-    // Metric boxes
-    var metrics=[{val:cumplimiento+'%',lbl:'Cumplimiento',col:'#0303B5'},{val:completed.length,lbl:'Visitas completadas',col:'#185FA5'},{val:pActivos.length,lbl:'Pendientes activos',col:'#E24B4A'},{val:pVencidos.length,lbl:'Pend. vencidos',col:'#BA7517'}];
-    metrics.forEach(function(m,i){
-      var x=10+i*70;
-      setFill('#F0F4F8'); doc.roundedRect(x,28,64,24,1,1,'F');
-      doc.setFontSize(18); doc.setFont(undefined,'bold'); setTxt(m.col); doc.text(String(m.val),x+32,42,{align:'center'});
-      doc.setFontSize(7); doc.setFont(undefined,'normal'); setTxt('#666666'); doc.text(m.lbl,x+32,50,{align:'center'});
-    });
-    // Per-visitor bars
-    doc.setFontSize(9); doc.setFont(undefined,'bold'); setTxt('#333333'); doc.text('Cumplimiento por visitador',10,62);
-    labUsers.slice(0,8).forEach(function(u,i){
-      var uv=completed.filter(function(v){return v.visitorId===u.id;});
-      var up=labPts.filter(function(p){return p.assignedTo===u.id;}).length||1;
-      var pct=Math.min(100,Math.round((uv.length/up)*100));
-      var y=68+i*10;
-      doc.setFontSize(7); doc.setFont(undefined,'normal'); setTxt('#333333'); doc.text(u.name,10,y+4);
-      setFill('#E8EDF2'); doc.rect(55,y,180,5,'F');
-      setFill(pct>=80?'#0303B5':pct>=60?'#BA7517':'#E24B4A'); doc.rect(55,y,Math.max(0.5,180*pct/100),5,'F');
-      doc.setFontSize(7); setTxt('#666666'); doc.text(pct+'%',240,y+4);
-    });
-
-    // ── PÁGINA DETALLE VISITAS ────────────────────────────────────
-    doc.addPage();
-    setFill('#1B3A6B'); doc.rect(0,0,W,22,'F');
-    doc.setFontSize(14); doc.setFont(undefined,'bold'); setTxt('#FFFFFF'); doc.text('Detalle de visitas · '+lab.name,10,14);
-    doc.setFontSize(8); doc.setFont(undefined,'normal'); setTxt('#8FAFD4'); doc.text('Puntos visitados · tiempo por visita',10,20);
-    var totalTime=0,countTime=0,profTime=0,profCount=0;
-    completed.forEach(function(v){
-      if(v.arrivedAt&&v.completedAt){
-        var m=Math.round((new Date(v.completedAt)-new Date(v.arrivedAt))/60000);
-        if(m>0&&m<480){totalTime+=m;countTime++;if(v.type==='profesional'){profTime+=m;profCount++;}}
-      }
-    });
-    doc.autoTable({
-      head:[['Punto visitado','Visitador','Tipo','Tiempo','Fecha']],
-      body:completed.slice(0,30).map(function(v){
-        var u=userById(v.visitorId)||{name:''};
-        var pt=pointById(v.pointId)||{};
-        var mins=0;
-        if(v.arrivedAt&&v.completedAt){mins=Math.round((new Date(v.completedAt)-new Date(v.arrivedAt))/60000);}
-        var ptLabel=v.type==='profesional'?(v.pointName?v.pointName+' · ':'')+String(v.placeName||''):(pt.name||v.placeName||'Visita');
-        return[ptLabel,u.name,v.type==='profesional'?'Profesional':'General',mins>0?mins+' min':'—',v.date||''];
-      }),
-      startY:26,styles:{fontSize:7.5,cellPadding:2},
-      headStyles:{fillColor:[27,58,107],textColor:255,fontStyle:'bold'},
-      alternateRowStyles:{fillColor:[245,248,250]},
-      columnStyles:{0:{cellWidth:90},2:{cellWidth:25},3:{cellWidth:20},4:{cellWidth:22}}
-    });
-    var avgT=countTime>0?Math.round(totalTime/countTime):0;
-    var avgP=profCount>0?Math.round(profTime/profCount):0;
-    var finalY=(doc.lastAutoTable.finalY||160)+5;
-    setFill('#E8F5F0'); doc.rect(10,finalY,W-20,10,'F');
-    doc.setFontSize(8); doc.setFont(undefined,'bold'); setTxt('#0F6E56');
-    doc.text('Promedio general: '+avgT+' min  ·  Promedio profesional: '+avgP+' min  ·  Total: '+completed.length+' visitas',14,finalY+6.5);
-
-    // ── PÁGINA PENDIENTES ─────────────────────────────────────────
-    doc.addPage();
-    setFill('#1B3A6B'); doc.rect(0,0,W,22,'F');
-    doc.setFontSize(14); doc.setFont(undefined,'bold'); setTxt('#FFFFFF'); doc.text('Gestión de pendientes · '+lab.name,10,14);
-    doc.setFontSize(8); doc.setFont(undefined,'normal'); setTxt('#8FAFD4'); doc.text('Activos · resueltos · vencidos sin gestión',10,20);
-    // Summary boxes
-    [{val:pActivos.length,lbl:'Activos',col:'#E24B4A',bg:'#FCEBEB'},{val:pResueltos.length,lbl:'Resueltos',col:'#0303B5',bg:'#E0F2FE'},{val:pVencidos.length,lbl:'Vencidos',col:'#BA7517',bg:'#FAEEDA'}].forEach(function(m,i){
-      setFill(m.bg); doc.roundedRect(10+i*95,26,88,20,1,1,'F');
-      doc.setFontSize(16); doc.setFont(undefined,'bold'); setTxt(m.col); doc.text(String(m.val),54+i*95,38,{align:'center'});
-      doc.setFontSize(7); doc.setFont(undefined,'normal'); doc.text(m.lbl,54+i*95,43,{align:'center'});
-    });
-    // Active list left col
-    doc.setFontSize(8); doc.setFont(undefined,'bold'); setTxt('#333333'); doc.text('Pendientes activos',10,56);
-    pActivos.slice(0,8).forEach(function(p,i){
-      var u=userById(p.userId)||{name:''};
-      var col=p.prioridad==='urgente'?'#E24B4A':p.prioridad==='semana'?'#BA7517':'#888780';
-      setFill('#F8F9FA'); doc.rect(10,58+i*16,130,14,'F');
-      setFill(col); doc.rect(10,58+i*16,2,14,'F');
-      doc.setFontSize(7.5); doc.setFont(undefined,'bold'); setTxt('#222222');
-      doc.text(String(p.texto||'').substring(0,45),14,65+i*16);
-      doc.setFontSize(6.5); doc.setFont(undefined,'normal'); setTxt('#666666');
-      doc.text(u.name+' · '+(p.prioridad==='urgente'?'Urgente':p.prioridad==='semana'?'Esta semana':'Normal')+(p.fechaLimite?' · '+p.fechaLimite:''),14,70+i*16);
-    });
-    // Vencidos right col
-    doc.setFontSize(8); doc.setFont(undefined,'bold'); setTxt('#A32D2D'); doc.text('Vencidos sin gestión ⚠',148,56);
-    if(pVencidos.length===0){
-      setFill('#E0F2FE'); doc.rect(148,58,140,14,'F');
-      doc.setFontSize(8); setTxt('#0303B5'); doc.text('Sin pendientes vencidos ✓',218,67,{align:'center'});
-    } else {
-      pVencidos.slice(0,6).forEach(function(p,i){
-        var u=userById(p.userId)||{name:''};
-        var dias=Math.round((Date.now()-new Date(p.creadoAt).getTime())/86400000);
-        setFill('#FCEBEB'); doc.rect(148,58+i*16,140,14,'F');
-        doc.setFontSize(7.5); doc.setFont(undefined,'bold'); setTxt('#A32D2D');
-        doc.text(String(p.texto||'').substring(0,45),152,65+i*16);
-        doc.setFontSize(6.5); doc.setFont(undefined,'normal');
-        doc.text(u.name+' · Hace '+dias+' días sin resolver',152,70+i*16);
-      });
-    }
-    }catch(pdfErr){console.error('PDF lab error:',pdfErr);}
-  });
-
-  // ── PÁGINA COMPARATIVA ────────────────────────────────────────
-  if(labsToReport.length>1){
-    doc.addPage();
-    setFill('#1B3A6B'); doc.rect(0,0,W,22,'F');
-    doc.setFontSize(14); doc.setFont(undefined,'bold'); setTxt('#FFFFFF'); doc.text('Comparativa entre laboratorios',10,14);
-    doc.setFontSize(8); doc.setFont(undefined,'normal'); setTxt('#8FAFD4'); doc.text(periodoLabel,10,20);
-    var labColors2=['#0303B5','#185FA5','#BA7517','#534AB7','#E24B4A','#0F6E56'];
-    var cardWpdf=Math.min(60,260/labsToReport.length);
-    labsToReport.filter(Boolean).forEach(function(lab,i){
-      var lv=(D.visits||[]).filter(function(v){return v.labId===lab.id&&v.status==='completed'&&(!rptDesde||v.date>=rptDesde)&&(!rptHasta||v.date<=rptHasta);});
-      var lpts=(D.points||[]).filter(function(p){return p.labId===lab.id;}).length||1;
-      var pct=Math.min(100,Math.round((lv.length/lpts)*100));
-      var lpends=(D.pendientes||[]).filter(function(p){var u=userById(p.userId);return u&&u.labId===lab.id&&!p.resuelto;});
-      var lvenc=lpends.filter(function(p){return p.creadoAt&&(Date.now()-new Date(p.creadoAt).getTime())>7*86400000;});
-      var col=labColors2[i%labColors2.length];
-      var x=10+i*cardWpdf;
-      setFill('#F5F8FA'); doc.rect(x,26,cardWpdf-3,35,'F');
-      doc.setFontSize(7); doc.setFont(undefined,'bold'); setTxt(col); doc.text(lab.name,x+2,33);
-      doc.setFontSize(14); doc.text(pct+'%',x+(cardWpdf-3)/2,48,{align:'center'});
-      doc.setFontSize(6); doc.setFont(undefined,'normal'); setTxt('#666666');
-      doc.text(lv.length+' visitas',x+2,54);
-      doc.text(lvenc.length+' vencidos',x+2,59);
-    });
-    // Bar chart comparison
-    doc.setFontSize(9); doc.setFont(undefined,'bold'); setTxt('#333333'); doc.text('% Cumplimiento comparativo',10,75);
-    var sorted2=labsToReport.filter(Boolean).map(function(lab){
-      var lv=(D.visits||[]).filter(function(v){return v.labId===lab.id&&v.status==='completed'&&(!rptDesde||v.date>=rptDesde)&&(!rptHasta||v.date<=rptHasta);});
-      var lpts=(D.points||[]).filter(function(p){return p.labId===lab.id;}).length||1;
-      return{name:lab.name,pct:Math.min(100,Math.round((lv.length/lpts)*100))};
-    }).sort(function(a,b){return b.pct-a.pct;});
-    sorted2.forEach(function(l,i){
-      var col=labColors2[i%labColors2.length];
-      doc.setFontSize(7); doc.setFont(undefined,'normal'); setTxt('#333333'); doc.text(l.name,10,83+i*10);
-      setFill('#E8EDF2'); doc.rect(65,79+i*10,180,5,'F');
-      setFill(col); doc.rect(65,79+i*10,Math.max(0.5,180*l.pct/100),5,'F');
-      doc.setFontSize(7); setTxt('#666666'); doc.text(l.pct+'%',250,83+i*10);
-    });
-  }
-
-  doc.save('Informe_APPMED_'+(labId||'General')+'_'+today()+'.pdf');
-}
-
+function generarPDF(labId){ toast('PDF no disponible','info'); }
+function generarPDFMulti(){ toast('PDF no disponible','info'); }
+function _generarPDF(labId){}
 function generarPDFMarketing(periodo){
   if(typeof periodo==='object'&&periodo&&periodo.dataset) periodo=periodo.dataset.p||'mes';
   toast('Generando PDF Marketing...','info');
@@ -3857,102 +3652,33 @@ window.addEventListener('DOMContentLoaded', function(){
   }
 });
 
-// Pausar Firebase cuando pantalla apagada, reanudar al volver
-document.addEventListener('visibilitychange', function(){
-  if(!dbRef) return;
-  if(document.hidden){
-    // Pantalla apagada - pausar sincronizacion
-    try{ dbRef.goOffline(); }catch(e){}
-  } else {
-    // Pantalla activa - reanudar sincronizacion
-    try{
-      dbRef.goOnline();
-      // Forzar render cuando vuelve
-      setTimeout(function(){
-        if(currentUser) renderCurrentScreen();
-      }, 1000);
-    }catch(e){}
-  }
-});
+
 
 // Restaurar sesion cuando Firebase confirme que los usuarios llegaron
 
-// Reiniciar listeners despues del login con filtros por rol
+// Listeners simples - escuchan todo sin filtros por rol
 function setupListenersForRole(){
-  if(!dbRef||!currentUser) return;
-
-  // Detener listeners actuales (si los hay) y crear nuevos filtrados
+  if(!dbRef) return;
+  // Detener listeners previos
   try{ dbRef.ref('medvisit/visits').off(); }catch(e){}
   try{ dbRef.ref('medvisit/points').off(); }catch(e){}
   try{ dbRef.ref('medvisit/pendientes').off(); }catch(e){}
 
-  if(currentUser.role==='visitor'){
-    // Visitador solo escucha SUS visitas
-    dbRef.ref('medvisit/visits').orderByChild('visitorId').equalTo(currentUser.id).on('value',function(snap){
-      var remote=snap.val();
-      var newVisits=toArray(remote);
-      if(JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
-      D.visits=newVisits;
-      saveLocal(D);
-      scheduleRender();
-    });
-    // Visitador escucha todos los puntos y filtra en memoria
-    // (retrocompatible con puntos sin campo assignedTo)
-    dbRef.ref('medvisit/points').on('value',function(snap){
-      var remote=snap.val();
-      var newPts=toArray(remote);
-      if(JSON.stringify(newPts)===JSON.stringify(D.points)) return;
-      D.points=newPts;
-      saveLocal(D);
-      scheduleRender();
-    });
-    // Visitador escucha todos los pendientes y filtra en memoria
-    // (retrocompatible con pendientes sin campo userId)
-    dbRef.ref('medvisit/pendientes').on('value',function(snap){
-      var remote=snap.val();
-      var newPends=toArray(remote||[]);
-      if(JSON.stringify(newPends)===JSON.stringify(D.pendientes)) return;
-      D.pendientes=newPends;
-      scheduleRender();
-    });
-  } else if(currentUser.role==='admin'&&currentLabId){
-    // Admin solo escucha datos de su lab
-    dbRef.ref('medvisit/visits').orderByChild('labId').equalTo(currentLabId).on('value',function(snap){
-      var newVisits=toArray(snap.val());
-      if(JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
-      D.visits=newVisits;
-      saveLocal(D);
-      scheduleRender();
-    });
-    // Admin necesita todos los puntos de su lab y todos los pendientes/visitadores
-    dbRef.ref('medvisit/points').on('value',function(snap){
-      var newPts=toArray(snap.val());
-      if(JSON.stringify(newPts)===JSON.stringify(D.points)) return;
-      D.points=newPts; saveLocal(D); scheduleRender();
-    });
-    dbRef.ref('medvisit/pendientes').on('value',function(snap){
-      var newPends=toArray(snap.val()||[]);
-      if(JSON.stringify(newPends)===JSON.stringify(D.pendientes)) return;
-      D.pendientes=newPends; scheduleRender();
-    });
-  } else {
-    // SuperAdmin y AdminGeneral escuchan todo
-    dbRef.ref('medvisit/visits').on('value',function(snap){
-      var newVisits=toArray(snap.val());
-      if(JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
-      D.visits=newVisits; saveLocal(D); scheduleRender();
-    });
-    dbRef.ref('medvisit/points').on('value',function(snap){
-      var newPts=toArray(snap.val());
-      if(JSON.stringify(newPts)===JSON.stringify(D.points)) return;
-      D.points=newPts; saveLocal(D); scheduleRender();
-    });
-    dbRef.ref('medvisit/pendientes').on('value',function(snap){
-      var newPends=toArray(snap.val()||[]);
-      if(JSON.stringify(newPends)===JSON.stringify(D.pendientes)) return;
-      D.pendientes=newPends; scheduleRender();
-    });
-  }
+  dbRef.ref('medvisit/visits').on('value',function(snap){
+    var newVisits=toArray(snap.val());
+    if(JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
+    D.visits=newVisits; saveLocal(D); scheduleRender();
+  });
+  dbRef.ref('medvisit/points').on('value',function(snap){
+    var newPts=toArray(snap.val());
+    if(JSON.stringify(newPts)===JSON.stringify(D.points)) return;
+    D.points=newPts; saveLocal(D); scheduleRender();
+  });
+  dbRef.ref('medvisit/pendientes').on('value',function(snap){
+    var newPends=toArray(snap.val()||[]);
+    if(JSON.stringify(newPends)===JSON.stringify(D.pendientes)) return;
+    D.pendientes=newPends; scheduleRender();
+  });
 }
 
 function tryRestoreSession(){
