@@ -10,205 +10,191 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0303B5">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
   <title>APPMED</title>
-  <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiQVBQTUVEIiwic2hvcnRfbmFtZSI6IkFQUE1FRCIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjMDMwM0I1IiwidGhlbWVfY29sb3IiOiIjMDMwM0I1In0=">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Serif+Display&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Serif+Display&display=swap" rel="stylesheet"></noscript>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></noscript>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
-    :root{--primary:#0303B5;--primary-light:#2D2DCC;--primary-50:#EEEEFF;--primary-100:#CCCCFF;--accent:#F59E0B;--accent-light:#FEF3C7;--danger:#DC2626;--danger-light:#FEE2E2;--success:#16A34A;--success-light:#DCFCE7;--info:#0303B5;--info-light:#DBEAFE;--bg:#F1F5F9;--card:#FFFFFF;--fg:#0F172A;--muted:#64748B;--border:#E2E8F0;--radius:14px;}
+    :root{
+      --primary:#0303B5;--primary-light:#2D2DCC;--primary-50:#EEEEFF;
+      --danger:#DC2626;--danger-light:#FEE2E2;
+      --success:#16A34A;--success-light:#DCFCE7;
+      --accent:#F59E0B;--accent-light:#FEF3C7;
+      --info-light:#DBEAFE;
+      --bg:#F1F5F9;--card:#FFFFFF;--fg:#0F172A;--muted:#64748B;--border:#E2E8F0;--radius:14px;
+    }
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
     body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--fg);overflow-x:hidden;min-height:100vh;}
-    h1,h2,h3,.serif{font-family:'DM Serif Display',serif;}
     input,select,textarea,button{font-family:inherit;}
+
+    /* SCREENS */
     .screen{display:none;min-height:100vh;flex-direction:column;}
     .screen.active{display:flex;}
+
+    /* LOGIN */
     #loginScreen{background:linear-gradient(160deg,#0303B5 0%,#020280 50%,#022C22 100%);justify-content:center;align-items:center;padding:24px;text-align:center;}
     .login-logo{width:72px;height:72px;background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;border:1px solid rgba(255,255,255,0.2);}
     .login-logo i{font-size:32px;color:#fff;}
     .login-card{background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:32px 24px;width:100%;max-width:380px;}
-    .login-card h1{color:#fff;font-size:28px;margin-bottom:4px;}
+    .login-card h1{color:#fff;font-size:28px;font-weight:800;margin-bottom:4px;}
     .login-card .sub{color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:28px;}
-    .login-input{width:100%;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;font-size:15px;outline:none;transition:all .2s;}
+    .login-input{width:100%;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;font-size:15px;outline:none;transition:all .2s;margin-bottom:12px;}
     .login-input::placeholder{color:rgba(255,255,255,0.4);}
-    .login-input:focus{border-color:var(--primary-light);background:rgba(255,255,255,0.12);box-shadow:0 0 0 3px rgba(45,45,204,0.2);}
-    .login-btn{width:100%;padding:15px;border-radius:12px;border:none;background:var(--primary-light);color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;}
-    .login-btn:hover{background:#0D9488;transform:translateY(-1px);}
+    .login-input:focus{border-color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.12);}
+    .login-btn{width:100%;padding:15px;border-radius:12px;border:none;background:var(--primary-light);color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
     .login-btn:active{transform:scale(0.98);}
-    .login-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
-    .login-error{color:#FCA5A5;font-size:13px;margin-top:12px;min-height:20px;}
-    .login-attempts{color:rgba(255,255,255,0.4);font-size:11px;margin-top:8px;display:none;}
-    .conn-dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse-dot 2s infinite;}
-    @keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:0.3;}}
-    .app-header{background:var(--card);padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;}
-    .app-header h2{font-size:20px;line-height:1.2;}
-    .app-header .sub{font-size:12px;color:var(--muted);font-weight:400;font-family:'Inter',sans-serif;}
-    .header-btn{width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--fg);font-size:16px;transition:all .15s;}
+    .login-error{color:#FCA5A5;font-size:13px;margin-top:12px;min-height:18px;}
+
+    /* BLOQUEADO */
+    #blockedScreen{background:linear-gradient(160deg,#1e1b4b 0%,#312e81 50%,#0f172a 100%);justify-content:center;align-items:center;padding:24px;text-align:center;}
+    .blocked-card{background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:36px 24px;width:100%;max-width:360px;}
+
+    /* HEADER */
+    .app-header{background:var(--card);padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;}
+    .app-header h2{font-size:18px;font-weight:800;line-height:1.2;}
+    .app-header .sub{font-size:11px;color:var(--muted);}
+    .header-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--fg);font-size:15px;}
     .header-btn:active{transform:scale(0.92);}
-    .header-conn{display:flex;align-items:center;gap:4px;font-size:9px;font-weight:700;padding:4px 8px;border-radius:6px;}
-    .header-conn.online{background:var(--success-light);color:var(--success);}
-    .header-conn.offline{background:var(--accent-light);color:#92400E;}
-    .header-conn .hdot{width:5px;height:5px;border-radius:50%;background:currentColor;}
-    .header-conn.online .hdot{animation:pulse-dot 2s infinite;}
+
+    /* SYNC BADGE - indicador de sincronizacion */
+    .sync-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;transition:all .3s;}
+    .sync-badge.synced{background:var(--success-light);color:var(--success);}
+    .sync-badge.syncing{background:var(--accent-light);color:#92400E;}
+    .sync-badge.offline{background:#F1F5F9;color:var(--muted);}
+    .sync-dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+    .sync-badge.synced .sync-dot{animation:pulse-dot 2s infinite;}
+    .sync-badge.syncing .sync-dot{animation:spin-dot .8s linear infinite;}
+    @keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:0.3;}}
+    @keyframes spin-dot{to{transform:rotate(360deg);}}
+
+    /* TABS */
     .tab-bar{display:flex;background:var(--card);border-top:1px solid var(--border);position:fixed;bottom:0;left:0;right:0;z-index:30;padding:6px 4px;padding-bottom:max(6px,env(safe-area-inset-bottom));}
-    .tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border:none;background:none;color:var(--muted);font-size:10px;font-weight:600;cursor:pointer;transition:color .15s;}
+    .tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border:none;background:none;color:var(--muted);font-size:10px;font-weight:600;cursor:pointer;}
     .tab-btn i{font-size:18px;}
     .tab-btn.active{color:var(--primary);}
-    .app-body{flex:1;padding:16px 16px 90px;overflow-y:auto;}
-    .tab-content{display:none;animation:fadeUp .3s ease;}
+    .app-body{flex:1;padding:14px 14px 88px;overflow-y:auto;}
+    .tab-content{display:none;}
     .tab-content.active{display:block;}
-    @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-    .card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:18px;margin-bottom:14px;}
-    .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
-    .stat-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:16px;}
-    .stat-num{font-size:26px;font-weight:900;line-height:1;}
-    .stat-label{font-size:11px;color:var(--muted);margin-top:4px;font-weight:500;}
-    .btn{padding:12px 20px;border-radius:12px;border:none;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;width:100%;}
+
+    /* CARDS */
+    .card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:12px;}
+    .btn{padding:11px 18px;border-radius:12px;border:none;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:all .15s;width:100%;}
     .btn:active{transform:scale(0.97);}
     .btn-primary{background:var(--primary);color:#fff;}
     .btn-success{background:var(--success);color:#fff;}
-    .btn-danger{background:var(--danger);color:#fff;}
     .btn-outline{background:transparent;color:var(--primary);border:1.5px solid var(--primary);}
-    .btn-sm{padding:8px 14px;font-size:12px;border-radius:10px;width:auto;}
-    .btn-ghost{background:var(--primary-50);color:var(--primary);border:none;}
-    .form-group{margin-bottom:16px;}
-    .form-label{display:block;font-size:12px;font-weight:700;color:var(--fg);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px;}
-    .form-input{width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;background:var(--bg);color:var(--fg);outline:none;transition:all .2s;}
-    .form-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(3,3,181,0.1);background:#fff;}
+    .btn-sm{padding:8px 13px;font-size:12px;border-radius:10px;width:auto;}
+    .btn-purple{background:#7C3AED;color:#fff;}
+    .form-group{margin-bottom:14px;}
+    .form-label{display:block;font-size:11px;font-weight:700;color:var(--fg);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.3px;}
+    .form-input{width:100%;padding:11px 13px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;background:var(--bg);color:var(--fg);outline:none;transition:border-color .2s;}
+    .form-input:focus{border-color:var(--primary);background:#fff;}
     .form-input::placeholder{color:#94A3B8;}
-    select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748B' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;}
-    textarea.form-input{resize:vertical;min-height:70px;}
-    .badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+    select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748B' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px;}
+    textarea.form-input{resize:vertical;min-height:68px;}
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
     .badge-pending{background:#FEF3C7;color:#92400E;}
     .badge-progress{background:#DBEAFE;color:#0303B5;}
     .badge-done{background:#DCFCE7;color:#166534;}
-    .badge-cancel{background:#FEE2E2;color:#991B1B;}
+    .section-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;}
+    .empty-state{text-align:center;padding:40px 20px;}
+    .empty-state i{font-size:44px;color:var(--border);margin-bottom:10px;display:block;}
+    .empty-state p{color:var(--muted);font-size:14px;}
     .avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0;}
-    .geo-status{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:8px 12px;border-radius:8px;margin-top:6px;}
-    .geo-status.searching{background:var(--info-light);color:var(--info);}
-    .geo-status.found{background:var(--success-light);color:var(--success);}
-    .geo-status.error{background:var(--danger-light);color:var(--danger);}
-    .spinner-sm{width:14px;height:14px;border:2px solid rgba(37,99,235,0.2);border-top-color:var(--info);border-radius:50%;animation:spin .6s linear infinite;display:inline-block;}
-    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* MODALES */
     .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
     .modal-overlay.open{opacity:1;pointer-events:all;}
-    .modal-sheet{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;padding:8px 20px 24px;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
+    .modal-sheet{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;padding:8px 18px 24px;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
     .modal-overlay.open .modal-sheet{transform:translateY(0);}
-    .modal-handle{width:40px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 16px;}
-    .modal-title{font-size:18px;font-weight:800;margin-bottom:20px;font-family:'DM Serif Display',serif;}
+    .modal-handle{width:40px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 14px;}
+    .modal-title{font-size:17px;font-weight:800;margin-bottom:18px;}
     .confirm-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.7);backdrop-filter:blur(6px);z-index:300;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;padding:24px;}
     .confirm-overlay.open{opacity:1;pointer-events:all;}
-    .confirm-box{background:var(--card);border-radius:18px;padding:28px 24px;max-width:340px;width:100%;text-align:center;transform:scale(0.9);transition:transform .25s cubic-bezier(.4,0,.2,1);box-shadow:0 25px 60px rgba(0,0,0,0.2);}
+    .confirm-box{background:var(--card);border-radius:18px;padding:26px 22px;max-width:320px;width:100%;text-align:center;transform:scale(0.9);transition:transform .25s;box-shadow:0 25px 60px rgba(0,0,0,0.2);}
     .confirm-overlay.open .confirm-box{transform:scale(1);}
-    .confirm-icon{width:56px;height:56px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:24px;}
+    .confirm-icon{width:52px;height:52px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:22px;}
     .confirm-icon.danger{background:var(--danger-light);color:var(--danger);}
-    .confirm-icon.warning{background:var(--accent-light);color:var(--accent);}
-    .confirm-title{font-size:16px;font-weight:800;margin-bottom:8px;}
-    .confirm-msg{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5;}
-    .confirm-actions{display:flex;gap:10px;}
+    .confirm-actions{display:flex;gap:10px;margin-top:20px;}
     .confirm-actions .btn{flex:1;}
-    .toast-wrap{position:fixed;top:16px;left:16px;right:16px;z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
-    .toast{padding:14px 18px;border-radius:12px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;box-shadow:0 8px 30px rgba(0,0,0,0.15);animation:toastIn .35s ease;pointer-events:all;}
+
+    /* TOAST */
+    .toast-wrap{position:fixed;top:14px;left:14px;right:14px;z-index:200;display:flex;flex-direction:column;gap:7px;pointer-events:none;}
+    .toast{padding:12px 16px;border-radius:12px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:9px;box-shadow:0 8px 28px rgba(0,0,0,0.15);animation:toastIn .3s ease;pointer-events:all;}
     .toast-ok{background:var(--primary);color:#fff;}
     .toast-err{background:var(--danger);color:#fff;}
-    .toast-info{background:var(--fg);color:#fff;}
+    .toast-warn{background:#92400E;color:#fff;}
+    .toast-save{background:#166534;color:#fff;}
     .toast.out{animation:toastOut .25s forwards;}
-    @keyframes toastIn{from{transform:translateY(-20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
-    @keyframes toastOut{to{transform:translateY(-20px);opacity:0;}}
-    .photo-preview{width:100%;max-height:220px;object-fit:cover;border-radius:12px;border:2px solid var(--border);margin:10px 0;}
-    .photo-capture-btn{width:100%;padding:20px;border:2px dashed var(--border);border-radius:12px;background:var(--bg);display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;}
+    @keyframes toastIn{from{transform:translateY(-18px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+    @keyframes toastOut{to{transform:translateY(-18px);opacity:0;}}
+
+    /* FOTOS */
+    .photo-preview{width:100%;max-height:200px;object-fit:cover;border-radius:12px;border:2px solid var(--border);margin:8px 0;}
+    .photo-capture-btn{width:100%;padding:18px;border:2px dashed var(--border);border-radius:12px;background:var(--bg);display:flex;flex-direction:column;align-items:center;gap:7px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;}
     .photo-capture-btn:active{border-color:var(--primary);color:var(--primary);}
-    .photo-capture-btn i{font-size:28px;}
-    .section-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;}
-    .point-card-inner{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);}
-    .point-card-inner:last-child{border-bottom:none;}
-    .point-num{width:36px;height:36px;border-radius:10px;background:var(--primary-50);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0;}
-    .point-info{flex:1;min-width:0;}
-    .point-name{font-size:14px;font-weight:700;}
-    .point-addr{font-size:12px;color:var(--muted);margin-top:2px;word-break:break-word;}
-    .empty-state{text-align:center;padding:48px 20px;}
-    .empty-state i{font-size:48px;color:var(--border);margin-bottom:12px;}
-    .empty-state p{color:var(--muted);font-size:14px;}
-    .preview-header{background:linear-gradient(135deg,var(--primary),#020280);border-radius:14px;padding:20px;margin-bottom:18px;color:#fff;text-align:center;}
-    .preview-stop{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);position:relative;}
-    .preview-stop:last-of-type{border-bottom:none;}
-    .preview-stop-line{position:absolute;left:22px;top:42px;bottom:-14px;width:2px;background:var(--border);}
-    .preview-stop:last-of-type .preview-stop-line{display:none;}
-    .preview-stop-num{width:44px;height:44px;border-radius:12px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;flex-shrink:0;position:relative;z-index:1;box-shadow:0 3px 10px rgba(0,0,0,0.15);}
-    .preview-stop-body{flex:1;min-width:0;}
-    .preview-stop-name{font-size:15px;font-weight:800;}
-    .preview-stop-addr{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4;}
-    .preview-stop-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
-    .preview-stop-time{font-size:12px;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:4px;}
-    .preview-stop-map-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;background:var(--info-light);color:var(--info);font-size:11px;font-weight:700;text-decoration:none;transition:all .15s;}
-    .preview-nav-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border-radius:12px;background:linear-gradient(135deg,#0303B5,#1D4ED8);color:#fff;font-size:14px;font-weight:700;text-decoration:none;margin-top:18px;}
-    .visit-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
-    .visit-type-btn{border:2px solid var(--border);border-radius:14px;padding:16px 12px;cursor:pointer;background:var(--bg);transition:all .18s;text-align:left;display:flex;flex-direction:column;gap:6px;}
-    .visit-type-btn.active{border-color:var(--primary);background:var(--primary-50);}
-    .visit-type-icon{width:38px;height:38px;border-radius:10px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:4px;}
-    .visit-type-btn.active .visit-type-icon{background:var(--primary);}
-    .visit-type-name{font-size:13px;font-weight:700;color:var(--fg);}
-    .visit-type-desc{font-size:11px;color:var(--muted);line-height:1.4;}
-    .firma-canvas{width:100%;height:150px;border:1.5px solid var(--border);border-radius:10px;background:#fafafa;cursor:crosshair;display:block;touch-action:none;}
+    .photo-capture-btn i{font-size:26px;}
+
+    /* FIRMA */
+    .firma-canvas{width:100%;height:140px;border:1.5px solid var(--border);border-radius:10px;background:#fafafa;cursor:crosshair;display:block;touch-action:none;}
     .firma-canvas.signed{border-color:var(--success);}
-    .firma-actions{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
-    .firma-hint{font-size:11px;color:var(--muted);}
-    .firma-clear{font-size:12px;color:var(--danger);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;}
-    .firma-badge{display:none;align-items:center;gap:5px;font-size:12px;color:var(--success);margin-top:4px;font-weight:700;}
-    .firma-badge.show{display:flex;}
+
+    /* TOGGLE */
     .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border-radius:10px;}
-    .toggle-label{font-size:13px;font-weight:600;}
-    .toggle-sub{font-size:11px;color:var(--muted);}
     .toggle{position:relative;width:44px;height:24px;flex-shrink:0;}
     .toggle input{opacity:0;width:0;height:0;}
     .toggle-track{position:absolute;inset:0;background:var(--border);border-radius:12px;cursor:pointer;transition:background .2s;}
     .toggle input:checked+.toggle-track{background:var(--primary);}
     .toggle-thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s;pointer-events:none;}
     .toggle input:checked~.toggle-thumb{transform:translateX(20px);}
-    .obsequio-detail{display:none;margin-top:10px;}
+    .obsequio-detail{display:none;margin-top:8px;}
     .obsequio-detail.show{display:block;}
-    .gps-chip{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--primary-50);border:1px solid rgba(3,3,181,0.15);border-radius:10px;font-size:12px;color:var(--primary);font-weight:600;margin-bottom:10px;}
-    /* Pantalla de horario bloqueado */
-    #blockedScreen{background:linear-gradient(160deg,#1e1b4b 0%,#312e81 50%,#0f172a 100%);justify-content:center;align-items:center;padding:24px;text-align:center;}
-    .blocked-card{background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:36px 24px;width:100%;max-width:380px;}
-    @media(min-width:640px){.app-body{padding:20px 24px 90px;}.stat-grid{grid-template-columns:repeat(4,1fr);}.modal-sheet{border-radius:20px;margin-bottom:20px;}}
+
+    /* GPS CHIP */
+    .gps-chip{display:flex;align-items:center;gap:7px;padding:7px 11px;background:var(--primary-50);border:1px solid rgba(3,3,181,0.15);border-radius:9px;font-size:11px;color:var(--primary);font-weight:600;margin-bottom:10px;}
+
+    /* VISIT TYPE */
+    .visit-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+    .visit-type-btn{border:2px solid var(--border);border-radius:14px;padding:14px 10px;cursor:pointer;background:var(--bg);text-align:left;display:flex;flex-direction:column;gap:5px;}
+    .visit-type-btn.active{border-color:var(--primary);background:var(--primary-50);}
+    .visit-type-icon{font-size:22px;margin-bottom:3px;}
+    .visit-type-name{font-size:13px;font-weight:700;color:var(--fg);}
+    .visit-type-desc{font-size:11px;color:var(--muted);line-height:1.3;}
+
+    /* PUNTO CARD */
+    .punto-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:14px;margin-bottom:10px;}
+    .punto-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+    .punto-num{width:32px;height:32px;border-radius:9px;background:var(--primary-50);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;}
+    .punto-name{font-size:14px;font-weight:700;}
+    .punto-addr{font-size:12px;color:var(--muted);margin-top:1px;}
+
+    /* PENDIENTE */
+    .pend-card{border-radius:10px;padding:10px 12px;margin-bottom:8px;}
+    .pend-urgente{background:#FCEBEB;border:1px solid #F09595;}
+    .pend-semana{background:#FAEEDA;border:1px solid #FAC775;}
+    .pend-normal{background:var(--bg);border:1px solid var(--border);}
+
+    /* SPINNER */
+    .spin{animation:spinA .6s linear infinite;display:inline-block;}
+    @keyframes spinA{to{transform:rotate(360deg);}}
+
+    /* QUEUE INDICATOR - visitas en cola */
+    .queue-bar{background:var(--accent-light);border-bottom:1px solid #F59E0B;padding:7px 14px;font-size:12px;font-weight:700;color:#92400E;display:flex;align-items:center;gap:7px;}
+    .queue-bar.hidden{display:none;}
+
+    @media(min-width:600px){.app-body{padding:18px 22px 88px;}.modal-sheet{border-radius:20px;margin-bottom:18px;}}
   </style>
-  <link rel="preconnect" href="https://appmed-helse-default-rtdb.firebaseio.com">
-  <link rel="dns-prefetch" href="https://appmed-helse-default-rtdb.firebaseio.com">
 </head>
 <body>
 
-<script>
-window.onerror = function(msg, url, line, col, err) {
-  var d=document.getElementById('debugError');
-  if(!d){
-    d=document.createElement('div');
-    d.id='debugError';
-    d.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#DC2626;color:#fff;padding:12px;font-size:12px;z-index:99999;font-family:monospace;white-space:pre-wrap;max-height:50vh;overflow-y:auto;';
-    document.body.appendChild(d);
-  }
-  d.innerHTML='<b>Error:</b> '+(msg||'')+'<br><small>'+(url||'')+':'+(line||'')+'</small><br><small>'+(err&&err.stack||'')+'</small><hr>'+d.innerHTML;
-  return false;
-};
-window.addEventListener('unhandledrejection', function(e) {
-  window.onerror(e.reason&&e.reason.message||'Promise error','',0,0,e.reason);
-});
-</script>
-
 <div class="toast-wrap" id="toastWrap"></div>
 
+<!-- CONFIRM GPS -->
 <div class="confirm-overlay" id="gpsPermOverlay">
-  <div style="background:var(--card);border-radius:18px;padding:32px 24px;max-width:340px;width:100%;text-align:center;">
-    <div style="width:56px;height:56px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:24px;background:var(--primary-50);color:var(--primary);"><i class="fa-solid fa-location-crosshairs"></i></div>
-    <div style="font-size:17px;font-weight:800;margin-bottom:8px;">Activar ubicacion</div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6;">Para registrar tu llegada a cada punto necesitamos acceder a tu ubicacion actual.</div>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <button class="btn btn-primary" onclick="requestGpsAndInit()"><i class="fa-solid fa-location-dot"></i> Permitir ubicacion</button>
+  <div style="background:var(--card);border-radius:18px;padding:30px 22px;max-width:320px;width:100%;text-align:center;">
+    <div style="width:52px;height:52px;border-radius:50%;margin:0 auto 14px;background:var(--primary-50);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:22px;"><i class="fa-solid fa-location-crosshairs"></i></div>
+    <div style="font-size:16px;font-weight:800;margin-bottom:8px;">Activar ubicacion</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.5;">Para registrar llegadas necesitamos tu ubicacion actual.</div>
+    <div style="display:flex;flex-direction:column;gap:9px;">
+      <button class="btn btn-primary" onclick="requestGpsAndInit()"><i class="fa-solid fa-location-dot"></i> Permitir</button>
       <button class="btn btn-outline" onclick="skipGpsAndInit()">Continuar sin ubicacion</button>
     </div>
   </div>
@@ -219,114 +205,111 @@ window.addEventListener('unhandledrejection', function(e) {
   <div class="login-logo"><i class="fa-solid fa-stethoscope"></i></div>
   <div class="login-card">
     <h1>APPMED</h1>
-    <p class="sub" id="loginGreeting">By HELSE</p>
-    <div style="display:flex;flex-direction:column;gap:14px;">
-      <input class="login-input" type="text" id="loginUser" placeholder="Usuario" autocomplete="username" autocapitalize="off">
-      <input class="login-input" type="password" id="loginPass" placeholder="Contrasena" autocomplete="current-password">
-      <button class="login-btn" id="loginBtn" onclick="doLogin()">Iniciar Sesion</button>
-    </div>
+    <p class="sub">By HELSE</p>
+    <input class="login-input" type="text" id="loginUser" placeholder="Usuario" autocomplete="username" autocapitalize="off">
+    <input class="login-input" type="password" id="loginPass" placeholder="Contrasena" autocomplete="current-password">
+    <button class="login-btn" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> Iniciar sesion</button>
     <div class="login-error" id="loginError"></div>
-    <div class="login-attempts" id="loginAttempts"></div>
-    <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:10px;min-height:18px;" id="loginStatus"><span class="spinner-sm" style="width:12px;height:12px;border-width:2px;vertical-align:middle;margin-right:4px;"></span> Conectando...</div>
-    <p style="color:rgba(255,255,255,0.35);font-size:10px;margin-top:20px;">Innovacion tecnologica con proposito humano</p>
+    <div id="loginStatus" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:10px;"><i class="spin fa-solid fa-circle-notch" style="font-size:10px;"></i> Conectando...</div>
   </div>
 </div>
 
-<!-- PANTALLA HORARIO BLOQUEADO -->
+<!-- BLOQUEADO -->
 <div class="screen" id="blockedScreen">
   <div class="blocked-card">
-    <div style="width:72px;height:72px;border-radius:20px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
-      <i class="fa-solid fa-clock" style="font-size:36px;color:rgba(255,255,255,0.8);"></i>
+    <div style="font-size:44px;margin-bottom:16px;">🕐</div>
+    <div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:8px;">Fuera de horario</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:22px;line-height:1.6;" id="blockedMsg"></div>
+    <div style="background:rgba(255,255,255,0.08);border-radius:12px;padding:14px;margin-bottom:18px;">
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;">Hora actual (Bogota)</div>
+      <div style="font-size:30px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;" id="blockedClock">--:--:--</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;" id="blockedHorario"></div>
     </div>
-    <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:8px;">Fuera de horario</div>
-    <div style="font-size:14px;color:rgba(255,255,255,0.65);margin-bottom:24px;line-height:1.6;" id="blockedMsg">El registro de visitas no esta disponible en este momento.</div>
-    <div style="background:rgba(255,255,255,0.08);border-radius:12px;padding:14px;margin-bottom:20px;">
-      <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px;">Hora actual</div>
-      <div style="font-size:28px;font-weight:900;color:#fff;" id="blockedClock">--:--</div>
-      <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;" id="blockedHorario">Horario: 06:00 - 20:00</div>
-    </div>
-    <button class="btn btn-outline" style="border-color:rgba(255,255,255,0.3);color:rgba(255,255,255,0.7);width:100%;" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesion</button>
+    <button class="btn btn-outline" style="border-color:rgba(255,255,255,0.3);color:rgba(255,255,255,0.7);" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesion</button>
   </div>
 </div>
 
 <!-- VISITADOR -->
 <div class="screen" id="visitorScreen">
   <div class="app-header">
-    <div style="flex:1;min-width:0;"><h2 id="visitorGreeting">Hola</h2><div class="sub" id="visitorDate"></div></div>
+    <div style="flex:1;min-width:0;">
+      <h2 id="visitorGreeting">Hola</h2>
+      <div class="sub" id="visitorDate"></div>
+    </div>
     <div style="display:flex;align-items:center;gap:6px;">
-      <button id="visitorMktBtn" onclick="abrirMarketing()" style="display:none;background:#7C3AED;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-receipt"></i> Marketing</button>
-      <div class="header-conn online" id="visitorConn"><span class="hdot"></span>Cloud</div>
+      <button id="visitorMktBtn" onclick="abrirMarketing()" style="display:none;background:#7C3AED;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-receipt"></i> Factura</button>
+      <div class="sync-badge synced" id="syncBadge"><span class="sync-dot"></span><span id="syncLabel">Cloud</span></div>
       <button class="header-btn" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
     </div>
   </div>
+
+  <!-- BARRA DE COLA: visible solo si hay visitas pendientes de subir -->
+  <div class="queue-bar hidden" id="queueBar">
+    <i class="fa-solid fa-arrow-up-from-bracket"></i>
+    <span id="queueBarMsg">Sincronizando visitas...</span>
+  </div>
+
   <div class="app-body">
-    <div class="tab-content active" id="vTab-hoy"><div id="visitorPendientesSection" style="padding:12px 16px 0;"></div><div id="visitorTodayPoints"></div></div>
-    <div class="tab-content" id="vTab-semana"><div id="visitorWeekSummary"></div></div>
-    <div class="tab-content" id="vTab-mkt"><div id="visitorMarketingList" style="padding:8px 16px;"></div></div>
+    <div class="tab-content active" id="vTab-hoy">
+      <div id="visitorPendientesSection"></div>
+      <div id="visitorTodayPoints"></div>
+    </div>
+    <div class="tab-content" id="vTab-rutas"><div id="visitorRutas"></div></div>
+    <div class="tab-content" id="vTab-mkt"><div id="visitorMktList" style="padding:4px 0;"></div></div>
     <div class="tab-content" id="vTab-perfil">
-      <div class="card" style="text-align:center;padding:32px 18px;">
-        <div class="avatar" id="vProfileAvatar" style="width:64px;height:64px;font-size:24px;margin:0 auto 12px;"></div>
-        <div style="font-size:18px;font-weight:800;" id="vProfileName"></div>
-        <div style="font-size:13px;color:var(--muted);" id="vProfileUser"></div>
-        <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border);display:flex;justify-content:space-around;">
-          <div><div style="font-size:24px;font-weight:900;" id="vProfileTotal">0</div><div style="font-size:11px;color:var(--muted);">Total</div></div>
-          <div><div style="font-size:24px;font-weight:900;" id="vProfileToday">0</div><div style="font-size:11px;color:var(--muted);">Hoy</div></div>
-          <div><div style="font-size:24px;font-weight:900;" id="vProfileWeek">0</div><div style="font-size:11px;color:var(--muted);">Semana</div></div>
+      <div class="card" style="text-align:center;padding:28px 16px;">
+        <div class="avatar" id="vProfileAvatar" style="width:60px;height:60px;font-size:22px;margin:0 auto 10px;"></div>
+        <div style="font-size:17px;font-weight:800;" id="vProfileName"></div>
+        <div style="font-size:12px;color:var(--muted);" id="vProfileUser"></div>
+        <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border);display:flex;justify-content:space-around;">
+          <div><div style="font-size:22px;font-weight:900;" id="vProfileTotal">0</div><div style="font-size:11px;color:var(--muted);">Total</div></div>
+          <div><div style="font-size:22px;font-weight:900;" id="vProfileToday">0</div><div style="font-size:11px;color:var(--muted);">Hoy</div></div>
+          <div><div style="font-size:22px;font-weight:900;" id="vProfileWeek">0</div><div style="font-size:11px;color:var(--muted);">Semana</div></div>
         </div>
       </div>
     </div>
   </div>
+
   <div class="tab-bar">
-    <button class="tab-btn active" onclick="switchVisitorTab('hoy',this)"><i class="fa-solid fa-calendar-day"></i>Hoy</button>
-    <button class="tab-btn" onclick="switchVisitorTab('semana',this)"><i class="fa-solid fa-route"></i>Mis Rutas</button>
-    <button class="tab-btn" onclick="switchVisitorTab('perfil',this)"><i class="fa-solid fa-user"></i>Perfil</button>
-    <button class="tab-btn" onclick="switchVisitorTab('mkt',this)"><i class="fa-solid fa-receipt"></i>Mis Facturas</button>
+    <button class="tab-btn active" onclick="switchTab('hoy',this)"><i class="fa-solid fa-calendar-day"></i>Hoy</button>
+    <button class="tab-btn" onclick="switchTab('rutas',this)"><i class="fa-solid fa-route"></i>Rutas</button>
+    <button class="tab-btn" onclick="switchTab('perfil',this)"><i class="fa-solid fa-user"></i>Perfil</button>
+    <button class="tab-btn" onclick="switchTab('mkt',this)"><i class="fa-solid fa-receipt"></i>Facturas</button>
   </div>
 </div>
 
-<!-- MODAL CERRAR VISITA (ruta fija) -->
+<!-- MODAL: CERRAR VISITA -->
 <div class="modal-overlay" id="modalCloseVisit">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">Cerrar Visita</div>
+    <div class="modal-title">Cerrar visita</div>
     <input type="hidden" id="closeVisitId">
-    <div style="background:var(--primary-50);border-radius:12px;padding:14px;margin-bottom:18px;">
-      <div style="font-size:13px;font-weight:700;color:var(--primary);" id="closeVisitPointName"></div>
-      <div id="closeVisitPointAddr" style="font-size:12px;color:var(--muted);margin-top:2px;"></div>
+    <div style="background:var(--primary-50);border-radius:10px;padding:12px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;color:var(--primary);" id="closeVisitName"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="closeVisitAddr"></div>
     </div>
     <input type="file" id="visitPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoTaken(event)">
     <div class="form-group">
-      <label class="form-label">Foto del Punto</label>
-      <div id="photoCaptureArea"><div class="photo-capture-btn" onclick="document.getElementById('visitPhotoInput').click()"><i class="fa-solid fa-camera"></i><span>Tomar Foto</span></div></div>
+      <label class="form-label">Foto del punto</label>
+      <div id="photoCaptureArea"><div class="photo-capture-btn" onclick="document.getElementById('visitPhotoInput').click()"><i class="fa-solid fa-camera"></i><span>Tomar foto</span></div></div>
       <img id="photoPreview" class="photo-preview" style="display:none;">
     </div>
-    <div class="form-group"><label class="form-label">Nombre del Jefe del Punto</label><input class="form-input" id="closeJefe" placeholder="Nombre del responsable"></div>
-    <div class="form-group"><label class="form-label">Notas (opcional)</label><textarea class="form-input" id="closeNotes" placeholder="Observaciones..."></textarea></div>
-    <div style="display:flex;gap:10px;margin-top:20px;">
+    <div class="form-group"><label class="form-label">Jefe del punto</label><input class="form-input" id="closeJefe" placeholder="Nombre del responsable"></div>
+    <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="closeNotes" placeholder="Observaciones..."></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
       <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalCloseVisit')">Cancelar</button>
       <button class="btn btn-success" style="flex:1;" onclick="completeVisit()"><i class="fa-solid fa-check"></i> Completar</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL VER FOTO -->
-<div class="modal-overlay" id="modalPhoto">
-  <div class="modal-sheet" style="padding:8px 8px 24px;">
-    <div class="modal-handle"></div>
-    <div class="modal-title" style="padding:0 12px;">Evidencia</div>
-    <img id="modalPhotoImg" style="width:100%;border-radius:12px;">
-    <div style="padding:8px 12px 0;"><div id="modalPhotoInfo" style="font-size:13px;color:var(--muted);line-height:1.5;"></div></div>
-    <button class="btn btn-outline" style="margin-top:16px;" onclick="closeModal('modalPhoto')">Cerrar</button>
-  </div>
-</div>
-
-<!-- MODAL NUEVA VISITA (libre) -->
+<!-- MODAL: NUEVA VISITA LIBRE -->
 <div class="modal-overlay" id="modalNuevaVisita">
-  <div class="modal-sheet" style="max-height:95vh;">
+  <div class="modal-sheet" style="max-height:94vh;">
     <div class="modal-handle"></div>
     <div class="modal-title">Nueva visita</div>
+
     <div id="visitaTipoSelector">
-      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:10px;">Tipo de visita</div>
       <div class="visit-type-grid">
         <button class="visit-type-btn" id="btnTipoGeneral" onclick="selectVisitType('general')">
           <div class="visit-type-icon">🌐</div>
@@ -335,69 +318,65 @@ window.addEventListener('unhandledrejection', function(e) {
         </button>
         <button class="visit-type-btn" id="btnTipoProfesional" onclick="selectVisitType('profesional')">
           <div class="visit-type-icon">🩺</div>
-          <div class="visit-type-name">Visita a profesional</div>
-          <div class="visit-type-desc">Medico, especialista u otro profesional</div>
+          <div class="visit-type-name">A profesional</div>
+          <div class="visit-type-desc">Medico, especialista u otro</div>
         </button>
       </div>
     </div>
+
     <!-- FORM GENERAL -->
     <div id="formVisitaGeneral" style="display:none;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-        <button onclick="selectVisitType(null)" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:13px;font-weight:600;padding:0;"><i class="fa-solid fa-arrow-left"></i> Cambiar tipo</button>
-      </div>
-      <div class="gps-chip" id="gpsChipGeneral"><i class="fa-solid fa-satellite-dish" style="font-size:11px;"></i> <span id="gpsTextGeneral">Obteniendo ubicacion...</span></div>
-      <div class="form-group"><label class="form-label">Nombre del lugar <span style="color:var(--danger);">*</span></label><input class="form-input" id="vg-lugar" placeholder="Ej. Drogueria La Rebaja"></div>
+      <button onclick="selectVisitType(null)" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:13px;font-weight:600;padding:0;margin-bottom:14px;"><i class="fa-solid fa-arrow-left"></i> Cambiar tipo</button>
+      <div class="gps-chip" id="gpsChipGeneral"><i class="fa-solid fa-satellite-dish" style="font-size:10px;"></i> <span id="gpsTextGeneral">Obteniendo ubicacion...</span></div>
+      <div class="form-group"><label class="form-label">Nombre del lugar *</label><input class="form-input" id="vg-lugar" placeholder="Ej. Drogueria La Rebaja"></div>
       <div class="form-group"><label class="form-label">Direccion</label><input class="form-input" id="vg-direccion" placeholder="Calle / Carrera / Barrio"></div>
       <div class="form-group"><label class="form-label">Contacto</label><input class="form-input" id="vg-contacto" placeholder="Nombre de quien atendio"></div>
-      <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="vg-notas" placeholder="Observaciones, pedidos..."></textarea></div>
+      <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="vg-notas" placeholder="Observaciones..."></textarea></div>
       <div class="form-group">
         <label class="form-label">Foto de evidencia</label>
-        <input type="file" id="vg-foto" accept="image/*" capture="environment" style="display:none;" onchange="previewVisitaFoto(this,'vg-preview')">
+        <input type="file" id="vg-foto" accept="image/*" capture="environment" style="display:none;" onchange="previewFoto(this,'vg-preview','general')">
         <div class="photo-capture-btn" onclick="document.getElementById('vg-foto').click()"><i class="fa-solid fa-camera"></i><span>Tomar foto</span></div>
         <img id="vg-preview" class="photo-preview" style="display:none;">
       </div>
-      <div style="display:flex;gap:10px;margin-top:10px;">
+      <div style="display:flex;gap:10px;margin-top:12px;">
         <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalNuevaVisita')">Cancelar</button>
-        <button class="btn btn-success" style="flex:1;" id="btnGuardarGeneral" onclick="guardarVisitaGeneral()"><i class="fa-solid fa-check"></i> Guardar</button>
+        <button class="btn btn-success" style="flex:1;" onclick="guardarVisitaGeneral()"><i class="fa-solid fa-check"></i> Guardar</button>
       </div>
     </div>
+
     <!-- FORM PROFESIONAL -->
     <div id="formVisitaProfesional" style="display:none;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-        <button onclick="selectVisitType(null)" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:13px;font-weight:600;padding:0;"><i class="fa-solid fa-arrow-left"></i> Cambiar tipo</button>
-      </div>
-      <div class="gps-chip" id="gpsChipProf"><i class="fa-solid fa-satellite-dish" style="font-size:11px;"></i> <span id="gpsTextProf">Obteniendo ubicacion...</span></div>
-      <div class="form-group"><label class="form-label">Nombre del Punto <span style="color:var(--danger);">*</span></label><input class="form-input" id="vp-punto" placeholder="Ej: Clinica del Norte..."></div>
-      <div class="form-group"><label class="form-label">Nombre del profesional <span style="color:var(--danger);">*</span></label><input class="form-input" id="vp-nombre" placeholder="Dr. / Dra. Nombre Apellido"></div>
+      <button onclick="selectVisitType(null)" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:13px;font-weight:600;padding:0;margin-bottom:14px;"><i class="fa-solid fa-arrow-left"></i> Cambiar tipo</button>
+      <div class="gps-chip" id="gpsChipProf"><i class="fa-solid fa-satellite-dish" style="font-size:10px;"></i> <span id="gpsTextProf">Obteniendo ubicacion...</span></div>
+      <div class="form-group"><label class="form-label">Nombre del punto</label><input class="form-input" id="vp-punto" placeholder="Ej: Clinica del Norte..."></div>
+      <div class="form-group"><label class="form-label">Nombre del profesional *</label><input class="form-input" id="vp-nombre" placeholder="Dr. / Dra. Nombre Apellido"></div>
       <div class="form-group"><label class="form-label">Especialidad</label><input class="form-input" id="vp-especialidad" placeholder="Ej. Cardiologia..."></div>
-      <div class="form-group"><label class="form-label">Numero de contacto <span style="color:var(--danger);">*</span></label><input class="form-input" type="tel" id="vp-telefono" placeholder="3XX XXX XXXX"></div>
-      <div class="form-group"><label class="form-label">Direccion del consultorio <span style="color:var(--danger);">*</span></label><input class="form-input" id="vp-direccion" placeholder="Calle, carrera, consultorio, piso..."></div>
+      <div class="form-group"><label class="form-label">Numero de contacto *</label><input class="form-input" type="tel" id="vp-telefono" placeholder="3XX XXX XXXX"></div>
+      <div class="form-group"><label class="form-label">Direccion del consultorio *</label><input class="form-input" id="vp-direccion" placeholder="Calle, carrera, piso..."></div>
       <div class="form-group">
         <div class="toggle-row">
-          <div><div class="toggle-label">Entrega de obsequio o detalle</div><div class="toggle-sub">Muestras, material, regalo</div></div>
-          <label class="toggle"><input type="checkbox" id="vp-toggleObsequio" onchange="toggleObsequioField(this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+          <div><div style="font-size:13px;font-weight:600;">Entrega de obsequio</div><div style="font-size:11px;color:var(--muted);">Muestras, material, regalo</div></div>
+          <label class="toggle"><input type="checkbox" id="vp-toggleObsequio" onchange="toggleObsequio(this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
         </div>
-        <div id="vp-obsequioDetail" class="obsequio-detail">
-          <textarea class="form-input" id="vp-obsequio" placeholder="Ej. 2 muestras Ketolance 10mg..." style="margin-top:8px;"></textarea>
-        </div>
+        <div id="vp-obsequioDetail" class="obsequio-detail"><textarea class="form-input" id="vp-obsequio" placeholder="Ej. 2 muestras Ketolance 10mg..." style="margin-top:8px;"></textarea></div>
       </div>
       <div class="form-group">
-        <label class="form-label">Foto de evidencia <span style="color:var(--danger);">*</span></label>
-        <input type="file" id="vp-foto" accept="image/*" capture="environment" style="display:none;" onchange="previewVisitaFoto(this,'vp-preview')">
+        <label class="form-label">Foto de evidencia *</label>
+        <input type="file" id="vp-foto" accept="image/*" capture="environment" style="display:none;" onchange="previewFoto(this,'vp-preview','prof')">
         <div class="photo-capture-btn" onclick="document.getElementById('vp-foto').click()"><i class="fa-solid fa-camera"></i><span>Tomar foto con el profesional</span></div>
         <img id="vp-preview" class="photo-preview" style="display:none;">
       </div>
       <div class="form-group">
-        <label class="form-label">Firma del profesional <span style="color:var(--danger);">* obligatoria</span></label>
-        <canvas id="vp-firmaCanvas" class="firma-canvas" width="600" height="150"></canvas>
-        <div class="firma-actions">
-          <span class="firma-hint">El medico firma aqui con el dedo</span>
-          <button class="firma-clear" onclick="clearFirmaProf()">Borrar firma</button>
+        <label class="form-label">Firma del profesional * <span style="font-size:10px;color:var(--muted);text-transform:none;font-weight:400;">(obligatoria)</span></label>
+        <canvas id="vp-firmaCanvas" class="firma-canvas" width="600" height="140"></canvas>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
+          <span style="font-size:11px;color:var(--muted);">El medico firma aqui con el dedo</span>
+          <button style="font-size:11px;color:var(--danger);background:none;border:none;cursor:pointer;" onclick="clearFirma()">Borrar</button>
         </div>
-        <div class="firma-badge" id="vp-firmaBadge"><i class="fa-solid fa-check-circle"></i> Firma registrada</div>
+        <div id="vp-firmaBadge" style="display:none;align-items:center;gap:5px;font-size:12px;color:var(--success);margin-top:4px;font-weight:700;"><i class="fa-solid fa-check-circle"></i> Firma registrada</div>
       </div>
-      <div class="form-group"><label class="form-label">Notas adicionales</label><textarea class="form-input" id="vp-notas" placeholder="Temas tratados, proxima visita..."></textarea></div>
-      <div style="display:flex;gap:10px;margin-top:10px;">
+      <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="vp-notas" placeholder="Temas tratados..."></textarea></div>
+      <div style="display:flex;gap:10px;margin-top:12px;">
         <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalNuevaVisita')">Cancelar</button>
         <button class="btn btn-success" style="flex:1;" id="btnGuardarProf" onclick="guardarVisitaProfesional()" disabled><i class="fa-solid fa-check"></i> Guardar</button>
       </div>
@@ -405,45 +384,53 @@ window.addEventListener('unhandledrejection', function(e) {
   </div>
 </div>
 
-<!-- MODAL MARKETING -->
+<!-- MODAL: VER FOTO -->
+<div class="modal-overlay" id="modalPhoto">
+  <div class="modal-sheet" style="padding:8px 8px 22px;">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="padding:0 10px;">Evidencia</div>
+    <img id="modalPhotoImg" style="width:100%;border-radius:12px;">
+    <button class="btn btn-outline" style="margin-top:14px;" onclick="closeModal('modalPhoto')">Cerrar</button>
+  </div>
+</div>
+
+<!-- MODAL: MARKETING -->
 <div class="modal-overlay" id="modalMarketing">
   <div class="modal-sheet">
-    <div class="modal-title">Cargar Factura de Marketing</div>
+    <div class="modal-handle"></div>
+    <div class="modal-title">Cargar factura</div>
     <div class="form-group">
-      <label class="form-label">Nombre del establecimiento <span style="color:var(--danger);">*</span></label>
+      <label class="form-label">Establecimiento *</label>
       <input class="form-input" id="mkt-lugar" placeholder="Ej: Exito, Jumbo..." oninput="autocompletarNit(this.value)">
     </div>
-    <div class="form-group" id="mkt-nit-group">
-      <label class="form-label">NIT del establecimiento</label>
-      <input class="form-input" id="mkt-nit" placeholder="Se completa automaticamente" readonly style="background:var(--bg);">
-      <div id="mkt-razon" style="font-size:11px;color:var(--muted);margin-top:4px;"></div>
-    </div>
     <div class="form-group">
-      <label class="form-label">Valor total de la factura <span style="color:var(--danger);">*</span></label>
-      <input class="form-input" type="number" id="mkt-valor" placeholder="Ej: 85000">
+      <label class="form-label">NIT</label>
+      <input class="form-input" id="mkt-nit" readonly style="background:var(--bg);">
+      <div id="mkt-razon" style="font-size:11px;color:var(--muted);margin-top:3px;"></div>
     </div>
+    <div class="form-group"><label class="form-label">Valor *</label><input class="form-input" type="number" id="mkt-valor" placeholder="Ej: 85000"></div>
     <div class="form-group">
-      <label class="form-label">Foto de la factura <span style="color:var(--danger);">*</span></label>
+      <label class="form-label">Foto de la factura *</label>
       <input type="file" id="mkt-foto-input" accept="image/*" capture="environment" style="display:none;" onchange="mktPreviewFoto(this)">
-      <div onclick="document.getElementById('mkt-foto-input').click()" style="border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;background:var(--bg);">
-        <div id="mkt-foto-preview-wrap" style="display:none;margin-bottom:8px;"><img id="mkt-foto-preview" style="max-height:160px;border-radius:8px;width:100%;object-fit:cover;"></div>
-        <i class="fa-solid fa-camera" style="font-size:24px;color:var(--muted);"></i>
-        <div style="font-size:12px;color:var(--muted);margin-top:6px;">Toca para tomar foto o subir imagen</div>
+      <div onclick="document.getElementById('mkt-foto-input').click()" style="border:2px dashed var(--border);border-radius:12px;padding:18px;text-align:center;cursor:pointer;background:var(--bg);">
+        <div id="mkt-foto-preview-wrap" style="display:none;margin-bottom:8px;"><img id="mkt-foto-preview" style="max-height:150px;border-radius:8px;width:100%;object-fit:cover;"></div>
+        <i class="fa-solid fa-camera" style="font-size:22px;color:var(--muted);"></i>
+        <div style="font-size:12px;color:var(--muted);margin-top:5px;">Toca para capturar</div>
       </div>
     </div>
-    <div style="display:flex;gap:10px;margin-top:16px;">
+    <div style="display:flex;gap:10px;margin-top:14px;">
       <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalMarketing')">Cancelar</button>
       <button class="btn btn-primary" style="flex:1;" onclick="guardarMarketing()"><i class="fa-solid fa-upload"></i> Cargar</button>
     </div>
   </div>
 </div>
 
-<!-- CONFIRM OVERLAY -->
+<!-- CONFIRM -->
 <div class="confirm-overlay" id="confirmOverlay">
   <div class="confirm-box">
-    <div class="confirm-icon" id="confirmIcon"><i id="confirmIconI"></i></div>
-    <div class="confirm-title" id="confirmTitle"></div>
-    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-icon danger" id="confirmIcon"><i id="confirmIconI"></i></div>
+    <div style="font-size:15px;font-weight:800;margin-bottom:7px;" id="confirmTitle"></div>
+    <div style="font-size:13px;color:var(--muted);" id="confirmMsg"></div>
     <div class="confirm-actions">
       <button class="btn btn-outline" onclick="cancelConfirm()">Cancelar</button>
       <button class="btn" id="confirmOkBtn" onclick="executeConfirm()">Confirmar</button>
@@ -452,628 +439,621 @@ window.addEventListener('unhandledrejection', function(e) {
 </div>
 
 <script>
-// ── CONFIGURACION ──────────────────────────────────────────────
-var FIREBASE_CONFIG={apiKey:"AIzaSyAx8FiXFZutVSDqHrh5ANKfoZlBZTRB2ic",authDomain:"appmed-helse.firebaseapp.com",databaseURL:"https://appmed-helse-default-rtdb.firebaseio.com",projectId:"appmed-helse",storageBucket:"appmed-helse.firebasestorage.app",messagingSenderId:"116820385584",appId:"1:116820385584:web:4857ff3653ac5bdfbf72f5"};
-
-// Horario permitido para captura: 6am a 8pm hora Bogota (UTC-5)
-var CAPTURE_HORA_INICIO = 6;
-var CAPTURE_HORA_FIN    = 20;
-
-var BASE_LABS=[
-  {id:'nestle',  name:'Nestle',    color:'#E2001A',colorLight:'#FEE2E2',icon:'fa-cube'},
-  {id:'abamia',  name:'Abamia',    color:'#0066CC',colorLight:'#DBEAFE',icon:'fa-pills'},
-  {id:'fresenius',name:'Fresenius',color:'#009036',colorLight:'#DCFCE7',icon:'fa-syringe'},
-  {id:'ketolance',name:'Ketolance',color:'#F59E0B',colorLight:'#FEF3C7',icon:'fa-flask'},
-  {id:'abbott',  name:'Abbott',    color:'#009CDE',colorLight:'#E0F2FE',icon:'fa-microscope'}
-];
-var LABS=BASE_LABS.slice();
-var AV_COLORS=['#0303B5','#D97706','#DC2626','#7C3AED','#0303B5','#DB2777','#0303B5','#EA580C','#4F46E5','#0891B2'];
-var MIN_PER_PUNTO=15;
-var MAX_LOGIN_ATTEMPTS=5, LOCKOUT_SECONDS=30;
-var lockoutEnd=0, loginAttempts=0, lockoutInterval=null;
-
-// ── ESTADO GLOBAL ──────────────────────────────────────────────
-var D={users:[],visits:[],points:[],pendientes:[],labs:[]};
-var currentUser=null;
-var firebaseReady=false, firebaseOnline=false, dbRef=null;
-var gpsPermission='unknown';
-var _visitRoute=null;
-var visitaGpsCoords=null, visitaFotoDataGeneral=null, visitaFotoDataProf=null;
-var profFirmaCanvas=null, profFirmaCtx=null, profFirmaActiva=false;
-var currentVisitorTab='hoy';
-var _vInitDone=false;
-var _renderTimer=null;
-var _confirmCb=null;
-var mktFotoData=null;
-
-// ── UTILS ──────────────────────────────────────────────────────
-function uid(){return 'id_'+Date.now()+'_'+Math.random().toString(36).substr(2,5);}
-function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function fmtDate(d){if(!d)return'';var dt=new Date(d+'T12:00:00');var m=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];return dt.getDate()+' '+m[dt.getMonth()]+' '+dt.getFullYear();}
-function fmt(h,m){return h.toString().padStart(2,'0')+':'+m.toString().padStart(2,'0');}
-function esc(s){if(!s)return'';var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
-function avatarColor(id){var h=0;for(var i=0;i<(id||'').length;i++)h=id.charCodeAt(i)+((h<<5)-h);return AV_COLORS[Math.abs(h)%AV_COLORS.length];}
-function initials(n){if(!n)return'??';var p=n.trim().split(/\s+/);return p.length>=2?(p[0][0]+p[1][0]).toUpperCase():n.substring(0,2).toUpperCase();}
-function getUserLabId(uid){var u=(D.users||[]).find(function(u){return u.id===uid;});return u?u.labId:null;}
-function userById(id){return (D.users||[]).find(function(u){return u.id===id;});}
-function pointById(id){return (D.points||[]).find(function(p){return p.id===id;});}
-function visitById(id){return (D.visits||[]).find(function(v){return v.id===id;});}
-function getGreeting(){var h=new Date().getHours();return h<12?'Buenos dias':h<18?'Buenas tardes':'Buenas noches';}
-function mapsLink(lat,lng,addr){if(lat&&lng)return 'https://www.google.com/maps?q='+lat+','+lng;return 'https://www.google.com/maps/search/'+encodeURIComponent(addr||'');}
-function addrHTML(addr,lat,lng){return '<a href="'+mapsLink(lat,lng,addr)+'" target="_blank" style="color:var(--info);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:4px;"><i class="fa-solid fa-location-dot"></i>'+esc(addr||'Sin direccion')+'</a>';}
-function buildMapsRouteUrl(pts){var valid=pts.filter(function(p){return p.lat&&p.lng;});if(!valid.length)return '';if(valid.length===1)return mapsLink(valid[0].lat,valid[0].lng,valid[0].address);var origin=valid[0].lat+','+valid[0].lng;var dest=valid[valid.length-1].lat+','+valid[valid.length-1].lng;var waypoints=valid.slice(1,-1).map(function(p){return p.lat+','+p.lng;}).join('|');return 'https://www.google.com/maps/dir/?api=1&origin='+origin+'&destination='+dest+(waypoints?'&waypoints='+waypoints:'');}
-
-// ── CONTROL DE HORARIO ─────────────────────────────────────────
-function horaActualBogota(){
-  // UTC-5
-  var d=new Date();
-  var utc=d.getTime()+d.getTimezoneOffset()*60000;
-  var bogota=new Date(utc + (-5*3600000));
-  return bogota;
-}
-function dentroDeHorario(){
-  var h=horaActualBogota().getHours();
-  return h>=CAPTURE_HORA_INICIO && h<CAPTURE_HORA_FIN;
-}
-function verificarYMostrarBloqueado(){
-  if(dentroDeHorario()) return false;
-  // Actualizar reloj cada segundo
-  actualizarRelojBloqueado();
-  if(!window._blockedInterval){
-    window._blockedInterval=setInterval(function(){
-      actualizarRelojBloqueado();
-      // Si entro al horario, redirigir a pantalla visitador
-      if(dentroDeHorario()){
-        clearInterval(window._blockedInterval);
-        window._blockedInterval=null;
-        showScreen('visitorScreen');
-        renderVisitor();
-      }
-    },1000);
-  }
-  document.getElementById('blockedHorario').textContent='Horario: '+fmt(CAPTURE_HORA_INICIO,0)+' - '+fmt(CAPTURE_HORA_FIN,0);
-  document.getElementById('blockedMsg').textContent='El registro de visitas solo esta disponible entre las '+fmt(CAPTURE_HORA_INICIO,0)+' y las '+fmt(CAPTURE_HORA_FIN,0)+' (hora Bogota).';
-  showScreen('blockedScreen');
-  return true;
-}
-function actualizarRelojBloqueado(){
-  var b=horaActualBogota();
-  var el=document.getElementById('blockedClock');
-  if(el) el.textContent=fmt(b.getHours(),b.getMinutes())+':'+String(b.getSeconds()).padStart(2,'0');
-}
-
-// ── toArray / ensureData ───────────────────────────────────────
-function toArray(val){
-  if(!val)return [];
-  if(Array.isArray(val))return val.filter(function(x){return x!=null;});
-  return Object.entries(val).map(function(entry){
-    var key=entry[0],obj=entry[1];
-    if(obj&&typeof obj==='object'&&!obj._fbKey) obj._fbKey=key;
-    return obj;
-  }).filter(function(x){return x!=null;});
-}
-
-// ── FIREBASE ──────────────────────────────────────────────────
-function initFirebase(){
-  if(typeof firebase==='undefined'){
-    if(!window._fbRetry) window._fbRetry=0;
-    window._fbRetry++;
-    if(window._fbRetry>30){
-      var st=document.getElementById('loginStatus');
-      if(st) st.innerHTML='<span style="color:#FCA5A5;">Error al cargar SDK. Verifica tu conexion.</span>';
+// ── 1. FIREBASE INIT ───────────────────────────────────────────
+// Firebase Realtime Database compat v10 en web NO tiene setPersistenceEnabled.
+// La resiliencia ante señal inestable (5G->3G) se maneja con:
+//   a) Cola local en localStorage (pushVisit la usa como respaldo)
+//   b) flushQueue() que reintenta cuando vuelve la conexion
+//   c) Listeners .on() de Firebase que reconectan solos al recuperar señal
+(function initFirebaseWhenReady(){
+  var MAX=40, retry=0;
+  function tryInit(){
+    if(typeof firebase==='undefined'){
+      retry++;
+      if(retry>MAX){ showLoginStatus('Error al cargar Firebase. Recarga la pagina.', true); return; }
+      setTimeout(tryInit, 400);
       return;
     }
-    setTimeout(initFirebase,500);
+    try{
+      if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      var db=firebase.database();
+      window._db=db;
+      window._dbReady=true;
+      finishFirebaseInit(db);
+    }catch(e){
+      console.error('Firebase init error:',e);
+      showLoginStatus('Error de conexion: '+e.message, true);
+    }
+  }
+  tryInit();
+})();
+
+// ── 2. CONFIG ──────────────────────────────────────────────────
+var FIREBASE_CONFIG={
+  apiKey:"AIzaSyAx8FiXFZutVSDqHrh5ANKfoZlBZTRB2ic",
+  authDomain:"appmed-helse.firebaseapp.com",
+  databaseURL:"https://appmed-helse-default-rtdb.firebaseio.com",
+  projectId:"appmed-helse",
+  storageBucket:"appmed-helse.firebasestorage.app",
+  messagingSenderId:"116820385584",
+  appId:"1:116820385584:web:4857ff3653ac5bdfbf72f5"
+};
+var CAPTURE_HORA_INICIO=6, CAPTURE_HORA_FIN=20;
+var MIN_PER_PUNTO=15;
+var MAX_ATTEMPTS=5, LOCKOUT_SEC=30;
+var AV_COLORS=['#0303B5','#D97706','#DC2626','#7C3AED','#DB2777','#EA580C','#4F46E5','#0891B2'];
+var BASE_LABS=[
+  {id:'nestle',  name:'Nestle',    color:'#E2001A'},
+  {id:'abamia',  name:'Abamia',    color:'#0066CC'},
+  {id:'fresenius',name:'Fresenius',color:'#009036'},
+  {id:'ketolance',name:'Ketolance',color:'#F59E0B'},
+  {id:'abbott',  name:'Abbott',    color:'#009CDE'}
+];
+var LABS=BASE_LABS.slice();
+
+// ── 3. ESTADO ──────────────────────────────────────────────────
+var D={users:[],visits:[],points:[],pendientes:[]};
+var currentUser=null;
+var gpsPermission='unknown';
+var _visitRoute=null;
+var _visitaFotoGeneral=null, _visitaFotoProf=null;
+var _visitaGps=null;
+var _profFirmaCanvas=null, _profFirmaCtx=null, _profFirmaActiva=false;
+var _currentTab='hoy';
+var _confirmCb=null;
+var _mktFoto=null;
+var _lockoutEnd=0, _loginAttempts=0, _lockoutInterval=null;
+var _renderTimer=null;
+var _pendingQueue=[];   // visitas guardadas localmente esperando subir
+var _online=false;
+
+// ── 4. UTILS ──────────────────────────────────────────────────
+function uid(){return 'v'+Date.now()+'_'+Math.random().toString(36).substr(2,5);}
+function today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function pad(n){return String(n).padStart(2,'0');}
+function fmt(h,m){return pad(h)+':'+pad(m);}
+function esc(s){if(!s)return'';var d=document.createElement('div');d.textContent=String(s);return d.innerHTML;}
+function avatarColor(id){var h=0;for(var i=0;i<(id||'').length;i++)h=id.charCodeAt(i)+((h<<5)-h);return AV_COLORS[Math.abs(h)%AV_COLORS.length];}
+function initials(n){if(!n)return'?';var p=n.trim().split(/\s+/);return(p.length>=2?p[0][0]+p[1][0]:n.substring(0,2)).toUpperCase();}
+function getUserLabId(uid){var u=(D.users||[]).find(function(x){return x.id===uid;});return u?u.labId:null;}
+function userById(id){return(D.users||[]).find(function(u){return u.id===id;});}
+function pointById(id){return(D.points||[]).find(function(p){return p.id===id;});}
+function visitById(id){return(D.visits||[]).find(function(v){return v.id===id;});}
+function getGreeting(){var h=new Date().getHours();return h<12?'Buenos dias':h<18?'Buenas tardes':'Buenas noches';}
+function toArray(val){
+  if(!val)return[];
+  if(Array.isArray(val))return val.filter(function(x){return x!=null;});
+  return Object.keys(val).map(function(k){var v=val[k];if(v&&typeof v==='object') v._fbKey=k;return v;}).filter(function(x){return x!=null;});
+}
+function mapsLink(lat,lng,addr){if(lat&&lng)return'https://www.google.com/maps?q='+lat+','+lng;return'https://www.google.com/maps/search/'+encodeURIComponent(addr||'');}
+function showLoginStatus(msg,isErr){var el=document.getElementById('loginStatus');if(el){el.innerHTML=isErr?'<span style="color:#FCA5A5;">'+esc(msg)+'</span>':'<i class="spin fa-solid fa-circle-notch" style="font-size:10px;"></i> '+esc(msg);}}
+
+// ── 5. COLA LOCAL (visitas sin confirmar por Firebase) ─────────
+// Guarda en localStorage para sobrevivir recargas
+function loadQueue(){
+  try{var s=localStorage.getItem('appmed_queue');_pendingQueue=s?JSON.parse(s):[];}catch(e){_pendingQueue=[];}
+}
+function saveQueue(){
+  try{localStorage.setItem('appmed_queue',JSON.stringify(_pendingQueue));}catch(e){}
+}
+function addToQueue(visit){
+  _pendingQueue.push(visit);
+  saveQueue();
+  updateQueueBar();
+}
+function removeFromQueue(visitId){
+  _pendingQueue=_pendingQueue.filter(function(v){return v.id!==visitId;});
+  saveQueue();
+  updateQueueBar();
+}
+function updateQueueBar(){
+  var bar=document.getElementById('queueBar');
+  var msg=document.getElementById('queueBarMsg');
+  if(!bar)return;
+  if(_pendingQueue.length===0){
+    bar.classList.add('hidden');
+  } else {
+    bar.classList.remove('hidden');
+    msg.textContent=_pendingQueue.length===1?'1 visita pendiente de sincronizar':_pendingQueue.length+' visitas pendientes de sincronizar';
+  }
+}
+function flushQueue(){
+  // Intenta subir todas las visitas en cola cuando hay conexion
+  if(!_online||!window._db||!_pendingQueue.length)return;
+  var toFlush=_pendingQueue.slice();
+  toFlush.forEach(function(visit){
+    var ref=window._db.ref('medvisit/visits').push();
+    ref.set(visit).then(function(){
+      removeFromQueue(visit.id);
+      // Agregar a D.visits si no esta
+      if(D.visits.findIndex(function(v){return v.id===visit.id;})<0){
+        D.visits.push(visit);
+      }
+    }).catch(function(e){console.error('Queue flush error:',e);});
+  });
+}
+
+// ── 6. SYNC BADGE ─────────────────────────────────────────────
+function setSyncState(state){
+  // state: 'synced' | 'syncing' | 'offline'
+  var badge=document.getElementById('syncBadge');
+  var label=document.getElementById('syncLabel');
+  if(!badge||!label)return;
+  badge.className='sync-badge '+state;
+  if(state==='synced') label.textContent='Cloud';
+  else if(state==='syncing') label.textContent='Sync...';
+  else label.textContent='Local';
+}
+
+// ── 7. GUARDAR VISITA (robusto) ────────────────────────────────
+// Estrategia:
+// 1. Guardar en D.visits inmediatamente (UI actualizada al instante)
+// 2. Agregar a cola local (localStorage)
+// 3. Intentar subir a Firebase
+//    - Si hay conexion: sube, saca de cola → badge "Cloud"
+//    - Si hay señal lenta: Firebase reintenta solo (persistence)
+//    - Si falla: queda en cola, se sube cuando vuelve la señal
+function pushVisit(visit){
+  // Paso 1: guardar en memoria local para que la UI responda YA
+  D.visits.push(visit);
+
+  // Paso 2: cola local como respaldo
+  addToQueue(visit);
+  setSyncState('syncing');
+
+  if(!window._db){
+    toast('Visita guardada localmente','warn');
     return;
   }
-  try{
-    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-    dbRef=firebase.database();
-    dbRef.setPersistenceEnabled(true);
-    firebaseReady=true;
-    dbRef.ref('.info/connected').on('value',function(snap){
-      firebaseOnline=snap.val()===true;
-      updateHeaderConn();
+
+  // Paso 3: intentar Firebase
+  var ref=window._db.ref('medvisit/visits').push();
+  visit._fbKey=ref.key;
+  ref.set(visit)
+    .then(function(){
+      removeFromQueue(visit.id);
+      setSyncState(_pendingQueue.length?'syncing':'synced');
+    })
+    .catch(function(e){
+      // Firebase persistence reintentara automaticamente
+      // La visita ya esta en la cola local como respaldo
+      console.warn('Firebase pending, will retry:',e.message);
+      setSyncState('syncing');
+      toast('Guardado localmente, sincronizando...','warn');
     });
-  }catch(e){
-    console.error('Firebase init error:',e);
-    firebaseReady=false;
-    return;
+}
+
+function saveVisitUpdate(visit){
+  // Actualizar campos de una visita existente (cerrar visita)
+  if(!window._db)return;
+  var update={status:visit.status,completedAt:visit.completedAt||null,photo:visit.photo||null,jefe:visit.jefe||null,notes:visit.notes||null};
+  setSyncState('syncing');
+  if(visit._fbKey){
+    window._db.ref('medvisit/visits/'+visit._fbKey).update(update)
+      .then(function(){setSyncState(_pendingQueue.length?'syncing':'synced');})
+      .catch(function(e){console.warn('Update pending:',e.message);});
+  } else {
+    window._db.ref('medvisit/visits').orderByChild('id').equalTo(visit.id).once('value',function(snap){
+      snap.forEach(function(child){
+        child.ref.update(update)
+          .then(function(){setSyncState(_pendingQueue.length?'syncing':'synced');})
+          .catch(function(e){console.warn('Update pending:',e.message);});
+      });
+    });
   }
-  // Cargar usuarios para login (sin datos sensibles de admin)
-  var _usersLoaded=false;
-  dbRef.ref('medvisit/users').on('value',function(snap){
+}
+
+// ── 8. FIREBASE INIT COMPLETO ─────────────────────────────────
+function finishFirebaseInit(db){
+  // Monitorear conexion
+  db.ref('.info/connected').on('value',function(snap){
+    _online=snap.val()===true;
+    setSyncState(_online?(_pendingQueue.length?'syncing':'synced'):'offline');
+    if(_online && _pendingQueue.length) flushQueue();
+  });
+
+  // Cargar usuarios (necesario para login)
+  var _usersReady=false;
+  db.ref('medvisit/users').on('value',function(snap){
     try{
       D.users=toArray(snap.val());
       var st=document.getElementById('loginStatus');
       if(st&&D.users.length) st.style.display='none';
-      if(!_usersLoaded){
-        _usersLoaded=true;
-        tryRestoreSession();
-      }
+      if(!_usersReady){_usersReady=true;tryRestoreSession();}
       scheduleRender();
     }catch(e){console.error(e);}
   });
-  dbRef.ref('medvisit/labs').on('value',function(snap){
+
+  // Labs dinamicos
+  db.ref('medvisit/labs').on('value',function(snap){
     try{
       var extra=toArray(snap.val()||[]);
       LABS=BASE_LABS.slice().concat(extra.filter(function(l){return !BASE_LABS.some(function(b){return b.id===l.id;});}));
-    }catch(e){console.error(e);}
+    }catch(e){}
   });
 }
 
 function setupVisitorListeners(){
-  if(!dbRef||!currentUser) return;
-  // Solo visitas del visitador actual (ultimas 50)
-  _vInitDone=false;
-  try{
-    var qRef=dbRef.ref('medvisit/visits').orderByChild('visitorId').equalTo(currentUser.id).limitToLast(50);
-    qRef.once('value',function(snap){
-      try{
-        var nv=toArray(snap.val());
-        nv.forEach(function(v){
-          var idx=D.visits.findIndex(function(o){return o.id===v.id;});
-          if(idx>=0) D.visits[idx]=v; else D.visits.push(v);
-        });
-        scheduleRender();
-      }catch(e){console.error(e);}
-      _vInitDone=true;
-    });
-    qRef.on('child_changed',function(snap){
-      try{var nv=snap.val();if(!nv||!nv.id)return;var idx=D.visits.findIndex(function(o){return o.id===nv.id;});if(idx>=0){D.visits[idx]=nv;scheduleRender();}}catch(e){}
-    });
-    qRef.on('child_added',function(snap){
-      if(!_vInitDone)return;
-      try{var nv=snap.val();if(!nv||!nv.id)return;if(D.visits.findIndex(function(v){return v.id===nv.id;})<0){D.visits.push(nv);scheduleRender();}}catch(e){}
-    });
-  }catch(e){console.error(e);}
-  try{
-    dbRef.ref('medvisit/points').on('value',function(snap){
-      try{var np=toArray(snap.val());D.points=np;scheduleRender();}catch(e){console.error(e);}
-    });
-  }catch(e){}
-  try{
-    dbRef.ref('medvisit/pendientes').on('value',function(snap){
-      try{D.pendientes=toArray(snap.val()||[]);scheduleRender();}catch(e){console.error(e);}
-    });
-  }catch(e){}
+  var db=window._db;
+  if(!db||!currentUser)return;
+  var _init=false;
+
+  // Solo visitas de este visitador - ultimas 60
+  var qRef=db.ref('medvisit/visits').orderByChild('visitorId').equalTo(currentUser.id).limitToLast(60);
+  qRef.once('value',function(snap){
+    try{
+      toArray(snap.val()).forEach(function(v){
+        if(D.visits.findIndex(function(o){return o.id===v.id;})<0) D.visits.push(v);
+      });
+      scheduleRender();
+    }catch(e){}
+    _init=true;
+  });
+  qRef.on('child_changed',function(snap){
+    try{var v=snap.val();if(!v||!v.id)return;var i=D.visits.findIndex(function(o){return o.id===v.id;});if(i>=0){D.visits[i]=v;scheduleRender();}}catch(e){}
+  });
+  qRef.on('child_added',function(snap){
+    if(!_init)return;
+    try{var v=snap.val();if(!v||!v.id)return;if(D.visits.findIndex(function(o){return o.id===v.id;})<0){D.visits.push(v);scheduleRender();}}catch(e){}
+  });
+
+  // Puntos y pendientes
+  db.ref('medvisit/points').on('value',function(snap){try{D.points=toArray(snap.val());scheduleRender();}catch(e){}});
+  db.ref('medvisit/pendientes').on('value',function(snap){try{D.pendientes=toArray(snap.val()||[]);scheduleRender();}catch(e){}});
 }
 
 function scheduleRender(){
-  if(_renderTimer) clearTimeout(_renderTimer);
+  if(_renderTimer)clearTimeout(_renderTimer);
   _renderTimer=setTimeout(function(){
     _renderTimer=null;
-    if(currentUser&&currentUser.role==='visitor') renderVisitorToday();
-  },600);
+    if(currentUser&&currentUser.role==='visitor') renderHoy();
+  },500);
 }
 
-function updateHeaderConn(){
-  var el=document.getElementById('visitorConn');
-  if(!el)return;
-  var online=firebaseReady&&firebaseOnline;
-  if(online){el.className='header-conn online';el.innerHTML='<span class="hdot"></span>Cloud';}
-  else{el.className='header-conn offline';el.innerHTML='<span class="hdot"></span>Local';}
-}
-
-// ── GUARDAR VISITAS (atomico) ──────────────────────────────────
-function pushVisit(visit){
-  D.visits.push(visit);
-  if(firebaseReady&&dbRef){
-    var ref=dbRef.ref('medvisit/visits').push();
-    visit._fbKey=ref.key;
-    var idx=D.visits.findIndex(function(v){return v.id===visit.id;});
-    if(idx>=0) D.visits[idx]._fbKey=ref.key;
-    ref.set(visit).catch(function(err){console.error('Firebase push error',err);toast('Error al guardar visita','err');});
+// ── 9. HORARIO ─────────────────────────────────────────────────
+function horaBogota(){var d=new Date();return new Date(d.getTime()+d.getTimezoneOffset()*60000+(-5*3600000));}
+function dentroDeHorario(){var h=horaBogota().getHours();return h>=CAPTURE_HORA_INICIO&&h<CAPTURE_HORA_FIN;}
+function verificarHorario(){
+  if(dentroDeHorario())return false;
+  actualizarRelojBloqueado();
+  if(!window._blockedInterval){
+    window._blockedInterval=setInterval(function(){
+      actualizarRelojBloqueado();
+      if(dentroDeHorario()){clearInterval(window._blockedInterval);window._blockedInterval=null;showScreen('visitorScreen');renderVisitor();}
+    },1000);
   }
+  var inicio=fmt(CAPTURE_HORA_INICIO,0), fin=fmt(CAPTURE_HORA_FIN,0);
+  document.getElementById('blockedMsg').textContent='El registro esta disponible entre las '+inicio+' y las '+fin+' (hora Bogota).';
+  document.getElementById('blockedHorario').textContent='Horario permitido: '+inicio+' - '+fin;
+  showScreen('blockedScreen');
+  return true;
 }
-function saveVisit(visit){
-  if(firebaseReady&&dbRef){
-    if(visit._fbKey){
-      dbRef.ref('medvisit/visits/'+visit._fbKey).update({status:visit.status,completedAt:visit.completedAt||null,photo:visit.photo||null,jefe:visit.jefe||null,notes:visit.notes||null}).catch(function(err){console.error(err);});
-    } else {
-      dbRef.ref('medvisit/visits').orderByChild('id').equalTo(visit.id).once('value',function(snap){
-        snap.forEach(function(child){child.ref.update({status:visit.status,completedAt:visit.completedAt||null,photo:visit.photo||null,jefe:visit.jefe||null,notes:visit.notes||null}).catch(function(err){console.error(err);});});
-      });
-    }
-  }
-}
-
-// ── PENDIENTES ────────────────────────────────────────────────
-function getPendientesUsuario(userId){
-  return (D.pendientes||[]).filter(function(p){
-    if(!p||!p.id) return false;
-    if(p.userId!==userId) return false;
-    return !p.eliminado;
-  });
-}
-function resolverPendiente(pid){
-  if(pid&&typeof pid==='object') pid=pid.dataset?pid.dataset.id:pid;
-  var idx=(D.pendientes||[]).findIndex(function(p){return p.id===pid;});
-  if(idx<0)return;
-  D.pendientes[idx].resuelto=true;
-  D.pendientes[idx].resueltoAt=new Date().toISOString();
-  D.pendientes[idx].ocultoVisitador=true;
-  savePendiente(D.pendientes[idx]);
-  var pendEl=document.getElementById('visitorPendientesSection');
-  if(pendEl) renderPendientesSection(currentUser.id,pendEl);
-  toast('Pendiente resuelto');
-}
-function savePendiente(p){
-  if(firebaseReady&&dbRef){
-    if(p._fbKey){
-      dbRef.ref('medvisit/pendientes/'+p._fbKey).set(p).catch(function(e){console.error(e);});
-    } else {
-      dbRef.ref('medvisit/pendientes').orderByChild('id').equalTo(p.id).once('value',function(snap){
-        snap.forEach(function(child){child.ref.set(p).catch(function(e){console.error(e);});});
-      });
-    }
-  }
-}
-function renderPendientesSection(userId,containerEl){
-  var all=getPendientesUsuario(userId);
-  var activos=all.filter(function(p){return !p.resuelto&&!p.eliminado&&!p.ocultoVisitador;});
-  if(!activos.length){if(containerEl) containerEl.innerHTML='';return;}
-  var html='<div style="background:var(--card);border-radius:14px;padding:14px 16px;margin-bottom:12px;border:1px solid var(--border);">';
-  html+='<div style="font-weight:700;font-size:13px;margin-bottom:10px;"><i class="fa-solid fa-clipboard-list" style="color:var(--primary);margin-right:6px;"></i>Pendientes ('+activos.length+')</div>';
-  activos.sort(function(a,b){var o={urgente:0,semana:1,normal:2};return (o[a.prioridad]||2)-(o[b.prioridad]||2);}).forEach(function(p){
-    var isUrgent=p.prioridad==='urgente';
-    var isSemana=p.prioridad==='semana';
-    var bg=isUrgent?'#FCEBEB':isSemana?'#FAEEDA':'var(--bg)';
-    var border=isUrgent?'#F09595':isSemana?'#FAC775':'var(--border)';
-    var badgeBg=isUrgent?'#FCEBEB':isSemana?'#FAEEDA':'#F3F4F6';
-    var badgeColor=isUrgent?'#A32D2D':isSemana?'#854F0B':'#6B7280';
-    var badgeText=isUrgent?'Urgente':isSemana?'Esta semana':'Normal';
-    if(p.fechaLimite) badgeText+=' · '+p.fechaLimite;
-    html+='<div style="background:'+bg+';border:1px solid '+border+';border-radius:10px;padding:10px 12px;margin-bottom:8px;">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">';
-    html+='<div style="flex:1;"><span style="font-size:10px;font-weight:700;background:'+badgeBg+';color:'+badgeColor+';padding:2px 8px;border-radius:20px;display:inline-block;margin-bottom:5px;">'+badgeText+'</span><div style="font-size:13px;line-height:1.4;">'+esc(p.texto)+'</div>';
-    if(p.creadoPorNombre&&p.creadoPor!==userId) html+='<div style="font-size:11px;color:var(--muted);margin-top:3px;">Por: '+esc(p.creadoPorNombre)+'</div>';
-    html+='</div>';
-    html+='<button onclick="resolverPendiente(this.dataset.id)" data-id="'+p.id+'" style="font-size:11px;padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--card);cursor:pointer;white-space:nowrap;">Listo</button>';
-    html+='</div></div>';
-  });
-  html+='</div>';
-  if(containerEl) containerEl.innerHTML=html;
+function actualizarRelojBloqueado(){
+  var b=horaBogota();
+  var el=document.getElementById('blockedClock');
+  if(el)el.textContent=fmt(b.getHours(),b.getMinutes())+':'+pad(b.getSeconds());
 }
 
-// ── LOGIN ─────────────────────────────────────────────────────
+// ── 10. LOGIN / SESION ─────────────────────────────────────────
 function doLogin(){
-  if(Date.now()<lockoutEnd)return;
-  var u=document.getElementById('loginUser').value.trim(),
-      p=document.getElementById('loginPass').value,
-      err=document.getElementById('loginError'),
-      att=document.getElementById('loginAttempts');
+  if(Date.now()<_lockoutEnd)return;
+  var u=document.getElementById('loginUser').value.trim();
+  var p=document.getElementById('loginPass').value;
+  var err=document.getElementById('loginError');
   if(!u||!p){err.textContent='Ingresa usuario y contrasena';return;}
-  err.style.color='';
-  if(!D.users||!D.users.length){
-    err.textContent='Verifica tu conexion a internet';
-    err.style.color='#F59E0B';
-    return;
-  }
-  // Solo permitir rol visitor
-  var user=(D.users||[]).find(function(x){return x.username===u&&x.password===p&&x.active;});
+  err.textContent='';
+  if(!D.users||!D.users.length){err.textContent='Sin conexion. Espera un momento.';return;}
+  var user=(D.users||[]).find(function(x){return x.username===u&&x.password===p&&x.active!==false;});
   if(!user){
-    loginAttempts++;
-    var rem=MAX_LOGIN_ATTEMPTS-loginAttempts;
-    if(rem<=0){loginAttempts=0;lockoutEnd=Date.now()+LOCKOUT_SECONDS*1000;showLockout();err.textContent='';att.style.display='none';return;}
-    err.textContent='Usuario o contrasena incorrectos';
-    att.style.display='block';att.textContent=rem+' intento'+(rem>1?'s':'')+' restante'+(rem>1?'s':'');
+    _loginAttempts++;
+    var rem=MAX_ATTEMPTS-_loginAttempts;
+    if(rem<=0){_loginAttempts=0;_lockoutEnd=Date.now()+LOCKOUT_SEC*1000;showLockout();return;}
+    err.textContent='Usuario o contrasena incorrectos ('+rem+' intento'+(rem>1?'s':'')+' restante'+(rem>1?'s':'')+')';
     return;
   }
-  if(user.role!=='visitor'){
-    err.textContent='Este acceso es solo para visitadores. Usa el panel admin.';
-    return;
-  }
-  currentUser={id:user.id,username:user.username,role:user.role,name:user.name,labId:user.labId||'',freeVisit:user.freeVisit===true,active:user.active};
-  err.textContent='';loginAttempts=0;att.style.display='none';
-  try{localStorage.setItem('appmed_visitor_session',JSON.stringify({userId:user.id,ts:Date.now()}));}catch(e){}
+  if(user.role!=='visitor'){err.textContent='Solo visitadores. Usa el panel admin.';return;}
+  setCurrentUser(user);
+  entrarComoVisitador();
+}
+function setCurrentUser(user){
+  currentUser={id:user.id,username:user.username,role:user.role,name:user.name,labId:user.labId||'',freeVisit:user.freeVisit===true};
+  try{localStorage.setItem('appmed_vsess',JSON.stringify({uid:user.id,ts:Date.now()}));}catch(e){}
+}
+function entrarComoVisitador(){
+  loadQueue();
+  updateQueueBar();
   setupVisitorListeners();
-  // Verificar horario antes de mostrar pantalla
   gpsPermission='unknown';
   if(localStorage.getItem('appmed_gps')==='granted'){
     gpsPermission='granted';
-    if(verificarYMostrarBloqueado()) return;
+    if(verificarHorario())return;
     showScreen('visitorScreen');
     renderVisitor();
   } else {
-    showGpsPermOverlay();
+    document.getElementById('gpsPermOverlay').classList.add('open');
   }
-  toast(getGreeting()+', '+user.name.split(' ')[0]+'!');
+  toast(getGreeting()+', '+currentUser.name.split(' ')[0]+'!');
+}
+function tryRestoreSession(){
+  try{
+    var s=localStorage.getItem('appmed_vsess');
+    if(!s)return;
+    var obj=JSON.parse(s);
+    if(!obj||!obj.uid)return;
+    var u=(D.users||[]).find(function(x){return x.id===obj.uid&&x.active!==false&&x.role==='visitor';});
+    if(!u)return;
+    setCurrentUser(u);
+    entrarComoVisitador();
+  }catch(e){console.error(e);}
 }
 function doLogout(){
-  try{localStorage.removeItem('appmed_visitor_session');}catch(e){}
+  try{localStorage.removeItem('appmed_vsess');}catch(e){}
   if(window._blockedInterval){clearInterval(window._blockedInterval);window._blockedInterval=null;}
-  currentUser=null;gpsPermission='unknown';_visitRoute=null;
+  currentUser=null;gpsPermission='unknown';_visitRoute=null;_currentTab='hoy';
   document.getElementById('loginUser').value='';
   document.getElementById('loginPass').value='';
   document.getElementById('loginError').textContent='';
-  document.getElementById('loginAttempts').style.display='none';
-  currentVisitorTab='hoy';
   showScreen('loginScreen');
 }
-function confirmLogout(){
-  showConfirm('Cerrar sesion','Seguro que quieres salir?','danger','fa-right-from-bracket',function(){doLogout();},'danger');
-}
+function confirmLogout(){showConfirm('Cerrar sesion','Seguro que quieres salir?','fa-right-from-bracket',doLogout,'btn-danger');}
 function showLockout(){
-  var overlay=document.getElementById('lockoutOverlay');
-  if(!overlay){
-    overlay=document.createElement('div');
-    overlay.id='lockoutOverlay';
-    overlay.style.cssText='position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(15,23,42,0.9);z-index:9999;gap:12px;';
-    overlay.innerHTML='<i class="fa-solid fa-lock" style="font-size:36px;color:#F59E0B;"></i>'+'<div style="font-size:18px;font-weight:700;color:#fff;">Cuenta bloqueada temporalmente</div>'+'<div id="lockoutTimer" style="font-size:40px;font-weight:900;color:#F59E0B;">00:30</div>'+'<div style="font-size:13px;color:rgba(255,255,255,0.5);">Demasiados intentos fallidos</div>';
-    document.body.appendChild(overlay);
-  }
-  overlay.style.display='flex';
-  var seconds=LOCKOUT_SECONDS;
-  if(lockoutInterval) clearInterval(lockoutInterval);
-  lockoutInterval=setInterval(function(){
-    seconds--;
-    var el=document.getElementById('lockoutTimer');
-    if(el) el.textContent='00:'+seconds.toString().padStart(2,'0');
-    if(seconds<=0){clearInterval(lockoutInterval);lockoutInterval=null;overlay.style.display='none';lockoutEnd=0;}
-  },1000);
+  var o=document.getElementById('lockoutOverlay');
+  if(!o){o=document.createElement('div');o.id='lockoutOverlay';o.style.cssText='position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(15,23,42,0.9);z-index:9999;gap:12px;';o.innerHTML='<i class="fa-solid fa-lock" style="font-size:32px;color:#F59E0B;"></i><div style="font-size:17px;font-weight:700;color:#fff;">Cuenta bloqueada</div><div id="lockoutTimer" style="font-size:38px;font-weight:900;color:#F59E0B;">00:30</div><div style="font-size:12px;color:rgba(255,255,255,0.5);">Demasiados intentos</div>';document.body.appendChild(o);}
+  o.style.display='flex';
+  var sec=LOCKOUT_SEC;
+  if(_lockoutInterval)clearInterval(_lockoutInterval);
+  _lockoutInterval=setInterval(function(){sec--;var el=document.getElementById('lockoutTimer');if(el)el.textContent='00:'+pad(sec);if(sec<=0){clearInterval(_lockoutInterval);_lockoutInterval=null;o.style.display='none';_lockoutEnd=0;}},1000);
 }
-
-// ── SESSION RESTORE ───────────────────────────────────────────
-function tryRestoreSession(){
-  try{
-    var sess=localStorage.getItem('appmed_visitor_session');
-    if(!sess)return;
-    var s=JSON.parse(sess);
-    if(!s||!s.userId)return;
-    var u=(D.users||[]).find(function(x){return x.id===s.userId&&x.active!==false&&x.role==='visitor';});
-    if(!u)return;
-    currentUser={id:u.id,username:u.username,role:u.role,name:u.name,labId:u.labId||'',freeVisit:u.freeVisit===true,active:u.active};
-    setupVisitorListeners();
-    if(localStorage.getItem('appmed_gps')==='granted'){
-      gpsPermission='granted';
-      if(verificarYMostrarBloqueado()) return;
-      showScreen('visitorScreen');
-      renderVisitor();
-    } else {
-      showGpsPermOverlay();
-    }
-  }catch(e){console.error('Session restore error:',e);}
-}
-
-// ── PANTALLAS ─────────────────────────────────────────────────
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
-  var el=document.getElementById(id);
-  if(el) el.classList.add('active');
-}
-function showGpsPermOverlay(){document.getElementById('gpsPermOverlay').classList.add('open');}
 function requestGpsAndInit(){
   document.getElementById('gpsPermOverlay').classList.remove('open');
   navigator.geolocation.getCurrentPosition(
-    function(){gpsPermission='granted';localStorage.setItem('appmed_gps','granted');if(verificarYMostrarBloqueado())return;showScreen('visitorScreen');renderVisitor();},
-    function(){gpsPermission='denied';if(verificarYMostrarBloqueado())return;showScreen('visitorScreen');renderVisitor();}
+    function(){gpsPermission='granted';localStorage.setItem('appmed_gps','granted');if(verificarHorario())return;showScreen('visitorScreen');renderVisitor();},
+    function(){gpsPermission='denied';if(verificarHorario())return;showScreen('visitorScreen');renderVisitor();}
   );
 }
 function skipGpsAndInit(){
   document.getElementById('gpsPermOverlay').classList.remove('open');
   gpsPermission='denied';
-  if(verificarYMostrarBloqueado())return;
-  showScreen('visitorScreen');
-  renderVisitor();
+  if(verificarHorario())return;
+  showScreen('visitorScreen');renderVisitor();
 }
 
-// ── GPS ───────────────────────────────────────────────────────
+// ── 11. GPS ────────────────────────────────────────────────────
 function getGPS(){
   return new Promise(function(resolve,reject){
     if(!navigator.geolocation){reject('GPS no disponible');return;}
-    var done=false,watchId=null,timer=null;
-    function finish(pos){if(done)return;done=true;if(watchId){navigator.geolocation.clearWatch(watchId);watchId=null;}if(timer){clearTimeout(timer);timer=null;}resolve({lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy||999});}
-    function fail(){if(done)return;done=true;if(watchId){navigator.geolocation.clearWatch(watchId);watchId=null;}if(timer){clearTimeout(timer);timer=null;}navigator.geolocation.getCurrentPosition(function(p){finish(p);},function(){reject('GPS no disponible');},{enableHighAccuracy:false,timeout:12000,maximumAge:10000});}
-    watchId=navigator.geolocation.watchPosition(function(p){if(p.coords.accuracy<=80)finish(p);},fail,{enableHighAccuracy:true,timeout:15000,maximumAge:0});
-    timer=setTimeout(function(){if(!done)navigator.geolocation.getCurrentPosition(finish,fail,{enableHighAccuracy:true,timeout:3000,maximumAge:5000});},15000);
+    var done=false;
+    function fin(pos){if(done)return;done=true;resolve({lat:pos.coords.latitude,lng:pos.coords.longitude,acc:Math.round(pos.coords.accuracy||999)});}
+    function fal(){if(done)return;done=true;reject('GPS no disponible');}
+    navigator.geolocation.getCurrentPosition(fin,fal,{enableHighAccuracy:true,timeout:12000,maximumAge:30000});
   });
 }
-function obtenerGPSVisita(chipId,textId){
-  var txt=document.getElementById(textId);
-  txt.textContent='Obteniendo ubicacion...';
-  getGPS().then(function(gps){visitaGpsCoords=gps;txt.textContent=gps.lat.toFixed(5)+', '+gps.lng.toFixed(5)+' ('+Math.round(gps.accuracy||0)+'m)';}).catch(function(){visitaGpsCoords=null;txt.textContent='No disponible';});
+function obtenerGPS(textId){
+  var el=document.getElementById(textId);
+  if(el)el.textContent='Obteniendo ubicacion...';
+  _visitaGps=null;
+  getGPS().then(function(g){_visitaGps=g;if(el)el.textContent=g.lat.toFixed(5)+', '+g.lng.toFixed(5)+' ('+g.acc+'m)';}).catch(function(){if(el)el.textContent='No disponible';});
 }
 
-// ── RENDER VISITADOR ──────────────────────────────────────────
+// ── 12. RENDER PRINCIPAL ───────────────────────────────────────
 function renderVisitor(){
-  var h=new Date().getHours();
+  var h=horaBogota().getHours();
   var sal=h<12?'Buenos dias':h<18?'Buenas tardes':'Buenas noches';
   document.getElementById('visitorGreeting').textContent=sal+', '+currentUser.name.split(' ')[0]+'!';
   var mktBtn=document.getElementById('visitorMktBtn');
-  if(mktBtn) mktBtn.style.display='inline-block';
-  var d=new Date();
-  var days=['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
-  var months=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-  document.getElementById('visitorDate').textContent=days[d.getDay()]+', '+d.getDate()+' de '+months[d.getMonth()]+' '+d.getFullYear();
-  renderVisitorToday();
+  if(mktBtn)mktBtn.style.display='inline-block';
+  var d=horaBogota();
+  var dias=['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
+  var meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  document.getElementById('visitorDate').textContent=dias[d.getDay()]+', '+d.getDate()+' de '+meses[d.getMonth()];
+  renderHoy();
 }
-function renderVisitorToday(){
+function renderHoy(){
   var el=document.getElementById('visitorTodayPoints');
   if(!el)return;
-  var pendEl=document.getElementById('visitorPendientesSection');
-  if(pendEl) renderPendientesSection(currentUser.id,pendEl);
-  var allMyPts=(D.points||[]).filter(function(p){return p.assignedTo===currentUser.id;});
+
+  // Pendientes
+  renderPendientes(currentUser.id);
+
+  var allPts=(D.points||[]).filter(function(p){return p.assignedTo===currentUser.id;});
   var routes=[];
-  allMyPts.forEach(function(p){var rn=p.routeName||'Sin ruta';if(routes.indexOf(rn)<0)routes.push(rn);});
+  allPts.forEach(function(p){var rn=p.routeName||'Sin ruta';if(routes.indexOf(rn)<0)routes.push(rn);});
+
   if(!routes.length){
     if(currentUser.freeVisit){
-      el.innerHTML='<div style="padding:24px 16px;">'
-        +'<div style="text-align:center;margin-bottom:24px;color:var(--muted);"><i class="fa-solid fa-unlock" style="font-size:36px;color:#7C3AED;margin-bottom:10px;display:block;"></i><div style="font-weight:700;font-size:16px;color:#1F2937;">Visitas libres activadas</div><div style="font-size:13px;margin-top:4px;">Registra visitas donde necesites</div></div>'
-        +'<button class="btn btn-primary" style="width:100%;margin-bottom:12px;padding:14px;font-size:15px;" onclick="abrirNuevaVisitaLibre()"><i class="fa-solid fa-plus"></i> Registrar visita general</button>'
-        +'<button class="btn btn-sm" style="width:100%;padding:14px;font-size:15px;background:#7C3AED;color:#fff;" onclick="abrirNuevaVisita()"><i class="fa-solid fa-user-doctor"></i> Visita a profesional</button>'
+      el.innerHTML='<div style="padding:20px 0;">'
+        +'<div style="text-align:center;margin-bottom:20px;"><i class="fa-solid fa-unlock" style="font-size:34px;color:#7C3AED;display:block;margin-bottom:8px;"></i><div style="font-weight:700;font-size:15px;">Visitas libres</div><div style="font-size:12px;color:var(--muted);margin-top:3px;">Registra visitas donde necesites</div></div>'
+        +'<button class="btn btn-primary" style="margin-bottom:10px;" onclick="abrirVisitaLibre()"><i class="fa-solid fa-plus"></i> Registrar visita general</button>'
+        +'<button class="btn btn-purple" onclick="abrirNuevaVisita()"><i class="fa-solid fa-user-doctor"></i> Visita a profesional</button>'
         +'</div>';
     } else {
-      el.innerHTML='<div class="empty-state"><i class="fa-solid fa-couch"></i><p>No tienes puntos asignados</p></div>';
+      el.innerHTML='<div class="empty-state"><i class="fa-solid fa-map-pin"></i><p>No tienes puntos asignados</p></div>';
     }
     return;
   }
+
   if(!_visitRoute||routes.indexOf(_visitRoute)===-1) _visitRoute=routes[0];
-  var selector='<div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;">';
+
+  // Selector de rutas
+  var sel='<div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;">';
   routes.forEach(function(r){
-    var active=r===_visitRoute;
-    selector+='<button onclick="seleccionarRuta(this.dataset.route)" data-route="'+esc(r)+'" style="flex-shrink:0;padding:7px 12px;border-radius:10px;border:'+(active?'2px solid var(--primary)':'1.5px solid var(--border)')+';background:'+(active?'var(--primary)':'var(--card)')+';color:'+(active?'#fff':'var(--fg)')+';font-size:11px;font-weight:700;cursor:pointer;">'+esc(r)+'</button>';
+    var act=r===_visitRoute;
+    sel+='<button onclick="cambiarRuta(\''+esc(r)+'\')" style="flex-shrink:0;padding:6px 12px;border-radius:10px;border:'+(act?'2px solid var(--primary)':'1.5px solid var(--border)')+';background:'+(act?'var(--primary)':'var(--card)')+';color:'+(act?'#fff':'var(--fg)')+';font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;">'+esc(r)+'</button>';
   });
-  selector+='</div>';
-  var myPts=allMyPts.filter(function(p){return (p.routeName||'Sin ruta')===_visitRoute;}).sort(function(a,b){return a.order-b.order;});
+  sel+='</div>';
+
+  var myPts=allPts.filter(function(p){return (p.routeName||'Sin ruta')===_visitRoute;}).sort(function(a,b){return (a.order||0)-(b.order||0);});
   var doneCt=(D.visits||[]).filter(function(v){return v.visitorId===currentUser.id&&v.date===today()&&v.status==='completed';}).length;
-  var allDone=doneCt===myPts.length;
-  var gpsOk=gpsPermission==='granted';
-  var mapsUrl=buildMapsRouteUrl(myPts);
-  var startH=8,startM=0;
-  var totalMin=myPts.length*MIN_PER_PUNTO;
-  var endTotalMin=startH*60+startM+totalMin;
-  var endH=Math.floor(endTotalMin/60)%24,endMM=endTotalMin%60;
-  var summary='<div class="card" style="border-left:4px solid '+(allDone?'var(--success)':'var(--primary)')+';padding:16px;">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
-    +'<div style="display:flex;align-items:center;gap:10px;">'
-    +'<div style="width:42px;height:42px;border-radius:12px;background:'+(allDone?'var(--success-light)':'var(--primary-50)')+';color:'+(allDone?'var(--success)':'var(--primary)')+';display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fa-solid '+(allDone?'fa-circle-check':'fa-route')+'"></i></div>'
-    +'<div><div style="font-size:15px;font-weight:800;">'+esc(_visitRoute)+'</div><div style="font-size:12px;color:var(--muted);">'+doneCt+'/'+myPts.length+' puntos &middot; '+fmt(startH,startM)+' &rarr; '+fmt(endH,endMM)+'</div></div>'
+  var mapsUrl=buildMapsUrl(myPts);
+  var allDone=myPts.length>0&&doneCt>=myPts.length;
+
+  // Resumen de ruta
+  var resumen='<div class="card" style="border-left:4px solid '+(allDone?'var(--success)':'var(--primary)')+';padding:14px;margin-bottom:12px;">'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">'
+    +'<div style="width:38px;height:38px;border-radius:10px;background:'+(allDone?'var(--success-light)':'var(--primary-50)')+';color:'+(allDone?'var(--success)':'var(--primary)')+';display:flex;align-items:center;justify-content:center;"><i class="fa-solid '+(allDone?'fa-circle-check':'fa-route')+'"></i></div>'
+    +'<div><div style="font-size:14px;font-weight:800;">'+esc(_visitRoute)+'</div><div style="font-size:12px;color:var(--muted);">'+doneCt+'/'+myPts.length+' completados</div></div>'
     +'</div>'
-    +(gpsOk?'<span style="font-size:9px;font-weight:700;background:var(--success-light);color:#166634;padding:3px 8px;border-radius:6px;"><i class="fa-solid fa-location-dot" style="font-size:8px;"></i> GPS</span>':'<span style="font-size:9px;font-weight:700;background:var(--accent-light);color:#92400E;padding:3px 8px;border-radius:6px;"><i class="fa-solid fa-location-slash" style="font-size:8px;"></i> Sin GPS</span>')
+    +'<div style="display:flex;gap:7px;flex-wrap:wrap;">'
+    +(mapsUrl?'<a href="'+mapsUrl+'" target="_blank" rel="noopener" class="btn btn-sm" style="flex:1;background:var(--primary);color:#fff;text-decoration:none;"><i class="fa-solid fa-diamond-turn-right"></i> Navegar</a>':'')
+    +'<button class="btn btn-sm btn-purple" style="flex:1;" onclick="abrirNuevaVisita()"><i class="fa-solid fa-user-doctor"></i> Visita prof.</button>'
     +'</div>'
-    +'<div style="display:flex;gap:8px;flex-wrap:wrap;">'
-    +(mapsUrl?'<a href="'+mapsUrl+'" target="_blank" rel="noopener" class="btn btn-sm" style="flex:1;background:var(--info);color:#fff;text-decoration:none;"><i class="fa-solid fa-diamond-turn-right"></i> Navegar</a>':'')
-    +'<button class="btn btn-sm" onclick="abrirNuevaVisita()" style="flex:1;background:#7C3AED;color:#fff;"><i class="fa-solid fa-user-doctor"></i> Visita prof.</button>'
-    +'</div>'
-    +(currentUser.freeVisit?'<div style="display:flex;gap:8px;margin-top:8px;"><button class="btn btn-sm" onclick="abrirNuevaVisitaLibre()" style="flex:1;background:#0303B5;color:#fff;font-size:13px;padding:10px;"><i class="fa-solid fa-plus"></i> Visita general</button><button class="btn btn-sm" onclick="abrirNuevaVisita()" style="flex:1;background:#7C3AED;color:#fff;font-size:13px;padding:10px;"><i class="fa-solid fa-user-doctor"></i> Visita profesional</button></div>':'')
+    +(currentUser.freeVisit?'<div style="display:flex;gap:7px;margin-top:8px;"><button class="btn btn-sm btn-primary" style="flex:1;" onclick="abrirVisitaLibre()"><i class="fa-solid fa-plus"></i> General</button><button class="btn btn-sm btn-purple" style="flex:1;" onclick="abrirNuevaVisita()"><i class="fa-solid fa-user-doctor"></i> Profesional</button></div>':'')
     +'</div>';
-  var pointsHtml=myPts.map(function(p){
-    var visitHoy=(D.visits||[]).find(function(v){return v.pointId===p.id&&v.visitorId===currentUser.id&&v.date===today();});
-    var ahora=Date.now();
-    var visitReciente=(D.visits||[]).find(function(v){return v.pointId===p.id&&v.visitorId===currentUser.id&&v.arrivedAt&&(ahora-new Date(v.arrivedAt).getTime())<43200000;});
-    var visit=visitHoy||null;
-    var st=visit?visit.status:'pending';
-    var badgeClass=st==='completed'?'badge-done':st==='in-progress'?'badge-progress':'badge-pending';
-    var badgeLabel=st==='completed'?'Completada':st==='in-progress'?'En Curso':'Pendiente';
+
+  // Lista de puntos
+  var pts=myPts.map(function(p){
+    var vHoy=(D.visits||[]).find(function(v){return v.pointId===p.id&&v.visitorId===currentUser.id&&v.date===today();});
+    var vReciente=(D.visits||[]).find(function(v){return v.pointId===p.id&&v.visitorId===currentUser.id&&v.arrivedAt&&(Date.now()-new Date(v.arrivedAt).getTime())<43200000;});
+    var st=vHoy?vHoy.status:'pending';
+    var badgeCls=st==='completed'?'badge-done':st==='in-progress'?'badge-progress':'badge-pending';
+    var badgeLbl=st==='completed'?'Completada':st==='in-progress'?'En curso':'Pendiente';
     var action='';
-    if(st==='pending'&&visitReciente&&visitReciente.status==='completed'){
-      action='<div style="margin-top:8px;font-size:11px;color:var(--muted);background:#F3F4F6;padding:8px 12px;border-radius:8px;"><i class="fa-solid fa-lock" style="color:#9CA3AF;"></i> Ya registraste este punto hoy</div>';
-      badgeClass='badge-done';badgeLabel='Completada';
+    if(st==='pending'&&vReciente&&vReciente.status==='completed'){
+      action='<div style="font-size:11px;color:var(--muted);background:#F3F4F6;padding:7px 10px;border-radius:8px;margin-top:8px;"><i class="fa-solid fa-lock" style="color:#9CA3AF;"></i> Ya registrado hoy</div>';
+      badgeCls='badge-done';badgeLbl='Completada';
     } else if(st==='pending'){
-      action='<div style="display:flex;gap:8px;margin-top:10px;">'
+      action='<div style="display:flex;gap:7px;margin-top:9px;">'
         +'<button class="btn btn-primary btn-sm" onclick="arriveToPoint(\''+p.id+'\')" style="flex:1;"><i class="fa-solid fa-location-crosshairs"></i> Llegada</button>'
-        +'<a href="'+mapsLink(p.lat,p.lng,p.address)+'" target="_blank" rel="noopener" class="btn btn-sm" style="flex:0 0 auto;background:var(--info-light);color:var(--info);padding:8px 12px;"><i class="fa-solid fa-map"></i></a>'
+        +'<a href="'+mapsLink(p.lat,p.lng,p.address)+'" target="_blank" rel="noopener" class="btn btn-sm" style="background:var(--info-light);color:var(--primary);padding:8px 12px;"><i class="fa-solid fa-map"></i></a>'
         +'</div>';
     } else if(st==='in-progress'){
-      action='<button class="btn btn-success btn-sm" onclick="openCloseVisit(\''+visit.id+'\',\''+p.id+'\')" style="margin-top:10px;width:100%;"><i class="fa-solid fa-camera"></i> Cerrar Visita</button>';
-    } else if(st==='completed'){
-      action=visit&&visit.photo?'<img src="'+visit.photo+'" style="width:52px;height:52px;border-radius:8px;object-fit:cover;border:1px solid var(--border);cursor:pointer;margin-top:10px;" onclick="viewVisitPhoto(\''+visit.id+'\')">':'<div style="margin-top:8px;font-size:11px;color:var(--success);"><i class="fa-solid fa-circle-check"></i> Completada</div>';
+      action='<button class="btn btn-success btn-sm" style="width:100%;margin-top:9px;" onclick="openCloseVisit(\''+vHoy.id+'\',\''+p.id+'\')"><i class="fa-solid fa-camera"></i> Cerrar visita</button>';
+    } else {
+      action=vHoy&&vHoy.photo?'<img src="'+vHoy.photo+'" style="width:48px;height:48px;border-radius:8px;object-fit:cover;border:1px solid var(--border);cursor:pointer;margin-top:8px;" onclick="verFoto(\''+vHoy.id+'\')">':'<div style="font-size:11px;color:var(--success);margin-top:6px;"><i class="fa-solid fa-circle-check"></i> Completada</div>';
     }
-    return '<div class="card"><div class="point-card-inner" style="border:none;padding:0;">'
-      +'<div class="point-num">'+p.order+'</div>'
-      +'<div class="point-info"><div class="point-name">'+esc(p.name)+'</div><div style="margin-top:4px;">'+addrHTML(p.address,p.lat,p.lng)+'</div></div>'
-      +'<span class="badge '+badgeClass+'">'+badgeLabel+'</span>'
+    return '<div class="punto-card">'
+      +'<div class="punto-header">'
+      +'<div class="punto-num">'+((p.order)||'?')+'</div>'
+      +'<div style="flex:1;min-width:0;"><div class="punto-name">'+esc(p.name)+'</div><div class="punto-addr"><a href="'+mapsLink(p.lat,p.lng,p.address)+'" target="_blank" style="color:var(--primary);font-size:11px;font-weight:600;text-decoration:none;"><i class="fa-solid fa-location-dot"></i> '+esc(p.address||'Sin direccion')+'</a></div></div>'
+      +'<span class="badge '+badgeCls+'">'+badgeLbl+'</span>'
       +'</div>'+action+'</div>';
   }).join('');
-  el.innerHTML=selector+summary+pointsHtml;
+
+  el.innerHTML=sel+resumen+pts;
 }
-function seleccionarRuta(ruta){
-  _visitRoute=ruta;
-  renderVisitorToday();
-}
-function renderVisitorSemana(){
-  var el=document.getElementById('visitorWeekSummary');
+function cambiarRuta(r){_visitRoute=r;renderHoy();}
+
+function renderPendientes(userId){
+  var el=document.getElementById('visitorPendientesSection');
   if(!el)return;
-  var allMyPts=(D.points||[]).filter(function(p){return p.assignedTo===currentUser.id;});
-  var routeNames=[];
-  allMyPts.forEach(function(p){var rn=p.routeName||'Sin ruta';if(routeNames.indexOf(rn)<0)routeNames.push(rn);});
-  routeNames.sort();
-  if(!routeNames.length){
-    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);">No tienes rutas asignadas.</div>'
-      +(currentUser.freeVisit?'<div style="padding:0 16px;display:flex;flex-direction:column;gap:10px;"><button class="btn btn-primary" onclick="abrirNuevaVisitaLibre()"><i class="fa-solid fa-plus"></i> Nueva visita general</button><button class="btn btn-sm" onclick="abrirNuevaVisita()" style="background:#7C3AED;color:#fff;"><i class="fa-solid fa-user-doctor"></i> Nueva visita a profesional</button></div>':'');
+  var activos=(D.pendientes||[]).filter(function(p){return p&&p.id&&p.userId===userId&&!p.resuelto&&!p.eliminado&&!p.ocultoVisitador;});
+  if(!activos.length){el.innerHTML='';return;}
+  activos.sort(function(a,b){var o={urgente:0,semana:1,normal:2};return(o[a.prioridad]||2)-(o[b.prioridad]||2);});
+  var html='<div class="card" style="margin-bottom:12px;">'
+    +'<div style="font-weight:700;font-size:13px;margin-bottom:10px;"><i class="fa-solid fa-clipboard-list" style="color:var(--primary);margin-right:5px;"></i>Pendientes ('+activos.length+')</div>';
+  activos.forEach(function(p){
+    var cls=p.prioridad==='urgente'?'pend-urgente':p.prioridad==='semana'?'pend-semana':'pend-normal';
+    var lbl=p.prioridad==='urgente'?'Urgente':p.prioridad==='semana'?'Esta semana':'Normal';
+    html+='<div class="pend-card '+cls+'">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
+      +'<div style="flex:1;"><div style="font-size:10px;font-weight:700;color:#92400E;margin-bottom:4px;">'+lbl+(p.fechaLimite?' · '+p.fechaLimite:'')+'</div>'
+      +'<div style="font-size:13px;">'+esc(p.texto)+'</div>'
+      +(p.creadoPorNombre&&p.creadoPor!==userId?'<div style="font-size:11px;color:var(--muted);margin-top:3px;">Por: '+esc(p.creadoPorNombre)+'</div>':'')
+      +'</div>'
+      +'<button onclick="resolverPendiente(\''+p.id+'\')" style="font-size:11px;padding:4px 8px;border-radius:8px;border:1px solid rgba(0,0,0,0.1);background:#fff;cursor:pointer;white-space:nowrap;">Listo</button>'
+      +'</div></div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+function resolverPendiente(pid){
+  var idx=(D.pendientes||[]).findIndex(function(p){return p.id===pid;});
+  if(idx<0)return;
+  D.pendientes[idx].resuelto=true;
+  D.pendientes[idx].resueltoAt=new Date().toISOString();
+  D.pendientes[idx].ocultoVisitador=true;
+  var p=D.pendientes[idx];
+  if(window._db){
+    var save=function(fbKey){window._db.ref('medvisit/pendientes/'+fbKey).set(p).catch(function(e){console.error(e);});};
+    if(p._fbKey){save(p._fbKey);}
+    else{window._db.ref('medvisit/pendientes').orderByChild('id').equalTo(pid).once('value',function(snap){snap.forEach(function(c){c.ref.set(p);});});}
+  }
+  renderPendientes(currentUser.id);
+  toast('Pendiente resuelto');
+}
+
+function renderRutas(){
+  var el=document.getElementById('visitorRutas');
+  if(!el)return;
+  var allPts=(D.points||[]).filter(function(p){return p.assignedTo===currentUser.id;});
+  var names=[];
+  allPts.forEach(function(p){var rn=p.routeName||'Sin ruta';if(names.indexOf(rn)<0)names.push(rn);});
+  names.sort();
+  if(!names.length){
+    el.innerHTML='<div class="empty-state"><i class="fa-solid fa-route"></i><p>Sin rutas asignadas</p></div>';
     return;
   }
   var html='';
-  routeNames.forEach(function(rn){
-    var pts=allMyPts.filter(function(p){return (p.routeName||'Sin ruta')===rn;}).sort(function(a,b){return a.order-b.order;});
-    var done=(D.visits||[]).filter(function(v){return (v.visitorId||v.userId)===currentUser.id&&pts.some(function(p){return p.id===v.pointId;})&&v.status==='completed';}).length;
+  names.forEach(function(rn){
+    var pts=allPts.filter(function(p){return (p.routeName||'Sin ruta')===rn;});
+    var done=(D.visits||[]).filter(function(v){return v.visitorId===currentUser.id&&pts.some(function(p){return p.id===v.pointId;})&&v.status==='completed';}).length;
     var pct=pts.length?Math.round(done/pts.length*100):0;
-    html+='<div class="card" style="cursor:pointer;" onclick="seleccionarRutaYTabHoy(\''+esc(rn)+'\')">'
+    html+='<div class="card" style="cursor:pointer;" onclick="irARuta(\''+esc(rn)+'\')">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;">'
-      +'<div style="font-weight:700;font-size:15px;">'+esc(rn)+'</div>'
-      +'<div style="font-weight:700;color:'+(pct===100?'var(--success)':'var(--primary)')+';">'+pct+'%</div>'
+      +'<div style="font-weight:700;font-size:14px;">'+esc(rn)+'</div>'
+      +'<div style="font-weight:800;font-size:15px;color:'+(pct===100?'var(--success)':'var(--primary)')+';">'+pct+'%</div>'
       +'</div>'
-      +'<div style="font-size:13px;color:var(--muted);margin-top:4px;">'+done+'/'+pts.length+' puntos completados</div>'
+      +'<div style="font-size:12px;color:var(--muted);margin-top:3px;">'+done+'/'+pts.length+' puntos</div>'
       +'</div>';
   });
   el.innerHTML=html;
 }
-function seleccionarRutaYTabHoy(ruta){
-  _visitRoute=ruta;
-  switchVisitorTab('hoy',document.querySelectorAll('#visitorScreen .tab-btn')[0]);
-}
-function renderVisitorMarketing(){
-  var el=document.getElementById('visitorMarketingList');
+function irARuta(rn){_visitRoute=rn;switchTab('hoy',document.querySelectorAll('#visitorScreen .tab-btn')[0]);}
+
+function renderMktVisitador(){
+  var el=document.getElementById('visitorMktList');
   if(!el)return;
   el.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px;">Cargando...</div>';
-  dbRef.ref('medvisit/marketing').orderByChild('userId').equalTo(currentUser.id).once('value',function(snap){
+  if(!window._db){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-wifi-slash"></i><p>Sin conexion</p></div>';return;}
+  window._db.ref('medvisit/marketing').orderByChild('userId').equalTo(currentUser.id).once('value',function(snap){
     var items=[];
-    snap.forEach(function(child){items.push(child.val());});
+    snap.forEach(function(c){items.push(c.val());});
     items.reverse();
-    if(!items.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">No has cargado facturas aun</div>';return;}
+    if(!items.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">No has cargado facturas aun</div>';return;}
     var total=items.reduce(function(s,r){return s+(r.valor||0);},0);
     el.innerHTML='<div style="background:var(--primary-50);border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;">'
       +'<span style="font-size:12px;color:var(--muted);">'+items.length+' facturas</span>'
       +'<span style="font-weight:800;color:var(--primary);">$'+total.toLocaleString()+'</span></div>'
-      +items.map(function(r){
-        return '<div class="card" style="margin-bottom:8px;">'
-          +'<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-weight:700;font-size:13px;">'+esc(r.lugar||'')+'</span><span style="font-weight:800;color:var(--primary);">$'+(r.valor||0).toLocaleString()+'</span></div>'
-          +'<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">'+esc(r.fecha||'')+'</div>'
-          +(r.foto?'<img src="'+r.foto+'" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="abrirFotoOverlay(this.src)">':'')
-          +'</div>';
-      }).join('');
+      +items.map(function(r){return '<div class="card" style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="font-weight:700;font-size:13px;">'+esc(r.lugar||'')+'</span><span style="font-weight:800;color:var(--primary);">$'+(r.valor||0).toLocaleString()+'</span></div><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">'+esc(r.fecha||'')+'</div>'+(r.foto?'<img src="'+r.foto+'" style="width:100%;max-height:130px;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="abrirFotoOverlay(this.src)">':'')+'</div>';}).join('');
   });
 }
-function renderVisitorPerfil(){
-  var el=document.getElementById('vProfileAvatar');
-  if(el){el.style.background=avatarColor(currentUser.id);el.textContent=initials(currentUser.name);}
-  var nameEl=document.getElementById('vProfileName');if(nameEl)nameEl.textContent=currentUser.name;
-  var userEl=document.getElementById('vProfileUser');if(userEl)userEl.textContent='@'+currentUser.username;
+
+function renderPerfil(){
+  var av=document.getElementById('vProfileAvatar');
+  if(av){av.style.background=avatarColor(currentUser.id);av.textContent=initials(currentUser.name);}
+  var n=document.getElementById('vProfileName');if(n)n.textContent=currentUser.name;
+  var u=document.getElementById('vProfileUser');if(u)u.textContent='@'+currentUser.username;
   var total=(D.visits||[]).filter(function(v){return v.visitorId===currentUser.id&&v.status==='completed';}).length;
-  var todayV=(D.visits||[]).filter(function(v){return v.visitorId===currentUser.id&&v.date===today()&&v.status==='completed';}).length;
-  var now=new Date();var weekStart=new Date(now);weekStart.setDate(now.getDate()-now.getDay()+1);
-  var weekV=(D.visits||[]).filter(function(v){return v.visitorId===currentUser.id&&v.status==='completed'&&v.date>=weekStart.toISOString().slice(0,10);}).length;
+  var hoyV=(D.visits||[]).filter(function(v){return v.visitorId===currentUser.id&&v.date===today()&&v.status==='completed';}).length;
+  var ws=new Date();ws.setDate(ws.getDate()-ws.getDay()+1);var wsStr=ws.toISOString().slice(0,10);
+  var semV=(D.visits||[]).filter(function(v){return v.visitorId===currentUser.id&&v.status==='completed'&&v.date>=wsStr;}).length;
   var t=document.getElementById('vProfileTotal');if(t)t.textContent=total;
-  var td=document.getElementById('vProfileToday');if(td)td.textContent=todayV;
-  var wk=document.getElementById('vProfileWeek');if(wk)wk.textContent=weekV;
+  var td=document.getElementById('vProfileToday');if(td)td.textContent=hoyV;
+  var wk=document.getElementById('vProfileWeek');if(wk)wk.textContent=semV;
 }
 
-// ── TABS ──────────────────────────────────────────────────────
-function switchVisitorTab(tab,btn){
-  currentVisitorTab=tab;
-  document.querySelectorAll('#visitorScreen .tab-content').forEach(function(t){t.classList.remove('active');});
-  document.querySelectorAll('#visitorScreen .tab-btn').forEach(function(b){b.classList.remove('active');});
-  var el=document.getElementById('vTab-'+tab);
-  if(el) el.classList.add('active');
-  if(btn) btn.classList.add('active');
-  if(tab==='semana') renderVisitorSemana();
-  else if(tab==='perfil') renderVisitorPerfil();
-  else if(tab==='mkt') renderVisitorMarketing();
-}
-
-// ── ACCIONES DE VISITA ────────────────────────────────────────
+// ── 13. ACCIONES ──────────────────────────────────────────────
 function arriveToPoint(pid){
   var p=pointById(pid);
   if(!p)return;
-  var existing=(D.visits||[]).find(function(v){return v.pointId===pid&&v.visitorId===currentUser.id&&v.date===today();});
-  if(existing)return;
+  if((D.visits||[]).find(function(v){return v.pointId===pid&&v.visitorId===currentUser.id&&v.date===today();}))return;
   var v={id:uid(),pointId:pid,visitorId:currentUser.id,labId:p.labId||currentUser.labId,date:today(),status:'in-progress',arrivedAt:new Date().toISOString(),type:'general'};
-  if(visitaGpsCoords){v.lat=visitaGpsCoords.lat;v.lng=visitaGpsCoords.lng;}
-  pushVisit(v);renderVisitorToday();toast('Llegada registrada');
+  if(_visitaGps){v.lat=_visitaGps.lat;v.lng=_visitaGps.lng;}
+  pushVisit(v);
+  renderHoy();
+  toast('Llegada registrada');
 }
 function openCloseVisit(vid,pid){
-  var p=pointById(pid);
+  var p=pointById(pid)||{};
   document.getElementById('closeVisitId').value=vid;
-  document.getElementById('closeVisitPointName').textContent=p?p.name:'';
-  document.getElementById('closeVisitPointAddr').textContent=p?p.address||'':'';
+  document.getElementById('closeVisitName').textContent=p.name||'';
+  document.getElementById('closeVisitAddr').textContent=p.address||'';
   document.getElementById('closeJefe').value='';
   document.getElementById('closeNotes').value='';
   document.getElementById('photoPreview').style.display='none';
   document.getElementById('photoPreview').src='';
   document.getElementById('visitPhotoInput').value='';
-  var area=document.getElementById('photoCaptureArea');
-  area.innerHTML='<div class="photo-capture-btn" onclick="document.getElementById(\'visitPhotoInput\').click()"><i class="fa-solid fa-camera"></i><span>Tomar Foto</span></div>';
+  document.getElementById('photoCaptureArea').innerHTML='<div class="photo-capture-btn" onclick="document.getElementById(\'visitPhotoInput\').click()"><i class="fa-solid fa-camera"></i><span>Tomar foto</span></div>';
   openModal('modalCloseVisit');
 }
 function handlePhotoTaken(e){
@@ -1084,11 +1064,11 @@ function handlePhotoTaken(e){
     img.onload=function(){
       var MAX=800,w=img.width,h=img.height;
       if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
-      var canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
-      canvas.getContext('2d').drawImage(img,0,0,w,h);
-      var compressed=canvas.toDataURL('image/jpeg',0.50);
-      var preview=document.getElementById('photoPreview');
-      preview.src=compressed;preview.style.display='block';
+      var c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      var comp=c.toDataURL('image/jpeg',0.50);
+      var prev=document.getElementById('photoPreview');
+      prev.src=comp;prev.style.display='block';
       document.getElementById('photoCaptureArea').innerHTML='';
     };
     img.src=ev.target.result;
@@ -1100,28 +1080,34 @@ function completeVisit(){
   var idx=(D.visits||[]).findIndex(function(v){return v.id===vid;});
   if(idx<0)return;
   var photo=document.getElementById('photoPreview').src;
-  var jefe=document.getElementById('closeJefe').value.trim();
-  var notes=document.getElementById('closeNotes').value.trim();
   D.visits[idx].status='completed';
   D.visits[idx].completedAt=new Date().toISOString();
   if(photo&&photo.startsWith('data:')) D.visits[idx].photo=photo;
-  if(jefe) D.visits[idx].jefe=jefe;
-  if(notes) D.visits[idx].notes=notes;
-  saveVisit(D.visits[idx]);
-  closeModal('modalCloseVisit');renderVisitorToday();toast('Visita completada');
+  D.visits[idx].jefe=document.getElementById('closeJefe').value.trim();
+  D.visits[idx].notes=document.getElementById('closeNotes').value.trim();
+  saveVisitUpdate(D.visits[idx]);
+  closeModal('modalCloseVisit');
+  renderHoy();
+  toast('Visita completada');
 }
-function viewVisitPhoto(vid){
-  if(vid&&typeof vid==='object') vid=vid.dataset?vid.dataset.id:vid;
+function verFoto(vid){
   var v=visitById(vid);if(!v||!v.photo)return;
   document.getElementById('modalPhotoImg').src=v.photo;
-  var u=userById(v.visitorId);var p=pointById(v.pointId);
-  document.getElementById('modalPhotoInfo').innerHTML='<strong>'+(p?esc(p.name):'Visita')+'</strong><br>'+(u?esc(u.name):'')+' &middot; '+fmtDate(v.date);
   openModal('modalPhoto');
 }
 
-// ── VISITAS LIBRES ────────────────────────────────────────────
-function abrirNuevaVisitaLibre(){
-  visitaGpsCoords=null;visitaFotoDataGeneral=null;
+// Mapa
+function buildMapsUrl(pts){
+  var v=pts.filter(function(p){return p.lat&&p.lng;});
+  if(!v.length)return'';
+  if(v.length===1)return mapsLink(v[0].lat,v[0].lng,v[0].address);
+  var wp=v.slice(1,-1).map(function(p){return p.lat+','+p.lng;}).join('|');
+  return'https://www.google.com/maps/dir/?api=1&origin='+v[0].lat+','+v[0].lng+'&destination='+v[v.length-1].lat+','+v[v.length-1].lng+(wp?'&waypoints='+wp:'');
+}
+
+// ── 14. VISITAS LIBRES ────────────────────────────────────────
+function abrirVisitaLibre(){
+  _visitaGps=null;_visitaFotoGeneral=null;
   ['vg-lugar','vg-direccion','vg-contacto','vg-notas'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('vg-preview').style.display='none';
   document.getElementById('vg-foto').value='';
@@ -1129,15 +1115,16 @@ function abrirNuevaVisitaLibre(){
   selectVisitType('general');
 }
 function abrirNuevaVisita(){
-  visitaGpsCoords=null;visitaFotoDataGeneral=null;visitaFotoDataProf=null;profFirmaActiva=false;
+  _visitaGps=null;_visitaFotoGeneral=null;_visitaFotoProf=null;_profFirmaActiva=false;
   selectVisitType(null);
   ['vg-lugar','vg-direccion','vg-contacto','vg-notas','vp-punto','vp-nombre','vp-especialidad','vp-telefono','vp-direccion','vp-obsequio','vp-notas'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('vg-preview').style.display='none';
-  document.getElementById('vp-preview').style.display='none';
-  document.getElementById('vg-foto').value='';document.getElementById('vp-foto').value='';
-  document.getElementById('vp-toggleObsequio').checked=false;document.getElementById('vp-obsequioDetail').classList.remove('show');
-  document.getElementById('vp-firmaBadge').classList.remove('show');
-  if(profFirmaCanvas){profFirmaCtx.clearRect(0,0,profFirmaCanvas.width,profFirmaCanvas.height);profFirmaCanvas.classList.remove('signed');}
+  ['vg-preview','vp-preview'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  document.getElementById('vp-toggleObsequio').checked=false;
+  document.getElementById('vp-obsequioDetail').classList.remove('show');
+  document.getElementById('vp-firmaBadge').style.display='none';
+  document.getElementById('btnGuardarProf').disabled=true;
+  if(_profFirmaCtx&&_profFirmaCanvas) _profFirmaCtx.clearRect(0,0,_profFirmaCanvas.width,_profFirmaCanvas.height);
+  if(_profFirmaCanvas) _profFirmaCanvas.classList.remove('signed');
   openModal('modalNuevaVisita');
 }
 function selectVisitType(tipo){
@@ -1146,98 +1133,102 @@ function selectVisitType(tipo){
   document.getElementById('formVisitaProfesional').style.display=tipo==='profesional'?'block':'none';
   document.getElementById('btnTipoGeneral').classList.toggle('active',tipo==='general');
   document.getElementById('btnTipoProfesional').classList.toggle('active',tipo==='profesional');
-  if(tipo==='general') obtenerGPSVisita('gpsChipGeneral','gpsTextGeneral');
-  if(tipo==='profesional'){obtenerGPSVisita('gpsChipProf','gpsTextProf');if(!profFirmaCanvas)initFirmaProf();}
+  if(tipo==='general') obtenerGPS('gpsTextGeneral');
+  if(tipo==='profesional'){obtenerGPS('gpsTextProf');if(!_profFirmaCanvas)initFirma();}
 }
-function previewVisitaFoto(input,previewId){
+function previewFoto(input,previewId,target){
   var file=input.files[0];if(!file)return;
   var reader=new FileReader();
   reader.onload=function(e){
-    var img=document.getElementById(previewId);
-    img.src=e.target.result;img.style.display='block';
-    if(previewId==='vg-preview') visitaFotoDataGeneral=e.target.result;
-    else visitaFotoDataProf=e.target.result;
+    var img=new Image();
+    img.onload=function(){
+      var MAX=1000,w=img.width,h=img.height;
+      if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+      var c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      var data=c.toDataURL('image/jpeg',0.60);
+      var prev=document.getElementById(previewId);
+      if(prev){prev.src=data;prev.style.display='block';}
+      if(target==='general') _visitaFotoGeneral=data;
+      else _visitaFotoProf=data;
+    };
+    img.src=e.target.result;
   };
   reader.readAsDataURL(file);
 }
-function toggleObsequioField(checked){document.getElementById('vp-obsequioDetail').classList.toggle('show',checked);}
-function initFirmaProf(){
-  profFirmaCanvas=document.getElementById('vp-firmaCanvas');
-  profFirmaCtx=profFirmaCanvas.getContext('2d');
+function toggleObsequio(checked){document.getElementById('vp-obsequioDetail').classList.toggle('show',checked);}
+function initFirma(){
+  _profFirmaCanvas=document.getElementById('vp-firmaCanvas');
+  _profFirmaCtx=_profFirmaCanvas.getContext('2d');
   var drawing=false;
-  function getPos(e){var r=profFirmaCanvas.getBoundingClientRect();var src=e.touches?e.touches[0]:e;return {x:(src.clientX-r.left)*(profFirmaCanvas.width/r.width),y:(src.clientY-r.top)*(profFirmaCanvas.height/r.height)};}
-  profFirmaCanvas.addEventListener('mousedown',function(e){drawing=true;var p=getPos(e);profFirmaCtx.beginPath();profFirmaCtx.moveTo(p.x,p.y);});
-  profFirmaCanvas.addEventListener('mousemove',function(e){if(!drawing)return;var p=getPos(e);profFirmaCtx.lineTo(p.x,p.y);profFirmaCtx.strokeStyle='#0F172A';profFirmaCtx.lineWidth=2;profFirmaCtx.lineCap='round';profFirmaCtx.stroke();profFirmaActiva=true;profFirmaCanvas.classList.add('signed');document.getElementById('vp-firmaBadge').classList.add('show');document.getElementById('btnGuardarProf').disabled=false;});
-  profFirmaCanvas.addEventListener('mouseup',function(){drawing=false;});
-  profFirmaCanvas.addEventListener('touchstart',function(e){e.preventDefault();drawing=true;var p=getPos(e);profFirmaCtx.beginPath();profFirmaCtx.moveTo(p.x,p.y);},{passive:false});
-  profFirmaCanvas.addEventListener('touchmove',function(e){e.preventDefault();if(!drawing)return;var p=getPos(e);profFirmaCtx.lineTo(p.x,p.y);profFirmaCtx.strokeStyle='#0F172A';profFirmaCtx.lineWidth=2;profFirmaCtx.lineCap='round';profFirmaCtx.stroke();profFirmaActiva=true;profFirmaCanvas.classList.add('signed');document.getElementById('vp-firmaBadge').classList.add('show');document.getElementById('btnGuardarProf').disabled=false;},{passive:false});
-  profFirmaCanvas.addEventListener('touchend',function(){drawing=false;});
+  function pos(e){var r=_profFirmaCanvas.getBoundingClientRect();var s=e.touches?e.touches[0]:e;return{x:(s.clientX-r.left)*(_profFirmaCanvas.width/r.width),y:(s.clientY-r.top)*(_profFirmaCanvas.height/r.height)};}
+  function start(e){drawing=true;var p=pos(e);_profFirmaCtx.beginPath();_profFirmaCtx.moveTo(p.x,p.y);}
+  function move(e){if(!drawing)return;var p=pos(e);_profFirmaCtx.lineTo(p.x,p.y);_profFirmaCtx.strokeStyle='#0F172A';_profFirmaCtx.lineWidth=2;_profFirmaCtx.lineCap='round';_profFirmaCtx.stroke();if(!_profFirmaActiva){_profFirmaActiva=true;_profFirmaCanvas.classList.add('signed');document.getElementById('vp-firmaBadge').style.display='flex';document.getElementById('btnGuardarProf').disabled=false;}}
+  function stop(){drawing=false;}
+  _profFirmaCanvas.addEventListener('mousedown',start);
+  _profFirmaCanvas.addEventListener('mousemove',move);
+  _profFirmaCanvas.addEventListener('mouseup',stop);
+  _profFirmaCanvas.addEventListener('touchstart',function(e){e.preventDefault();start(e);},{passive:false});
+  _profFirmaCanvas.addEventListener('touchmove',function(e){e.preventDefault();move(e);},{passive:false});
+  _profFirmaCanvas.addEventListener('touchend',stop);
 }
-function clearFirmaProf(){
-  if(profFirmaCtx)profFirmaCtx.clearRect(0,0,profFirmaCanvas.width,profFirmaCanvas.height);
-  profFirmaActiva=false;
-  if(profFirmaCanvas)profFirmaCanvas.classList.remove('signed');
-  document.getElementById('vp-firmaBadge').classList.remove('show');
+function clearFirma(){
+  if(_profFirmaCtx&&_profFirmaCanvas)_profFirmaCtx.clearRect(0,0,_profFirmaCanvas.width,_profFirmaCanvas.height);
+  _profFirmaActiva=false;
+  if(_profFirmaCanvas)_profFirmaCanvas.classList.remove('signed');
+  document.getElementById('vp-firmaBadge').style.display='none';
   document.getElementById('btnGuardarProf').disabled=true;
 }
 function guardarVisitaGeneral(){
   var lugar=document.getElementById('vg-lugar').value.trim();
   if(!lugar){toast('Nombre del lugar obligatorio','err');return;}
   var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentUser.labId,date:today(),status:'completed',completedAt:new Date().toISOString(),type:'general',placeName:lugar,address:document.getElementById('vg-direccion').value.trim(),contact:document.getElementById('vg-contacto').value.trim(),notes:document.getElementById('vg-notas').value.trim()};
-  if(visitaFotoDataGeneral) v.photo=visitaFotoDataGeneral;
-  if(visitaGpsCoords){v.lat=visitaGpsCoords.lat;v.lng=visitaGpsCoords.lng;}
-  pushVisit(v);closeModal('modalNuevaVisita');renderVisitorToday();toast('Visita guardada');
+  if(_visitaFotoGeneral) v.photo=_visitaFotoGeneral;
+  if(_visitaGps){v.lat=_visitaGps.lat;v.lng=_visitaGps.lng;}
+  pushVisit(v);
+  closeModal('modalNuevaVisita');
+  renderHoy();
+  toast('Visita guardada');
 }
 function guardarVisitaProfesional(){
   var nombre=document.getElementById('vp-nombre').value.trim();
   var tel=document.getElementById('vp-telefono').value.trim();
   var dir=document.getElementById('vp-direccion').value.trim();
   if(!nombre||!tel||!dir){toast('Completa los campos obligatorios','err');return;}
-  if(!profFirmaActiva){toast('La firma del profesional es obligatoria','err');return;}
-  if(!visitaFotoDataProf){toast('La foto de evidencia es obligatoria','err');return;}
-  var firma=profFirmaCanvas?profFirmaCanvas.toDataURL('image/png'):null;
-  var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentUser.labId,date:today(),status:'completed',completedAt:new Date().toISOString(),type:'profesional',pointName:document.getElementById('vp-punto').value.trim(),placeName:nombre,speciality:document.getElementById('vp-especialidad').value.trim(),phone:tel,address:dir,gift:document.getElementById('vp-toggleObsequio').checked?document.getElementById('vp-obsequio').value.trim():'',notes:document.getElementById('vp-notas').value.trim(),photo:visitaFotoDataProf,firma:firma};
-  if(visitaGpsCoords){v.lat=visitaGpsCoords.lat;v.lng=visitaGpsCoords.lng;}
-  pushVisit(v);closeModal('modalNuevaVisita');renderVisitorToday();toast('Visita profesional guardada');
+  if(!_profFirmaActiva){toast('La firma es obligatoria','err');return;}
+  if(!_visitaFotoProf){toast('La foto es obligatoria','err');return;}
+  var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentUser.labId,date:today(),status:'completed',completedAt:new Date().toISOString(),type:'profesional',pointName:document.getElementById('vp-punto').value.trim(),placeName:nombre,speciality:document.getElementById('vp-especialidad').value.trim(),phone:tel,address:dir,gift:document.getElementById('vp-toggleObsequio').checked?document.getElementById('vp-obsequio').value.trim():'',notes:document.getElementById('vp-notas').value.trim(),photo:_visitaFotoProf,firma:_profFirmaCanvas?_profFirmaCanvas.toDataURL('image/png'):null};
+  if(_visitaGps){v.lat=_visitaGps.lat;v.lng=_visitaGps.lng;}
+  pushVisit(v);
+  closeModal('modalNuevaVisita');
+  renderHoy();
+  toast('Visita profesional guardada');
 }
 
-// ── MARKETING ────────────────────────────────────────────────
-var NIT_ESTABLECIMIENTOS=[
-  {nombres:['exito','almacenes exito'],razon:'Almacenes Exito S.A.',nit:'890.900.608-9'},
-  {nombres:['jumbo','supermercado jumbo'],razon:'Cencosud Colombia S.A.',nit:'900.155.107-1'},
-  {nombres:['ara','tiendas ara'],razon:'Jeronimo Martins Colombia S.A.S.',nit:'900.480.569-1'},
-  {nombres:['d1','tiendas d1'],razon:'Koba Colombia S.A.S.',nit:'900.276.962-1'},
-  {nombres:['olimpica','supertiendas olimpica'],razon:'Supertiendas Olimpica S.A.',nit:'890.107.487-3'},
-  {nombres:['makro'],razon:'Makro Supermayorista S.A.',nit:'900.059.238-5'},
-  {nombres:['colsubsidio'],razon:'Caja Col. de Sub. Familiar',nit:'860.007.336-1'}
+// ── 15. MARKETING ─────────────────────────────────────────────
+var NIT_DB=[
+  {n:['exito','almacenes exito'],r:'Almacenes Exito S.A.',nit:'890.900.608-9'},
+  {n:['jumbo'],r:'Cencosud Colombia S.A.',nit:'900.155.107-1'},
+  {n:['ara','tiendas ara'],r:'Jeronimo Martins Colombia',nit:'900.480.569-1'},
+  {n:['d1','tiendas d1'],r:'Koba Colombia S.A.S.',nit:'900.276.962-1'},
+  {n:['olimpica'],r:'Supertiendas Olimpica S.A.',nit:'890.107.487-3'},
+  {n:['makro'],r:'Makro Supermayorista S.A.',nit:'900.059.238-5'},
+  {n:['colsubsidio'],r:'Caja Col. Subsidio Familiar',nit:'860.007.336-1'}
 ];
-function buscarNitEstablecimiento(nombre){
-  var n=nombre.toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
-  for(var i=0;i<NIT_ESTABLECIMIENTOS.length;i++){
-    var est=NIT_ESTABLECIMIENTOS[i];
-    for(var j=0;j<est.nombres.length;j++){
-      var ref=est.nombres[j].toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
-      if(n===ref||n.indexOf(ref)>=0||ref.indexOf(n)>=0) return est;
-    }
-  }
-  return null;
-}
-function autocompletarNit(valor){
-  var nitEl=document.getElementById('mkt-nit');
-  var razonEl=document.getElementById('mkt-razon');
+function autocompletarNit(v){
+  var nitEl=document.getElementById('mkt-nit'),razonEl=document.getElementById('mkt-razon');
   if(!nitEl||!razonEl)return;
-  var resultado=buscarNitEstablecimiento(valor);
-  if(resultado){nitEl.value=resultado.nit;nitEl.readOnly=true;nitEl.style.background='var(--primary-50)';razonEl.textContent=resultado.razon;razonEl.style.color='var(--primary)';}
-  else{nitEl.value='';nitEl.readOnly=false;nitEl.style.background='var(--bg)';razonEl.textContent=valor.length>2?'No reconocido - escribe el NIT manualmente':'';razonEl.style.color='var(--muted)';}
+  var n=v.toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
+  var found=null;
+  for(var i=0;i<NIT_DB.length;i++){for(var j=0;j<NIT_DB[i].n.length;j++){var ref=NIT_DB[i].n[j];if(n===ref||n.indexOf(ref)>=0||ref.indexOf(n)>=0){found=NIT_DB[i];break;}}if(found)break;}
+  if(found){nitEl.value=found.nit;nitEl.readOnly=true;nitEl.style.background='var(--primary-50)';razonEl.textContent=found.r;razonEl.style.color='var(--primary)';}
+  else{nitEl.value='';nitEl.readOnly=false;nitEl.style.background='var(--bg)';razonEl.textContent=n.length>2?'No reconocido - escribe el NIT manualmente':'';razonEl.style.color='var(--muted)';}
 }
 function abrirMarketing(){
-  mktFotoData=null;
-  document.getElementById('mkt-lugar').value='';
-  document.getElementById('mkt-valor').value='';
-  document.getElementById('mkt-nit').value='';
-  document.getElementById('mkt-nit').readOnly=false;
-  document.getElementById('mkt-nit').style.background='var(--bg)';
-  document.getElementById('mkt-razon').textContent='';
+  _mktFoto=null;
+  ['mkt-lugar','mkt-valor'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var n=document.getElementById('mkt-nit');if(n){n.value='';n.readOnly=false;n.style.background='var(--bg)';}
+  var r=document.getElementById('mkt-razon');if(r)r.textContent='';
   document.getElementById('mkt-foto-preview-wrap').style.display='none';
   document.getElementById('mkt-foto-input').value='';
   openModal('modalMarketing');
@@ -1250,10 +1241,10 @@ function mktPreviewFoto(input){
     img.onload=function(){
       var MAX=1200,w=img.width,h=img.height;
       if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
-      var canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
-      canvas.getContext('2d').drawImage(img,0,0,w,h);
-      mktFotoData=canvas.toDataURL('image/jpeg',0.65);
-      document.getElementById('mkt-foto-preview').src=mktFotoData;
+      var c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      _mktFoto=c.toDataURL('image/jpeg',0.65);
+      document.getElementById('mkt-foto-preview').src=_mktFoto;
       document.getElementById('mkt-foto-preview-wrap').style.display='block';
     };
     img.src=ev.target.result;
@@ -1263,60 +1254,78 @@ function mktPreviewFoto(input){
 function guardarMarketing(){
   var lugar=document.getElementById('mkt-lugar').value.trim();
   var valor=document.getElementById('mkt-valor').value.trim();
-  if(!lugar){toast('Escribe el nombre del establecimiento','err');return;}
-  if(!valor){toast('Escribe el valor de la factura','err');return;}
-  if(!mktFotoData){toast('Toma una foto de la factura','err');return;}
-  var nitVal=document.getElementById('mkt-nit').value.trim();
-  var razonVal=document.getElementById('mkt-razon').textContent.trim();
-  var reg={id:'mkt_'+Date.now()+'_'+Math.random().toString(36).substr(2,4),userId:currentUser.id,userName:currentUser.name,labId:currentUser.labId||'',lugar:lugar,nit:nitVal||'',razonSocial:razonVal||'',valor:parseFloat(valor),foto:mktFotoData,fecha:today(),creadoAt:new Date().toISOString()};
-  dbRef.ref('medvisit/marketing').push(reg).then(function(){toast('Factura cargada');closeModal('modalMarketing');}).catch(function(err){toast('Error al guardar','err');console.error(err);});
+  if(!lugar){toast('Escribe el establecimiento','err');return;}
+  if(!valor){toast('Escribe el valor','err');return;}
+  if(!_mktFoto){toast('Toma la foto de la factura','err');return;}
+  if(!window._db){toast('Sin conexion, intenta en un momento','err');return;}
+  var reg={id:'mkt_'+Date.now(),userId:currentUser.id,userName:currentUser.name,labId:currentUser.labId||'',lugar:lugar,nit:document.getElementById('mkt-nit').value.trim(),razonSocial:document.getElementById('mkt-razon').textContent.trim(),valor:parseFloat(valor),foto:_mktFoto,fecha:today(),creadoAt:new Date().toISOString()};
+  var btn=document.querySelector('#modalMarketing .btn-primary');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="spin fa-solid fa-circle-notch"></i> Subiendo...';}
+  window._db.ref('medvisit/marketing').push(reg)
+    .then(function(){
+      toast('Factura cargada');
+      closeModal('modalMarketing');
+      if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-upload"></i> Cargar';}
+    })
+    .catch(function(err){
+      toast('Error al guardar: '+err.message,'err');
+      if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-upload"></i> Cargar';}
+    });
 }
-
-// ── FOTO OVERLAY ──────────────────────────────────────────────
 function abrirFotoOverlay(src){
-  var overlay=document.createElement('div');
-  overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;';
-  overlay.onclick=function(){document.body.removeChild(overlay);};
+  var o=document.createElement('div');
+  o.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;';
+  o.onclick=function(){document.body.removeChild(o);};
   var img=document.createElement('img');img.src=src;img.style.cssText='max-width:95%;max-height:85vh;border-radius:12px;';
   var hint=document.createElement('div');hint.textContent='Toca para cerrar';hint.style.cssText='color:rgba(255,255,255,0.5);font-size:12px;margin-top:10px;';
-  overlay.appendChild(img);overlay.appendChild(hint);document.body.appendChild(overlay);
+  o.appendChild(img);o.appendChild(hint);document.body.appendChild(o);
 }
 
-// ── TOAST / MODAL / CONFIRM ───────────────────────────────────
+// ── 16. TABS / MODALS / UI ────────────────────────────────────
+function switchTab(tab,btn){
+  _currentTab=tab;
+  document.querySelectorAll('#visitorScreen .tab-content').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('#visitorScreen .tab-btn').forEach(function(b){b.classList.remove('active');});
+  var el=document.getElementById('vTab-'+tab);if(el)el.classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(tab==='rutas')renderRutas();
+  else if(tab==='perfil')renderPerfil();
+  else if(tab==='mkt')renderMktVisitador();
+  else if(tab==='hoy')renderHoy();
+}
+function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});var el=document.getElementById(id);if(el)el.classList.add('active');}
 function toast(msg,type){
   type=type||'ok';
   var w=document.getElementById('toastWrap'),t=document.createElement('div');
-  t.className='toast toast-'+type;
-  var icon=type==='ok'?'fa-circle-check':type==='err'?'fa-circle-xmark':'fa-circle-info';
+  t.className='toast toast-'+(type==='warn'?'warn':type==='err'?'err':type==='save'?'save':'ok');
+  var icon=type==='err'?'fa-circle-xmark':type==='warn'?'fa-triangle-exclamation':type==='save'?'fa-floppy-disk':'fa-circle-check';
   t.innerHTML='<i class="fa-solid '+icon+'"></i><span>'+esc(msg)+'</span>';
   w.appendChild(t);
-  setTimeout(function(){t.classList.add('out');setTimeout(function(){t.remove();},250);},3000);
+  setTimeout(function(){t.classList.add('out');setTimeout(function(){t.remove();},250);},3200);
 }
 function openModal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
 function closeModal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
-function showConfirm(title,msg,type,icon,cb,btnClass){
+function showConfirm(title,msg,icon,cb,btnCls){
   document.getElementById('confirmTitle').textContent=title;
   document.getElementById('confirmMsg').textContent=msg;
-  document.getElementById('confirmIcon').className='confirm-icon '+(type||'warning');
-  document.getElementById('confirmIconI').className='fa-solid '+(icon||'fa-question');
-  var btn=document.getElementById('confirmOkBtn');
-  btn.className='btn btn-'+(btnClass||'primary');
+  document.getElementById('confirmIconI').className='fa-solid '+icon;
+  document.getElementById('confirmOkBtn').className='btn '+(btnCls||'btn-primary');
   _confirmCb=cb;
   document.getElementById('confirmOverlay').classList.add('open');
 }
 function executeConfirm(){document.getElementById('confirmOverlay').classList.remove('open');if(_confirmCb){_confirmCb();_confirmCb=null;}}
 function cancelConfirm(){document.getElementById('confirmOverlay').classList.remove('open');_confirmCb=null;}
 
-// ── INIT ──────────────────────────────────────────────────────
+// ── 17. INIT ──────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded',function(){
-  initFirebase();
+  loadQueue();
+  updateQueueBar();
 });
 </script>
 
-<!-- Scripts diferidos -->
+<!-- Firebase SDK - DEFER para no bloquear render -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js" defer></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 
 </body>
 </html>
