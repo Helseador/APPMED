@@ -2,6 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="format-detection" content="telephone=no">
   <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="mobile-web-app-capable" content="yes">
@@ -1843,10 +1845,10 @@ function fmt(h,m){return h.toString().padStart(2,'0')+':'+m.toString().padStart(
 function esc(s){if(!s)return'';var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function avatarColor(id){var h=0;for(var i=0;i<(id||'').length;i++)h=id.charCodeAt(i)+((h<<5)-h);return AV_COLORS[Math.abs(h)%AV_COLORS.length];}
 function initials(n){if(!n)return'??';var p=n.trim().split(/\s+/);return p.length>=2?(p[0][0]+p[1][0]).toUpperCase():n.substring(0,2).toUpperCase();}
-function getUserLabId(uid){var u=(D.users||[]).find(u=>u.id===uid);return u?u.labId:null;}
+function getUserLabId(uid){var u=(D.users||[]).find(function(u){return u.id===uid;});return u?u.labId:null;}
 function refreshLabs() {
   LABS = BASE_LABS.slice().concat(
-    (D.labs || []).filter(l => !BASE_LABS.some(b => b.id === l.id))
+    (D.labs || []).filter(function(l){return !BASE_LABS.some(function(b){return b.id===l.id;});})
   );
   populateLabSelects();
 }
@@ -1948,10 +1950,7 @@ function updateHeaderConn(){
   });
 }
 function showSyncIndicator(){
-  var el=document.getElementById('syncIndicator');
-  if(!el) return;
-  el.style.display='flex';
-  setTimeout(function(){el.style.display='none';},2000);
+  // Indicador de sincronizacion desactivado
 }
 function renderCurrentScreen(){
   if(!currentUser) return;
@@ -1968,7 +1967,7 @@ function renderCurrentScreen(){
   else renderVisitor();
 }
 
-function toast(msg,type){type=type||'ok';var w=document.getElementById('toastWrap'),t=document.createElement('div');t.className='toast toast-'+type;var icon=type==='ok'?'fa-circle-check':type==='err'?'fa-circle-xmark':'fa-circle-info';t.innerHTML='<i class="fa-solid '+icon+'"></i><span>'+esc(msg)+'</span>';w.appendChild(t);setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),250);},3000);}
+function toast(msg,type){type=type||'ok';var w=document.getElementById('toastWrap'),t=document.createElement('div');t.className='toast toast-'+type;var icon=type==='ok'?'fa-circle-check':type==='err'?'fa-circle-xmark':'fa-circle-info';t.innerHTML='<i class="fa-solid '+icon+'"></i><span>'+esc(msg)+'</span>';w.appendChild(t);setTimeout(function(){t.classList.add('out');setTimeout(function(){t.remove();},250);},3000);}
 function openModal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
 function closeModal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
 
@@ -1981,13 +1980,13 @@ function toggleNotifDropdown(){
 }
 function renderNotifications(){
   var list=document.getElementById('adminNotifList');
-  var pending=(D.points||[]).filter(p=>p.approved===false && (p.labId===currentLabId || !currentLabId));
+  var pending=(D.points||[]).filter(function(p){return p.approved===false&&(p.labId===currentLabId||!currentLabId);});
   if(pending.length===0){
     list.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);"><i class="fa-solid fa-check-circle" style="font-size:24px;margin-bottom:8px;"></i><br>No hay puntos pendientes</div>';
     updateBadge(0);return;
   }
   updateBadge(pending.length);
-  list.innerHTML=pending.map(p=>{
+  list.innerHTML=pending.map(function(p){
     var u=userById(p.assignedTo);
     return `<div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:var(--bg);">
       <div style="font-size:11px;color:var(--primary);font-weight:700;margin-bottom:4px;">Nuevo punto solicitado</div>
@@ -2010,7 +2009,7 @@ function approvePoint(pid){
   if(p){p.approved=true; save(D); renderNotifications(); toast('Punto aprobado');}
 }
 function rejectPoint(pid){
-  D.points=(D.points||[]).filter(p=>p.id!==pid);
+  D.points=(D.points||[]).filter(function(p){return p.id!==pid;});
   save(D); renderNotifications(); toast('Punto rechazado');
 }
 
@@ -2057,7 +2056,7 @@ function doLogin(){
     setupListenersForRole();
     err.textContent=''; loginAttempts=0; att.style.display='none'; resetSession(); showScreen('superScreen'); renderSuperAdmin(); toast('Modo Super Admin'); return;
   }
-  var user=(D.users||[]).find(x=>x.username===u && x.password===p && x.active);
+  var user=(D.users||[]).find(function(x){return x.username===u && x.password===p && x.active;});
   if(!user){
     loginAttempts++; var rem=MAX_LOGIN_ATTEMPTS-loginAttempts;
     if(rem<=0){loginAttempts=0; lockoutEnd=Date.now()+LOCKOUT_SECONDS*1000; showLockout(); err.textContent=''; att.style.display='none'; return;}
@@ -2106,10 +2105,10 @@ function doLogin(){
 }
 function doLogout(){localStorage.removeItem('appmed_session'); currentUser=null; currentLabId=null;  _visitRoute=null; gpsPermission='unknown'; stopSession(); document.getElementById('loginUser').value=''; document.getElementById('loginPass').value=''; document.getElementById('loginError').textContent=''; document.getElementById('loginAttempts').style.display='none'; lastVisitorDetailId=null; lastSuperDetailId=null; currentAdminTab='canvas'; currentVisitorTab='hoy'; currentSuperTab='users'; showScreen('loginScreen');}
 function resetSession(){ /* Sesion sin limite de tiempo - solo cierra con logout manual */ }
-function stopSession(){if(sessionTimer){clearInterval(sessionTimer); sessionTimer=null;} ['adminSessionTimer','visitorSessionTimer'].forEach(id=>{var el=document.querySelector('#'+id); if(el) el.style.display='none';});}
+function stopSession(){if(sessionTimer){clearInterval(sessionTimer); sessionTimer=null;} ['adminSessionTimer','visitorSessionTimer'].forEach(function(id){var el=document.querySelector('#'+id); if(el) el.style.display='none';});}
 
 function getGPS(){
-  return new Promise((resolve,reject)=>{
+  return new Promise(function(resolve,reject){
     if(!navigator.geolocation){reject('GPS no disponible');return;}
     let done=false, watchId=null, timer=null;
     function finish(pos){
@@ -2123,46 +2122,49 @@ function getGPS(){
       if(watchId){navigator.geolocation.clearWatch(watchId);watchId=null;}
       if(timer){clearTimeout(timer); timer=null;}
       // fallback sin alta precision
-      navigator.geolocation.getCurrentPosition(p=>finish(p),()=>reject('GPS no disponible'),{enableHighAccuracy:false,timeout:12000,maximumAge:10000});
+      navigator.geolocation.getCurrentPosition(function(p){finish(p);},function(){reject('GPS no disponible');},{enableHighAccuracy:false,timeout:12000,maximumAge:10000});
     }
-    watchId=navigator.geolocation.watchPosition(p=>{if(p.coords.accuracy<=80) finish(p);},fail,{enableHighAccuracy:true,timeout:15000,maximumAge:0});
-    timer=setTimeout(()=>{if(!done) navigator.geolocation.getCurrentPosition(finish,fail,{enableHighAccuracy:true,timeout:3000,maximumAge:5000});},15000);
+    watchId=navigator.geolocation.watchPosition(function(p){if(p.coords.accuracy<=80) finish(p);},fail,{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+    timer=setTimeout(function(){if(!done) navigator.geolocation.getCurrentPosition(finish,fail,{enableHighAccuracy:true,timeout:3000,maximumAge:5000});},15000);
   });
 }
 function obtenerGPSVisita(chipId,textId){
   var txt=document.getElementById(textId);
   txt.textContent='Obteniendo ubicacion...';
-  getGPS().then(gps=>{
+  getGPS().then(function(gps){
     visitaGpsCoords=gps;
     txt.textContent=gps.lat.toFixed(5)+', '+gps.lng.toFixed(5)+' ('+Math.round(gps.accuracy||0)+'m)';
-  }).catch(()=>{visitaGpsCoords=null; txt.textContent='No disponible   se guardara sin coordenadas';});
+  }).catch(function(){visitaGpsCoords=null; txt.textContent='No disponible   se guardara sin coordenadas';});
 }
 
 function renderLabSelect(){
   var el=document.getElementById('labSelectBody');
   el.innerHTML='<div style="margin-bottom:24px;"><div style="font-size:22px;font-weight:900;font-family:\'DM Serif Display\',serif;margin-bottom:4px;">Selecciona un laboratorio</div><div style="font-size:13px;color:var(--muted);">Cada laboratorio tiene su propio equipo y visitas</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">' +
-    LABS.map(lab=>`<div class="canvas-card" style="background:linear-gradient(135deg,${lab.colorLight} 0%,#fff 100%);" onclick="selectLab('${lab.id}')">
-      <div class="card-stripe" style="background:${lab.color};"></div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-        <div style="width:44px;height:44px;border-radius:12px;background:${lab.color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,0.15);">
-          ${lab.logoData?`<div style="width:100%;height:100%;background:#fff;border-radius:inherit;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="${lab.logoData}" style="max-width:85%;max-height:85%;object-fit:contain;"></div>`:lab.logo?`<img src="${lab.logo}" style="max-width:85%;max-height:85%;object-fit:contain;">`:`<i class="fa-solid ${lab.icon}"></i>`}
-        </div>
-        <div style="flex:1;">
-          <div style="font-size:16px;font-weight:800;color:var(--fg);">${esc(lab.name)}</div>
-          <div style="font-size:12px;color:var(--muted);">Visitadores: ${(D.users||[]).filter(u=>u.labId===lab.id && u.role==='visitor').length}</div>
-        </div>
-        <i class="fa-solid fa-chevron-right" style="color:${lab.color};"></i>
-      </div>
-      <div style="font-size:12px;color:var(--muted);">Hoy: <strong style="color:${lab.color};">${(D.visits||[]).filter(v=>v.labId===lab.id && v.date===today() && v.status==='completed').length}</strong> completadas</div>
-    </div>`).join('')+'</div>';
+    LABS.map(function(lab){
+      var visCount=(D.users||[]).filter(function(u){return u.labId===lab.id&&u.role==='visitor';}).length;
+      var hoyCount=(D.visits||[]).filter(function(v){return v.labId===lab.id&&v.date===today()&&v.status==='completed';}).length;
+      var logoHtml=lab.logoData?('<div style="width:100%;height:100%;background:#fff;border-radius:inherit;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="'+lab.logoData+'" style="max-width:85%;max-height:85%;object-fit:contain;"></div>'):lab.logo?('<img src="'+lab.logo+'" style="max-width:85%;max-height:85%;object-fit:contain;">'):('<i class="fa-solid '+lab.icon+'"></i>');
+      return '<div class="canvas-card" style="background:linear-gradient(135deg,'+lab.colorLight+' 0%,#fff 100%);" onclick="selectLab(this.dataset.id)" data-id="'+lab.id+'">'
+        +'<div class="card-stripe" style="background:'+lab.color+';"></div>'
+        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">'
+        +'<div style="width:44px;height:44px;border-radius:12px;background:'+lab.color+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,0.15);">'+logoHtml+'</div>'
+        +'<div style="flex:1;">'
+        +'<div style="font-size:16px;font-weight:800;color:var(--fg);">'+esc(lab.name)+'</div>'
+        +'<div style="font-size:12px;color:var(--muted);">Visitadores: '+visCount+'</div>'
+        +'</div>'
+        +'<i class="fa-solid fa-chevron-right" style="color:'+lab.color+';"></i>'
+        +'</div>'
+        +'<div style="font-size:12px;color:var(--muted);">Hoy: <strong style="color:'+lab.color+';">'+hoyCount+'</strong> completadas</div>'
+        +'</div>';
+    }).join('')+'</div>';
 }
 function selectLab(id){
   currentLabId=id;
-  var lab=LABS.find(l=>l.id===id);
+  var lab=LABS.find(function(l){return l.id===id;});
   showScreen('adminScreen');
   currentAdminTab='canvas';
-  document.querySelectorAll('#adminScreen .tab-content').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('#adminScreen .tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#adminScreen .tab-content').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('#adminScreen .tab-btn').forEach(function(b){b.classList.remove('active');});
   document.getElementById('aTab-canvas').classList.add('active');
   document.querySelectorAll('#adminScreen .tab-btn')[0].classList.add('active');
   renderAdmin();
@@ -2200,8 +2202,8 @@ function renderVisitorToday(){
   var pendEl=document.getElementById('visitorPendientesSection');
   if(pendEl) renderPendientesSection(currentUser.id, pendEl, false);
   // ------- 1) Agrupar puntos por ruta (nuevo) -------
-  var allMyPts=(D.points||[]).filter(p=>p.assignedTo===currentUser.id);
-  var routes=Array.from(new Set(allMyPts.map(p=>p.routeName||'Sin ruta')));
+  var allMyPts=(D.points||[]).filter(function(p){return p.assignedTo===currentUser.id;});
+  var routes=Array.from(new Set(allMyPts.map(function(p){return p.routeName||'Sin ruta';})));
   if(!routes.length){
 
     if(currentUser && currentUser.freeVisit){
@@ -2219,24 +2221,24 @@ function renderVisitorToday(){
   if(!_visitRoute || routes.indexOf(_visitRoute)===-1) _visitRoute=routes[0];
   // -------- Selector de rutas ----------
   var selector='<div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;">';
-  routes.forEach(r=>{
+  routes.forEach(function(r){
     var active=r===_visitRoute;
-    selector+=`<button onclick="_visitRoute='${r}';renderVisitorToday()" style="flex-shrink:0;padding:7px 12px;border-radius:10px;border:${active?'2px solid var(--primary)':'1.5px solid var(--border)'};background:${active?'var(--primary)':'var(--card)'};color:${active?'#fff':'var(--fg)'};font-size:11px;font-weight:700;cursor:pointer;">${esc(r)}</button>`;
+    selector+='<button onclick="_visitRoute=\''+r.replace(/'/g,"\'")+'\'renderVisitorToday()" data-route="'+r+'" onclick="this.dataset.route&&(_visitRoute=this.dataset.route,renderVisitorToday())" style="flex-shrink:0;padding:7px 12px;border-radius:10px;border:'+(active?'2px solid var(--primary)':'1.5px solid var(--border)')+';background:'+(active?'var(--primary)':'var(--card)')+';color:'+(active?'#fff':'var(--fg)')+';font-size:11px;font-weight:700;cursor:pointer;">'+esc(r)+'</button>';
   });
   selector+='</div>';
   // -------- Filtrar puntos de la ruta ----------
-  var myPts=allMyPts.filter(p=> (p.routeName||'Sin ruta')===_visitRoute ).sort((a,b)=>a.order-b.order);
+  var myPts=allMyPts.filter(function(p){return (p.routeName||'Sin ruta')===_visitRoute;}).sort(function(a,b){return a.order-b.order;});
   // -------- Información de progreso ---------
   var isToday = true; // Sin restricción de día
   var startH=8,startM=0;
   var totalMin=myPts.length*MIN_PER_PUNTO;
   var endTotalMin=startH*60+startM+totalMin;
   var endH=Math.floor(endTotalMin/60)%24,endMM=endTotalMin%60;
-  var doneCt=(D.visits||[]).filter(v=>v.visitorId===currentUser.id && v.date===todayForDow(_visitRoute===undefined?todayDow():null) && v.status==='completed').length; // simplificado
+  var doneCt=(D.visits||[]).filter(function(v){return v.visitorId===currentUser.id&&v.date===today()&&v.status==='completed';}).length;
   var allDone=doneCt===myPts.length;
   var gpsOk=gpsPermission==='granted';
   var mapsUrl=buildMapsRouteUrl(myPts);
-  var summary=`<div class="route-card" style="padding:16px;border-left-color:${allDone?'var(--success)':'var(--primary)'};">
+  var summary=`<div class="route-card" style="padding:16px;border-left-color:${allDone?'var(--success)':'var(--primary)'};">  
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
       <div style="display:flex;align-items:center;gap:10px;">
         <div style="width:42px;height:42px;border-radius:12px;background:${allDone?'var(--success-light)':'var(--primary-50)'};color:${allDone?'var(--success)':'var(--primary)'};display:flex;align-items:center;justify-content:center;font-size:18px;">
@@ -2260,7 +2262,7 @@ function renderVisitorToday(){
     </div>`:''}
   </div>`;
   // -------- Lista de puntos ----------
-  var pointsHtml=myPts.map(p=>{
+  var pointsHtml=myPts.map(function(p){
     // Buscar visita de HOY
     var visitHoy=(D.visits||[]).find(function(v){return v.pointId===p.id && v.visitorId===currentUser.id && v.date===today();});
     // Buscar visita de las últimas 24h (cualquier estado)
@@ -2324,7 +2326,7 @@ function abrirNuevaVisita(){
   visitaGpsCoords=null; visitaFotoDataGeneral=null; visitaFotoDataProf=null; profFirmaActiva=false;
   selectVisitType(null);
   // limpiar campos
-  ['vg-lugar','vg-direccion','vg-contacto','vg-notas','vp-punto','vp-nombre','vp-especialidad','vp-telefono','vp-direccion','vp-obsequio','vp-notas'].forEach(id=>{var el=document.getElementById(id);if(el)el.value='';});
+  ['vg-lugar','vg-direccion','vg-contacto','vg-notas','vp-punto','vp-nombre','vp-especialidad','vp-telefono','vp-direccion','vp-obsequio','vp-notas'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('vg-preview').style.display='none';
   document.getElementById('vp-preview').style.display='none';
   document.getElementById('vg-foto').value=''; document.getElementById('vp-foto').value='';
@@ -2378,8 +2380,8 @@ function superAbrirNuevoLab(){
   document.getElementById('nlIcon').value='fa-flask';
   document.getElementById('nlLogo').value='';
   // Reset paleta visual
-  document.querySelectorAll('#nlColorPicker button').forEach(b=>b.style.borderColor='transparent');
-  document.querySelectorAll('#nlIconPicker button').forEach(b=>{b.style.background='var(--bg)'; b.style.borderColor='var(--border)';});
+  document.querySelectorAll('#nlColorPicker button').forEach(function(b){return b.style.borderColor='transparent';});
+  document.querySelectorAll('#nlIconPicker button').forEach(function(b){b.style.background='var(--bg)'; b.style.borderColor='var(--border)';});
   openModal('modalNuevoLab');
 }
 function nlPreviewLogo(input){
@@ -2391,8 +2393,8 @@ function nlPreviewLogo(input){
   };
   reader.readAsDataURL(input.files[0]);
 }
-function nlSelColor(col,btn){document.getElementById('nlColor').value=col; document.querySelectorAll('#nlColorPicker button').forEach(b=>b.style.borderColor='transparent'); btn.style.borderColor='#000';}
-function nlSelIcon(ic,btn){document.getElementById('nlIcon').value=ic; document.querySelectorAll('#nlIconPicker button').forEach(b=>{b.style.background='var(--bg)'; b.style.borderColor='var(--border)';}); btn.style.background=buttonColor=document.getElementById('nlColor').value; btn.style.borderColor=buttonColor; btn.style.color='#fff';}
+function nlSelColor(col,btn){document.getElementById('nlColor').value=col; document.querySelectorAll('#nlColorPicker button').forEach(function(b){return b.style.borderColor='transparent';}); btn.style.borderColor='#000';}
+function nlSelIcon(ic,btn){document.getElementById('nlIcon').value=ic; document.querySelectorAll('#nlIconPicker button').forEach(function(b){b.style.background='var(--bg)'; b.style.borderColor='var(--border)';}); btn.style.background=buttonColor=document.getElementById('nlColor').value; btn.style.borderColor=buttonColor; btn.style.color='#fff';}
 function superGuardarLab(){
   var nombre=document.getElementById('nlNombre').value.trim();
   if(!nombre){toast('Escribe el nombre del laboratorio','err');return;}
@@ -2429,7 +2431,7 @@ var _superBackTo=null;
 var rptDesde=null, rptHasta=null;
 
 function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   var el=document.getElementById(id);
   if(el) el.classList.add('active');
 }
@@ -2482,9 +2484,9 @@ function todayDow(){
   var d=new Date().getDay(); return d===0?7:d;
 }
 function todayForDow(dow){return today();}
-function userById(id){return (D.users||[]).find(u=>u.id===id);}
-function pointById(id){return (D.points||[]).find(p=>p.id===id);}
-function visitById(id){return (D.visits||[]).find(v=>v.id===id);}
+function userById(id){return (D.users||[]).find(function(u){return u.id===id;});}
+function pointById(id){return (D.points||[]).find(function(p){return p.id===id;});}
+function visitById(id){return (D.visits||[]).find(function(v){return v.id===id;});}
 function mapsLink(lat,lng,addr){
   if(lat&&lng) return 'https://www.google.com/maps?q='+lat+','+lng;
   return 'https://www.google.com/maps/search/'+encodeURIComponent(addr||'');
@@ -2493,12 +2495,12 @@ function addrHTML(addr,lat,lng){
   return '<a href="'+mapsLink(lat,lng,addr)+'" target="_blank" class="map-link"><i class="fa-solid fa-location-dot"></i>'+esc(addr||'Sin dirección')+'</a>';
 }
 function buildMapsRouteUrl(pts){
-  var valid=pts.filter(p=>p.lat&&p.lng);
+  var valid=pts.filter(function(p){return p.lat&&p.lng;});
   if(!valid.length) return '';
   if(valid.length===1) return mapsLink(valid[0].lat,valid[0].lng,valid[0].address);
   var origin=valid[0].lat+','+valid[0].lng;
   var dest=valid[valid.length-1].lat+','+valid[valid.length-1].lng;
-  var waypoints=valid.slice(1,-1).map(p=>p.lat+','+p.lng).join('|');
+  var waypoints=valid.slice(1,-1).map(function(p){return p.lat+','+p.lng;}).join('|');
   return 'https://www.google.com/maps/dir/?api=1&origin='+origin+'&destination='+dest+(waypoints?'&waypoints='+waypoints:'');
 }
 
@@ -2527,8 +2529,8 @@ function cancelConfirm(){
 
 function switchAdminTab(tab,btn){
   currentAdminTab=tab;
-  document.querySelectorAll('#adminScreen .tab-content').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('#adminScreen .tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#adminScreen .tab-content').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('#adminScreen .tab-btn').forEach(function(b){b.classList.remove('active');});
   var el=document.getElementById('aTab-'+tab);
   if(el) el.classList.add('active');
   if(btn) btn.classList.add('active');
@@ -2546,8 +2548,8 @@ function switchAdminTab(tab,btn){
 }
 function switchVisitorTab(tab,btn){
   currentVisitorTab=tab;
-  document.querySelectorAll('#visitorScreen .tab-content').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('#visitorScreen .tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#visitorScreen .tab-content').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('#visitorScreen .tab-btn').forEach(function(b){b.classList.remove('active');});
   var el=document.getElementById('vTab-'+tab);
   if(el) el.classList.add('active');
   if(btn) btn.classList.add('active');
@@ -2586,8 +2588,8 @@ function renderSuperUsers(){
   var el=document.getElementById('superUserList');
   if(!el) return;
   if(!(D.users||[]).length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-users"></i><p>No hay usuarios</p></div>';return;}
-  el.innerHTML=(D.users||[]).map(u=>{
-    var lab=LABS.find(l=>l.id===u.labId);
+  el.innerHTML=(D.users||[]).map(function(u){
+    var lab=LABS.find(function(l){return l.id===u.labId;});
     var col=avatarColor(u.id);
     return `<div class="user-item" onclick="openSuperDetail('${u.id}')">
       <div class="avatar" style="background:${col};">${initials(u.name)}</div>
@@ -2605,10 +2607,10 @@ function openSuperDetail(uid){
   lastSuperDetailId=uid;
   switchSuperTab('superDetail',null);
   var el=document.getElementById('superDetailContent');
-  var lab=LABS.find(l=>l.id===u.labId);
+  var lab=LABS.find(function(l){return l.id===u.labId;});
   var col=avatarColor(u.id);
-  var pts=(D.points||[]).filter(p=>p.assignedTo===uid);
-  var visits=(D.visits||[]).filter(v=>v.visitorId===uid);
+  var pts=(D.points||[]).filter(function(p){return p.assignedTo===uid;});
+  var visits=(D.visits||[]).filter(function(v){return v.visitorId===uid;});
   el.innerHTML=`
     <div style="text-align:center;padding:20px 0 16px;">
       <div class="avatar" style="width:64px;height:64px;font-size:24px;margin:0 auto 10px;background:${col};">${initials(u.name)}</div>
@@ -2632,14 +2634,13 @@ function openSuperDetail(uid){
       </button>
     </div>
     <div style="margin-top:16px;"><div class="section-title">Puntos asignados</div>
-      ${pts.length?pts.map(p=>`<div class="card" style="margin-bottom:8px;padding:12px;">
-        <div style="font-weight:700;">${esc(p.name)}</div>
-        <div style="font-size:12px;color:var(--muted);">${esc(p.address||'')}</div>
-        <div style="display:flex;gap:6px;margin-top:8px;">
-          <button class="btn btn-ghost btn-sm" onclick="_superBackTo='${u.id}';openPointEdit('${p.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
-          <button class="btn btn-danger btn-sm" onclick="deletePoint('${p.id}','${u.id}')"><i class="fa-solid fa-trash"></i></button>
-        </div>
-      </div>`).join(''):'<div class="empty-state" style="padding:20px;"><i class="fa-solid fa-map-pin"></i><p>Sin puntos</p></div>'}
+      ${pts.length?pts.map(function(p){return '<div class="card" style="margin-bottom:8px;padding:12px;">'
+        +'<div style="font-weight:700;">'+esc(p.name)+'</div>'
+        +'<div style="font-size:12px;color:var(--muted);">'+esc(p.address||'')+'</div>'
+        +'<div style="display:flex;gap:6px;margin-top:8px;">'
+        +'<button class="btn btn-ghost btn-sm" onclick="_superBackTo=\''+u.id+'\';openPointEdit(\''+p.id+'\')"><i class="fa-solid fa-pen"></i> Editar</button>'
+        +'<button class="btn btn-danger btn-sm" onclick="deletePoint(\''+p.id+'\',\''+u.id+'\')"><i class="fa-solid fa-trash"></i></button>'
+        +'</div></div>';}).join(''):'<div class="empty-state" style="padding:20px;"><i class="fa-solid fa-map-pin"></i><p>Sin puntos</p></div>'}
       <button class="btn btn-ghost" style="margin-top:8px;" onclick="openNewPoint('${u.id}')"><i class="fa-solid fa-plus"></i> Nuevo punto</button>
     <button class="btn btn-ghost" style="margin-top:8px;background:#0303B5;color:#fff;" onclick="abrirCargaExcel()"><i class="fa-solid fa-file-excel"></i> Cargar desde Excel</button>
     </div>
@@ -2683,13 +2684,13 @@ function superSaveUser(){
     if(u){u.name=name;u.username=username;u.role=role;u.labId=labId;if(password)u.password=password;}
   }else{
     if(!password){toast('Contraseña obligatoria','err');return;}
-    if((D.users||[]).find(u=>u.username===username)){toast('Usuario ya existe','err');return;}
+    if((D.users||[]).find(function(u){return u.username===username;})){toast('Usuario ya existe','err');return;}
     D.users.push({id:uid(),name,username,password,role,labId,active:true});
   }
   save(D); closeModal('modalSuperEdit'); renderSuperUsers(); toast(id?'Usuario actualizado':'Usuario creado');
 }
 function superDeleteUser(uid){
-  D.users=(D.users||[]).filter(u=>u.id!==uid);
+  D.users=(D.users||[]).filter(function(u){return u.id!==uid;});
   save(D); closeModal('modalSuperEdit'); renderSuperUsers(); toast('Usuario eliminado');
 }
 function toggleUserActive(uid){
@@ -2710,7 +2711,7 @@ function togglePw(uid,pw){
   if(el) el.textContent=el.textContent==='••••••••'?pw:'••••••••';
 }
 function copyPw(pw){
-  navigator.clipboard.writeText(pw).then(()=>toast('Contraseña copiada')).catch(()=>toast('No se pudo copiar','err'));
+  navigator.clipboard.writeText(pw).then(function(){toast('Contrasena copiada');}).catch(function(){toast('No se pudo copiar','err');});
 }
 function renderSuperVisitas(){
   var el=document.getElementById('superVisitasList');
@@ -2753,9 +2754,9 @@ function renderSuperFotos(){
 function renderSuperLabs(){
   var el=document.getElementById('superLabsList');
   if(!el) return;
-  el.innerHTML=LABS.map(lab=>{
-    var members=(D.users||[]).filter(u=>u.labId===lab.id).length;
-    var visits=(D.visits||[]).filter(v=>v.labId===lab.id&&v.status==='completed').length;
+  el.innerHTML=LABS.map(function(lab){
+    var members=(D.users||[]).filter(function(u){return u.labId===lab.id;}).length;
+    var visits=(D.visits||[]).filter(function(v){return v.labId===lab.id&&v.status==='completed';}).length;
     return `<div class="card" style="margin-bottom:10px;">
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="width:44px;height:44px;border-radius:12px;background:${lab.color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;flex-shrink:0;">
@@ -2773,13 +2774,13 @@ function renderSuperLabs(){
 function renderCanvasDashboard(){
   var el=document.getElementById('aTab-canvas');
   if(!el) return;
-  var lab=LABS.find(l=>l.id===currentLabId);
+  var lab=LABS.find(function(l){return l.id===currentLabId;});
   var labColor=lab?lab.color:'var(--primary)';
   var labColorLight=lab?lab.colorLight:'var(--primary-50)';
-  var myUsers=(D.users||[]).filter(u=>u.labId===currentLabId&&u.role==='visitor'&&u.active);
-  var todayVisits=(D.visits||[]).filter(v=>v.labId===currentLabId&&v.date===today());
-  var completed=todayVisits.filter(v=>v.status==='completed').length;
-  var totalPts=(D.points||[]).filter(p=>myUsers.some(u=>u.id===p.assignedTo)).length;
+  var myUsers=(D.users||[]).filter(function(u){return u.labId===currentLabId&&u.role==='visitor'&&u.active;});
+  var todayVisits=(D.visits||[]).filter(function(v){return v.labId===currentLabId&&v.date===today();});
+  var completed=todayVisits.filter(function(v){return v.status==='completed';}).length;
+  var totalPts=(D.points||[]).filter(function(p){return myUsers.some(function(u){return u.id===p.assignedTo;})}).length;
   var pct=totalPts?Math.round(completed/totalPts*100):0;
   el.innerHTML=`
     <div class="canvas-hero" style="background:linear-gradient(135deg,${labColor},${labColor}99);">
@@ -2790,13 +2791,13 @@ function renderCanvasDashboard(){
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-num">${myUsers.length}</div><div class="stat-label">Visitadores</div></div>
       <div class="stat-card"><div class="stat-num">${completed}</div><div class="stat-label">Visitas hoy</div></div>
-      <div class="stat-card"><div class="stat-num">${(D.visits||[]).filter(v=>v.labId===currentLabId&&v.status==='completed').length}</div><div class="stat-label">Total visitas</div></div>
+      <div class="stat-card"><div class="stat-num">${(D.visits||[]).filter(function(v){return v.labId===currentLabId&&v.status==='completed';}).length}</div><div class="stat-label">Total visitas</div></div>
       <div class="stat-card"><div class="stat-num">${totalPts}</div><div class="stat-label">Puntos totales</div></div>
     </div>
     <div class="section-title">Equipo</div>
-    <div class="canvas-grid">${myUsers.map(u=>{
-      var uPts=(D.points||[]).filter(p=>p.assignedTo===u.id);
-      var uDone=(D.visits||[]).filter(v=>v.visitorId===u.id&&v.date===today()&&v.status==='completed').length;
+    <div class="canvas-grid">${myUsers.map(function(u){
+      var uPts=(D.points||[]).filter(function(p){return p.assignedTo===u.id;});
+      var uDone=(D.visits||[]).filter(function(v){return v.visitorId===u.id&&v.date===today()&&v.status==='completed';}).length;
       var uPct=uPts.length?Math.round(uDone/uPts.length*100):0;
       var col=avatarColor(u.id);
       return `<div class="canvas-card" onclick="switchAdminTab('visitadores',document.querySelectorAll('#adminScreen .tab-btn')[1]);openVisitorDetail('${u.id}')">
@@ -2814,12 +2815,12 @@ function renderCanvasDashboard(){
 function renderVisitorList(){
   var el=document.getElementById('visitorList');
   if(!el) return;
-  var myUsers=(D.users||[]).filter(u=>u.labId===currentLabId&&u.role==='visitor');
+  var myUsers=(D.users||[]).filter(function(u){return u.labId===currentLabId&&u.role==='visitor';});
   document.getElementById('visitorCount').textContent=myUsers.length;
   if(!myUsers.length){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-users"></i><p>Sin visitadores</p></div>';return;}
-  el.innerHTML=myUsers.map(u=>{
+  el.innerHTML=myUsers.map(function(u){
     var col=avatarColor(u.id);
-    var pts=(D.points||[]).filter(p=>p.assignedTo===u.id).length;
+    var pts=(D.points||[]).filter(function(p){return p.assignedTo===u.id;}).length;
     return `<div class="user-item" onclick="openVisitorDetail('${u.id}')">
       <div class="avatar" style="background:${col};">${initials(u.name)}</div>
       <div style="flex:1;"><div style="font-weight:700;">${esc(u.name)}</div><div style="font-size:12px;color:var(--muted);">@${esc(u.username)} · ${pts} puntos</div></div>
@@ -2834,9 +2835,9 @@ function openVisitorDetail(uid){
   switchAdminTab('visitorDetail',null);
   var el=document.getElementById('visitorDetailContent');
   var col=avatarColor(u.id);
-  var pts=(D.points||[]).filter(p=>p.assignedTo===uid);
-  var visits=(D.visits||[]).filter(v=>v.visitorId===uid);
-  var todayDone=visits.filter(v=>v.date===today()&&v.status==='completed').length;
+  var pts=(D.points||[]).filter(function(p){return p.assignedTo===uid;});
+  var visits=(D.visits||[]).filter(function(v){return v.visitorId===uid;});
+  var todayDone=visits.filter(function(v){return v.date===today()&&v.status==='completed';}).length;
   el.innerHTML=`
     <div style="text-align:center;padding:16px 0;">
       <div class="avatar" style="width:64px;height:64px;font-size:24px;margin:0 auto 10px;background:${col};">${initials(u.name)}</div>
@@ -2849,21 +2850,14 @@ function openVisitorDetail(uid){
     </div>
     <div class="stat-grid" style="margin-top:12px;">
       <div class="stat-card"><div class="stat-num">${todayDone}</div><div class="stat-label">Hoy</div></div>
-      <div class="stat-card"><div class="stat-num">${visits.filter(v=>v.status==='completed').length}</div><div class="stat-label">Total</div></div>
+      <div class="stat-card"><div class="stat-num">${visits.filter(function(v){return v.status==='completed';}).length}</div><div class="stat-label">Total</div></div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:16px;">
       <button class="btn btn-primary" style="flex:1;" onclick="openEditVisitor('${u.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
       <button class="btn ${u.active?'btn-danger':'btn-success'}" style="flex:1;" onclick="toggleVisitorActive('${u.id}')">${u.active?'Desactivar':'Activar'}</button>
     </div>
     <div class="section-title">Puntos</div>
-    ${pts.map(p=>`<div class="card" style="margin-bottom:8px;padding:12px;">
-      <div style="font-weight:700;">${esc(p.name)}</div>
-      <div style="font-size:12px;color:var(--muted);">${esc(p.address||'')}</div>
-      <div style="display:flex;gap:6px;margin-top:8px;">
-        <button class="btn btn-ghost btn-sm" onclick="openPointEdit('${p.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
-        <button class="btn btn-danger btn-sm" onclick="deletePoint('${p.id}','${uid}')"><i class="fa-solid fa-trash"></i></button>
-      </div>
-    </div>`).join('')}
+    ${pts.map(function(p){return '<div class="card" style="margin-bottom:8px;padding:12px;"><div style="font-weight:700;">'+esc(p.name)+'</div><div style="font-size:12px;color:var(--muted);">'+esc(p.address||'')+'</div><div style="display:flex;gap:6px;margin-top:8px;"><button class="btn btn-ghost btn-sm" onclick="openPointEdit(\''+p.id+'\')"><i class="fa-solid fa-pen"></i> Editar</button><button class="btn btn-danger btn-sm" onclick="deletePoint(\''+p.id+"\',\'"+uid+'\')"><i class="fa-solid fa-trash"></i></button></div></div>';}).join('')}
     <button class="btn btn-ghost" onclick="openNewPoint('${uid}')"><i class="fa-solid fa-plus"></i> Nuevo punto</button>`;
 }
 function openNewVisitor(){
@@ -2898,7 +2892,7 @@ function saveVisitor(){
     if(u){u.name=name;u.username=username;u.labId=labId;if(password)u.password=password;}
   }else{
     if(!password){toast('Contraseña obligatoria','err');return;}
-    if((D.users||[]).find(u=>u.username===username)){toast('Usuario ya existe','err');return;}
+    if((D.users||[]).find(function(u){return u.username===username;})){toast('Usuario ya existe','err');return;}
     D.users.push({id:uid(),name,username,password,role:'visitor',labId,active:true});
   }
   save(D); closeModal('modalVisitor'); renderVisitorList(); toast(id?'Visitador actualizado':'Visitador creado');
@@ -2938,7 +2932,7 @@ function openPointEdit(pid){
   openModal('modalPoint');
 }
 function deletePoint(pid,vid){
-  D.points=(D.points||[]).filter(p=>p.id!==pid);
+  D.points=(D.points||[]).filter(function(p){return p.id!==pid;});
   save(D);
   if(vid) openVisitorDetail(vid);
   toast('Punto eliminado');
@@ -2946,8 +2940,8 @@ function deletePoint(pid,vid){
 function populateVisitFilter(){
   var sel=document.getElementById('filterVisitVisitor');
   if(!sel) return;
-  var myUsers=(D.users||[]).filter(u=>u.labId===currentLabId&&u.role==='visitor');
-  sel.innerHTML='<option value="">Todos</option>'+myUsers.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('');
+  var myUsers=(D.users||[]).filter(function(u){return u.labId===currentLabId&&u.role==='visitor';});
+  sel.innerHTML='<option value="">Todos</option>'+myUsers.map(function(u){return '<option value="'+u.id+'">'+esc(u.name)+'</option>';}).join('');
 }
 var _adminVisitasPage=0; // paginacion de visitas en panel admin
 function renderAdminVisitas(){
@@ -3019,7 +3013,7 @@ function renderAdminFotos(){
 function arriveToPoint(pid){
   var p=pointById(pid);
   if(!p) return;
-  var existing=(D.visits||[]).find(v=>v.pointId===pid&&v.visitorId===currentUser.id&&v.date===today());
+  var existing=(D.visits||[]).find(function(v){return v.pointId===pid&&v.visitorId===currentUser.id&&v.date===today();});
   if(existing) return;
   var v={id:uid(),pointId:pid,visitorId:currentUser.id,labId:p.labId||currentUser.labId,date:today(),status:'in-progress',arrivedAt:new Date().toISOString(),type:'general'};
   if(visitaGpsCoords){v.lat=visitaGpsCoords.lat;v.lng=visitaGpsCoords.lng;}
@@ -3239,10 +3233,10 @@ function renderVisitorPerfil(){
   if(el){el.style.background=avatarColor(currentUser.id);el.textContent=initials(currentUser.name);}
   var nameEl=document.getElementById('vProfileName'); if(nameEl) nameEl.textContent=currentUser.name;
   var userEl=document.getElementById('vProfileUser'); if(userEl) userEl.textContent='@'+currentUser.username;
-  var total=(D.visits||[]).filter(v=>v.visitorId===currentUser.id&&v.status==='completed').length;
-  var todayV=(D.visits||[]).filter(v=>v.visitorId===currentUser.id&&v.date===today()&&v.status==='completed').length;
+  var total=(D.visits||[]).filter(function(v){return v.visitorId===currentUser.id&&v.status==='completed';}).length;
+  var todayV=(D.visits||[]).filter(function(v){return v.visitorId===currentUser.id&&v.date===today()&&v.status==='completed';}).length;
   var now=new Date(); var weekStart=new Date(now); weekStart.setDate(now.getDate()-now.getDay()+1);
-  var weekV=(D.visits||[]).filter(v=>v.visitorId===currentUser.id&&v.status==='completed'&&v.date>=weekStart.toISOString().slice(0,10)).length;
+  var weekV=(D.visits||[]).filter(function(v){return v.visitorId===currentUser.id&&v.status==='completed'&&v.date>=weekStart.toISOString().slice(0,10);}).length;
   var t=document.getElementById('vProfileTotal'); if(t) t.textContent=total;
   var td=document.getElementById('vProfileToday'); if(td) td.textContent=todayV;
   var wk=document.getElementById('vProfileWeek'); if(wk) wk.textContent=weekV;
@@ -3320,7 +3314,7 @@ function confirmarMapaPicker(){
 }
 
 function openRoutePreview(dow){
-  var myPts=(D.points||[]).filter(p=>p.assignedTo===currentUser.id&&p.dayOfWeek==dow).sort((a,b)=>a.order-b.order);
+  var myPts=(D.points||[]).filter(function(p){return p.assignedTo===currentUser.id&&p.dayOfWeek==dow;}).sort(function(a,b){return a.order-b.order;});
   var dayName=DOW_NAME[dow]||'';
   var mapsUrl=buildMapsRouteUrl(myPts);
   var html=`<div class="preview-header">
@@ -3855,9 +3849,8 @@ window.addEventListener('DOMContentLoaded', function(){
   // Registrar Service Worker
   if('serviceWorker' in navigator){
     // Detectar base path automaticamente
-    var swPath = window.location.pathname.replace(/\/[^\/]*$/, '/') + 'sw.js';
-    navigator.serviceWorker.register(swPath).then(function(reg){
-      console.log('SW registrado:', swPath);
+    navigator.serviceWorker.register('/sw.js').then(function(reg){
+      console.log('SW registrado');
     }).catch(function(err){
       console.log('SW error:', err);
     });
@@ -3903,8 +3896,9 @@ function setupListenersForRole(){
       saveLocal(D);
       scheduleRender();
     });
-    // Visitador solo escucha SUS puntos
-    dbRef.ref('medvisit/points').orderByChild('assignedTo').equalTo(currentUser.id).on('value',function(snap){
+    // Visitador escucha todos los puntos y filtra en memoria
+    // (retrocompatible con puntos sin campo assignedTo)
+    dbRef.ref('medvisit/points').on('value',function(snap){
       var remote=snap.val();
       var newPts=toArray(remote);
       if(JSON.stringify(newPts)===JSON.stringify(D.points)) return;
@@ -3912,8 +3906,9 @@ function setupListenersForRole(){
       saveLocal(D);
       scheduleRender();
     });
-    // Visitador solo escucha SUS pendientes
-    dbRef.ref('medvisit/pendientes').orderByChild('userId').equalTo(currentUser.id).on('value',function(snap){
+    // Visitador escucha todos los pendientes y filtra en memoria
+    // (retrocompatible con pendientes sin campo userId)
+    dbRef.ref('medvisit/pendientes').on('value',function(snap){
       var remote=snap.val();
       var newPends=toArray(remote||[]);
       if(JSON.stringify(newPends)===JSON.stringify(D.pendientes)) return;
