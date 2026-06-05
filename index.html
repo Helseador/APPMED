@@ -1063,7 +1063,7 @@ function savePendiente(p){
         // Buscar por id en Firebase y actualizar
         dbRef.ref('medvisit/pendientes').orderByChild('id').equalTo(p.id).once('value',function(snap){
           snap.forEach(function(child){
-            child.ref.set(p);
+            child.ref.set(p).catch(function(err){console.error(err);});
           });
         });
       }
@@ -1965,7 +1965,7 @@ function saveVisit(visit){
             photo:visit.photo||null,
             jefe:visit.jefe||null,
             notes:visit.notes||null
-          });
+          }).catch(function(err){console.error('Firebase update error',err);});
         });
       });
     }
