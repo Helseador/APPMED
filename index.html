@@ -248,17 +248,10 @@ window.addEventListener('unhandledrejection', function(e) {
 </script>
 
 <div class="toast-wrap" id="toastWrap"></div>
-<div class="sync-indicator" id="syncIndicator" style="display:none;"><i class="fa-solid fa-arrows-rotate"></i> Sincronizando...</div>
-<div class="lockout-overlay" id="lockoutOverlay" style="display:none;">
-  <i class="fa-solid fa-lock"></i>
-  <div style="font-size:18px;font-weight:700;">Cuenta bloqueada temporalmente</div>
-  <div class="timer" id="lockoutTimer">00:30</div>
-  <div style="font-size:13px;color:rgba(255,255,255,0.5);">Demasiados intentos fallidos</div>
-</div>
 
 <div class="confirm-overlay" id="gpsPermOverlay">
-  <div class="gps-perm-card">
-    <div class="gps-perm-icon"><i class="fa-solid fa-location-crosshairs"></i></div>
+  <div style="background:var(--card);border-radius:18px;padding:32px 24px;max-width:340px;width:100%;text-align:center;">
+    <div style="width:56px;height:56px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:24px;background:var(--primary-50);color:var(--primary);"><i class="fa-solid fa-location-crosshairs"></i></div>
     <div style="font-size:17px;font-weight:800;margin-bottom:8px;">Activar ubicacion</div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6;">Para registrar tu llegada a cada punto necesitamos acceder a tu ubicacion actual.</div>
     <div style="display:flex;flex-direction:column;gap:10px;">
@@ -767,6 +760,9 @@ var SUPER_ADMIN_KEY='TesJua2024!';
 var MAX_LOGIN_ATTEMPTS=5, LOCKOUT_SECONDS=30, SESSION_MINUTES=30;
 var AV_COLORS=['#0303B5','#D97706','#DC2626','#7C3AED','#0303B5','#DB2777','#0303B5','#EA580C','#4F46E5','#0891B2'];
 var MIN_PER_PUNTO=15;
+
+function ensurePDF(cb){ if(typeof jspdf!=='undefined'){ cb(); }else{ setTimeout(function(){ ensurePDF(cb); },300); } }
+function ensurePPTX(cb){ if(typeof PptxGenJS!=='undefined'){ cb(); }else{ setTimeout(function(){ ensurePPTX(cb); },300); } }
 
 function defaultData(){
   return {users:[],visits:[],points:[],labs:[],notifications:[],pendientes:[]};
@@ -1992,9 +1988,6 @@ function pushVisit(visit){
   }
 }
 
-function updateConnBadge(){
-  // Badge oculto - no mostrar mensajes de conexion
-}
 function updateHeaderConn(){
   var ids=['adminConn','visitorConn','superConn','labSelectConn','contadorConn'];
   var online=firebaseReady && firebaseOnline;
@@ -2009,9 +2002,6 @@ function updateHeaderConn(){
       el.innerHTML='<span class="hdot"></span>Local';
     }
   });
-}
-function showSyncIndicator(){
-  // Indicador de sincronizacion desactivado
 }
 function renderCurrentScreen(){
   if(!currentUser) return;
@@ -2497,6 +2487,16 @@ function showScreen(id){
 
 function showLockout(){
   var overlay=document.getElementById('lockoutOverlay');
+  if(!overlay){
+    overlay=document.createElement('div');
+    overlay.id='lockoutOverlay';
+    overlay.style.cssText='position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(15,23,42,0.9);z-index:9999;gap:12px;';
+    overlay.innerHTML='<i class="fa-solid fa-lock" style="font-size:36px;color:#F59E0B;"></i>'
+      +'<div style="font-size:18px;font-weight:700;color:#fff;">Cuenta bloqueada temporalmente</div>'
+      +'<div class="timer" id="lockoutTimer" style="font-size:40px;font-weight:900;color:#F59E0B;">00:30</div>'
+      +'<div style="font-size:13px;color:rgba(255,255,255,0.5);">Demasiados intentos fallidos</div>';
+    document.body.appendChild(overlay);
+  }
   overlay.style.display='flex';
   var seconds=LOCKOUT_SECONDS;
   if(lockoutInterval) clearInterval(lockoutInterval);
@@ -3524,7 +3524,6 @@ function getReportData(labId){
 
 function generarPDF(labId){ toast('PDF no disponible','info'); }
 function generarPDFMulti(){ toast('PDF no disponible','info'); }
-function _generarPDF(labId){}
 function generarPDFMarketing(periodo){
   if(typeof periodo==='object'&&periodo&&periodo.dataset) periodo=periodo.dataset.p||'mes';
   toast('Generando PDF Marketing...','info');
@@ -3793,7 +3792,6 @@ function tryRestoreSession(){
 <!-- Scripts diferidos: no bloquean el render inicial -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js" defer></script>
