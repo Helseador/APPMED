@@ -16,16 +16,17 @@
   <title>APPMED</title>
   <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiTWVkVmlzaXQiLCJzaG9ydF9uYW1lIjoiTWVkVmlzaXQiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzBGNzY2RSIsInRoZW1lX2NvbG9yIjoiIzBGNzY2RSJ9">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Serif+Display&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Serif+Display&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Serif+Display&display=swap" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></noscript>
   <style>
     :root{--primary:#0303B5;--primary-light:#2D2DCC;--primary-50:#EEEEFF;--primary-100:#CCCCFF;--accent:#F59E0B;--accent-light:#FEF3C7;--danger:#DC2626;--danger-light:#FEE2E2;--success:#16A34A;--success-light:#DCFCE7;--info:#0303B5;--info-light:#DBEAFE;--bg:#F1F5F9;--card:#FFFFFF;--fg:#0F172A;--muted:#64748B;--border:#E2E8F0;--radius:14px;}
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-    body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--fg);overflow-x:hidden;min-height:100dvh;}
+    body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--fg);overflow-x:hidden;min-height:100vh;}
     h1,h2,h3,.serif{font-family:'DM Serif Display',serif;}
     input,select,textarea,button{font-family:inherit;}
-    .screen{display:none;min-height:100dvh;flex-direction:column;}
+    .screen{display:none;min-height:100vh;flex-direction:column;}
     .screen.active{display:flex;}
     #loginScreen{background:linear-gradient(160deg,#0303B5 0%,#020280 50%,#022C22 100%);justify-content:center;align-items:center;padding:24px;text-align:center;}
     .login-logo{width:72px;height:72px;background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;border:1px solid rgba(255,255,255,0.2);}
@@ -132,7 +133,7 @@
     @keyframes spin{to{transform:rotate(360deg);}}
     .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
     .modal-overlay.open{opacity:1;pointer-events:all;}
-    .modal-sheet{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:90dvh;overflow-y:auto;padding:8px 20px 24px;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
+    .modal-sheet{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;padding:8px 20px 24px;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
     .modal-overlay.open .modal-sheet{transform:translateY(0);}
     .modal-handle{width:40px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 16px;}
     .modal-title{font-size:18px;font-weight:800;margin-bottom:20px;font-family:'DM Serif Display',serif;}
@@ -524,7 +525,7 @@ window.addEventListener('unhandledrejection', function(e) {
 
 <!-- MODAL: NUEVA VISITA (selector de tipo) -->
 <div class="modal-overlay" id="modalNuevaVisita">
-  <div class="modal-sheet" style="max-height:95dvh;">
+  <div class="modal-sheet" style="max-height:95vh;">
     <div class="modal-handle"></div>
     <div class="modal-title">Nueva visita</div>
     <div id="visitaTipoSelector">
@@ -610,7 +611,7 @@ window.addEventListener('unhandledrejection', function(e) {
 
 <!-- MODAL VER VISITA PROFESIONAL -->
 <div class="modal-overlay" id="modalVerProfesional">
-  <div class="modal-sheet" style="max-height:95dvh;">
+  <div class="modal-sheet" style="max-height:95vh;">
     <div class="modal-handle"></div>
     <div class="modal-title">Detalle visita profesional</div>
     <div id="modalVerProfContent"></div>
