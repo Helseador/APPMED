@@ -236,7 +236,7 @@
 <body>
 
 <div class="toast-wrap" id="toastWrap"></div>
-<div class="sync-indicator" id="syncIndicator"><i class="fa-solid fa-arrows-rotate"></i> Sincronizando...</div>
+<div class="sync-indicator" id="syncIndicator" style="display:none;"><i class="fa-solid fa-arrows-rotate"></i> Sincronizando...</div>
 <div class="lockout-overlay" id="lockoutOverlay" style="display:none;">
   <i class="fa-solid fa-lock"></i>
   <div style="font-size:18px;font-weight:700;">Cuenta bloqueada temporalmente</div>
@@ -1771,57 +1771,79 @@ function initFirebase(){
     if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
     dbRef=firebase.database();
     firebaseReady=true;
+    // Monitorear estado de conexión
+    dbRef.ref('.info/connected').on('value', function(snap){
+      firebaseOnline=snap.val()===true;
+      updateHeaderConn();
+    });
   }catch(e){
     console.error('Firebase init error:',e);
     firebaseReady=false;
+    // Mostrar error visible al usuario
+    var errEl=document.getElementById('loginError');
+    if(errEl) errEl.textContent='Error de conexión con el servidor. Verifica tu internet e intenta de nuevo.';
     return;
   }
 
   // Escuchar cambios en tiempo real por colección
+  function safeRef(path, cb){
+    try{
+      dbRef.ref(path).on('value', cb);
+    }catch(e){
+      console.error('Error escuchando', path, e);
+    }
+  }
 
-  dbRef.ref('medvisit/visits').on('value',function(snap){
-    var remote=snap.val();
-    var newVisits=toArray(remote);
-    if(JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
-    D.visits=newVisits;
-    saveLocal(D);
-    showSyncIndicator();
-    scheduleRender();
+  safeRef('medvisit/visits', function(snap){
+    try{
+      var remote=snap.val();
+      var newVisits=toArray(remote);
+      if(JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
+      D.visits=newVisits;
+      saveLocal(D);
+      scheduleRender();
+    }catch(e){console.error(e);}
   });
   var _sessionRestored=false;
-  // Listener users es prioritario - se carga inmediato
-  dbRef.ref('medvisit/users').on('value',function(snap){
-    var remote=snap.val();
-    var newUsers=toArray(remote);
-    if(JSON.stringify(newUsers)===JSON.stringify(D.users)) return;
-    D.users=newUsers;
-    saveLocal(D);
-    // Intentar restaurar sesion la primera vez que llegan los usuarios
-    if(!_sessionRestored&&!currentUser){
-      _sessionRestored=true;
-      tryRestoreSession();
-    }
-    scheduleRender();
+  safeRef('medvisit/users', function(snap){
+    try{
+      var remote=snap.val();
+      var newUsers=toArray(remote);
+      if(JSON.stringify(newUsers)===JSON.stringify(D.users)) return;
+      D.users=newUsers;
+      saveLocal(D);
+      if(!_sessionRestored&&!currentUser){
+        _sessionRestored=true;
+        tryRestoreSession();
+      }
+      scheduleRender();
+    }catch(e){console.error(e);}
   });
-  dbRef.ref('medvisit/points').on('value',function(snap){
-    var remote=snap.val();
-    var newPts=toArray(remote);
-    if(JSON.stringify(newPts)===JSON.stringify(D.points)) return;
-    D.points=newPts;
-    saveLocal(D);
-    if(currentUser&&currentUser.role==='visitor') scheduleRender();
+  safeRef('medvisit/points', function(snap){
+    try{
+      var remote=snap.val();
+      var newPts=toArray(remote);
+      if(JSON.stringify(newPts)===JSON.stringify(D.points)) return;
+      D.points=newPts;
+      saveLocal(D);
+      if(currentUser&&currentUser.role==='visitor') scheduleRender();
+    }catch(e){console.error(e);}
   });
-  dbRef.ref('medvisit/labs').on('value',function(snap){
-    var remote=snap.val();
-    D.labs=toArray(remote||[]);
-    refreshLabs();
+  safeRef('medvisit/labs', function(snap){
+    try{
+      var remote=snap.val();
+      D.labs=toArray(remote||[]);
+      refreshLabs();
+    }catch(e){console.error(e);}
   });
-  dbRef.ref('medvisit/pendientes').on('value',function(snap){
-    var remote=snap.val();
-    var newPends=toArray(remote||[]);
-    if(JSON.stringify(newPends)===JSON.stringify(D.pendientes)) return;
-    D.pendientes=newPends;
-    scheduleRender();
+  safeRef('medvisit/pendientes', function(snap){
+    try{
+      var remote=snap.val();
+      var newPends=toArray(remote||[]);
+      if(JSON.stringify(newPends)===JSON.stringify(D.pendientes)) return;
+      D.pendientes=newPends;
+      scheduleRender();
+    }catch(e){console.error(e);}
   });
 }
 
@@ -1937,10 +1959,11 @@ function updateConnBadge(){
 }
 function updateHeaderConn(){
   var ids=['adminConn','visitorConn','superConn','labSelectConn','contadorConn'];
+  var online=firebaseReady && firebaseOnline;
   ids.forEach(function(id){
     var el=document.getElementById(id);
     if(!el) return;
-    if(firebaseOnline){
+    if(online){
       el.className='header-conn online';
       el.innerHTML='<span class="hdot"></span>Cloud';
     }else{
@@ -3641,15 +3664,7 @@ function _generarPPTXMarketing(periodo){
 // Arranque
 window.addEventListener('DOMContentLoaded', function(){
   initFirebase();
-  // Registrar Service Worker
-  if('serviceWorker' in navigator){
-    // Detectar base path automaticamente
-    navigator.serviceWorker.register('/sw.js').then(function(reg){
-      console.log('SW registrado');
-    }).catch(function(err){
-      console.log('SW error:', err);
-    });
-  }
+  // Service Worker eliminado — causaba errores 404 y pantalla en blanco
 });
 
 
@@ -3659,22 +3674,29 @@ window.addEventListener('DOMContentLoaded', function(){
 // Listeners simples - escuchan todo sin filtros por rol
 function setupListenersForRole(){
   if(!dbRef) return;
-  // Detener listeners previos
-  try{ dbRef.ref('medvisit/visits').off(); }catch(e){}
-  try{ dbRef.ref('medvisit/points').off(); }catch(e){}
-  try{ dbRef.ref('medvisit/pendientes').off(); }catch(e){}
+  try{
+    dbRef.ref('medvisit/visits').off();
+    dbRef.ref('medvisit/points').off();
+    dbRef.ref('medvisit/pendientes').off();
+  }catch(e){}
 
-  dbRef.ref('medvisit/visits').on('value',function(snap){
+  function sRef(path, cb){
+    try{ dbRef.ref(path).on('value', function(snap){
+      try{ cb(snap); }catch(e){console.error('cb err', path, e);}
+    }); }catch(e){console.error('ref err', path, e);}
+  }
+
+  sRef('medvisit/visits', function(snap){
     var newVisits=toArray(snap.val());
     if(JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
     D.visits=newVisits; saveLocal(D); scheduleRender();
   });
-  dbRef.ref('medvisit/points').on('value',function(snap){
+  sRef('medvisit/points', function(snap){
     var newPts=toArray(snap.val());
     if(JSON.stringify(newPts)===JSON.stringify(D.points)) return;
     D.points=newPts; saveLocal(D); scheduleRender();
   });
-  dbRef.ref('medvisit/pendientes').on('value',function(snap){
+  sRef('medvisit/pendientes', function(snap){
     var newPends=toArray(snap.val()||[]);
     if(JSON.stringify(newPends)===JSON.stringify(D.pendientes)) return;
     D.pendientes=newPends; scheduleRender();
