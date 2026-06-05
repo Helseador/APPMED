@@ -1826,16 +1826,26 @@ function initFirebase(){
     if(st && !D.users.length) st.innerHTML = '<span style="color:#FCD34D;">⏳ Conectando al servidor... si persiste, recarga la página</span>';
   }, 15000);
 
-  safeRef('medvisit/visits', function(snap){
-    try{
-      var remote=snap.val();
-      var newVisits=toArray(remote);
-      if(JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
-      D.visits=newVisits;
-      saveLocal(D);
-      scheduleRender();
-    }catch(e){console.error(e);}
-  });
+  // Visitas: sincronizar solo las últimas 500 para evitar saturar el móvil
+  // Las visitas antiguas se conservan en caché local
+  try{
+    dbRef.ref('medvisit/visits').orderByKey().limitToLast(500).on('value', function(snap){
+      try{
+        var remote=snap.val();
+        var newVisits=toArray(remote);
+        if(!newVisits.length && JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
+        if(newVisits.length && JSON.stringify(newVisits)===JSON.stringify(D.visits.slice(-newVisits.length))) return;
+        // Merge: actualizar existentes, conservar antiguos del caché
+        newVisits.forEach(function(nv){
+          var idx=D.visits.findIndex(function(ov){return ov.id===nv.id;});
+          if(idx>=0) D.visits[idx]=nv;
+          else D.visits.push(nv);
+        });
+        saveLocal(D);
+        scheduleRender();
+      }catch(e){console.error('Visits merge error:',e);}
+    });
+  }catch(e){console.error('Visits listener error:',e);}
   var _sessionRestored=false;
   safeRef('medvisit/users', function(snap){
     try{
@@ -3724,11 +3734,22 @@ function setupListenersForRole(){
     }); }catch(e){console.error('ref err', path, e);}
   }
 
-  sRef('medvisit/visits', function(snap){
-    var newVisits=toArray(snap.val());
-    if(JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
-    D.visits=newVisits; saveLocal(D); scheduleRender();
-  });
+  // Visitas: solo últimas 500 para evitar saturación
+  try{
+    dbRef.ref('medvisit/visits').orderByKey().limitToLast(500).on('value', function(snap){
+      try{
+        var newVisits=toArray(snap.val());
+        if(!newVisits.length && JSON.stringify(newVisits)===JSON.stringify(D.visits)) return;
+        if(newVisits.length && JSON.stringify(newVisits)===JSON.stringify(D.visits.slice(-newVisits.length))) return;
+        newVisits.forEach(function(nv){
+          var idx=D.visits.findIndex(function(ov){return ov.id===nv.id;});
+          if(idx>=0) D.visits[idx]=nv;
+          else D.visits.push(nv);
+        });
+        saveLocal(D); scheduleRender();
+      }catch(e){console.error('visits merge err',e);}
+    });
+  }catch(e){console.error('visits listener err',e);}
   sRef('medvisit/points', function(snap){
     var newPts=toArray(snap.val());
     if(JSON.stringify(newPts)===JSON.stringify(D.points)) return;
