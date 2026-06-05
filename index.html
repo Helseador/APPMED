@@ -2282,7 +2282,7 @@ function renderVisitorToday(){
   var selector='<div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;">';
   routes.forEach(function(r){
     var active=r===_visitRoute;
-    selector+='<button onclick="_visitRoute=\''+r.replace(/'/g,"\'")+'\'renderVisitorToday()" data-route="'+r+'" onclick="this.dataset.route&&(_visitRoute=this.dataset.route,renderVisitorToday())" style="flex-shrink:0;padding:7px 12px;border-radius:10px;border:'+(active?'2px solid var(--primary)':'1.5px solid var(--border)')+';background:'+(active?'var(--primary)':'var(--card)')+';color:'+(active?'#fff':'var(--fg)')+';font-size:11px;font-weight:700;cursor:pointer;">'+esc(r)+'</button>';
+    selector+='<button onclick="this.dataset.route&&(_visitRoute=this.dataset.route,renderVisitorToday())" data-route="'+r+'" style="flex-shrink:0;padding:7px 12px;border-radius:10px;border:'+(active?'2px solid var(--primary)':'1.5px solid var(--border)')+';background:'+(active?'var(--primary)':'var(--card)')+';color:'+(active?'#fff':'var(--fg)')+';font-size:11px;font-weight:700;cursor:pointer;">'+esc(r)+'</button>';
   });
   selector+='</div>';
   // -------- Filtrar puntos de la ruta ----------
