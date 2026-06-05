@@ -3773,20 +3773,38 @@ function tryRestoreSession(){
       labId:u.labId||'',freeVisit:u.freeVisit===true,active:u.active};
     currentLabId=u.role==='admin'?u.labId||null:null;
 
-    if(u.role==='super'){showScreen('superScreen');renderSuperAdmin();}
-    else if(u.role==='adminGeneral'){currentLabId=null;showScreen('adminScreen');renderAdmin();}
-    else if(u.role==='admin'){showScreen('adminScreen');renderAdmin();}
-    else if(u.role==='contador'){showScreen('contadorScreen');renderContador();}
+    // Safe render: intenta renderizar, si falla vuelve al login con el error visible
+    function safeRender(fn, screenId){
+      try{
+        fn();
+        if(screenId) showScreen(screenId);
+      }catch(e){
+        console.error('SafeRender error:', e);
+        currentUser=null; currentLabId=null;
+        showScreen('loginScreen');
+        var errEl=document.getElementById('loginError');
+        if(errEl) errEl.textContent='Error al cargar: '+(e.message||'desconocido')+'. Recarga la página.';
+      }
+    }
+
+    if(u.role==='super'){ showScreen('superScreen'); safeRender(renderSuperAdmin); }
+    else if(u.role==='adminGeneral'){ currentLabId=null; showScreen('adminScreen'); safeRender(renderAdmin); }
+    else if(u.role==='admin'){ showScreen('adminScreen'); safeRender(renderAdmin); }
+    else if(u.role==='contador'){ showScreen('contadorScreen'); safeRender(renderContador); }
     else if(u.role==='visitor'){
       if(localStorage.getItem('appmed_gps')==='granted'){
-        gpsPermission='granted';showScreen('visitorScreen');renderVisitor();
+        gpsPermission='granted'; showScreen('visitorScreen'); safeRender(renderVisitor);
       } else {
         showGpsPermOverlay();
       }
     }
     // Reiniciar listeners para el rol restaurado
     setupListenersForRole();
-  }catch(e){console.error('Session restore error:',e);}
+  }catch(e){console.error('Session restore error:',e);
+    currentUser=null; showScreen('loginScreen');
+    var errEl=document.getElementById('loginError');
+    if(errEl) errEl.textContent='Error: '+(e.message||'desconocido')+'. Recarga e inicia sesión de nuevo.';
+  }
 }
 </script>
 
