@@ -328,7 +328,7 @@ function doLogout(){
 }
 
 // ── TABS ──────────────────────────────────────────────────────
-var _currentTab='visitas';
+var _currentTab='panel';
 var _tabs={
   super:   [{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'usuarios',icon:'fa-user-gear',label:'Usuarios'}],
   adminGeneral:[{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'}],
@@ -363,10 +363,13 @@ function switchTab(id){
 function renderCurrentTab(){
   var el=document.getElementById('tabContent');
   if(!el) return;
-  if(_currentTab==='visitas') el.innerHTML=renderVisitas();
+  if(_currentTab==='panel') renderCanvasDashboard();
+  else if(_currentTab==='visitas') el.innerHTML=renderVisitas();
   else if(_currentTab==='visitadores') el.innerHTML=renderVisitadores();
   else if(_currentTab==='pendientes') el.innerHTML=renderPendientes();
   else if(_currentTab==='marketing') el.innerHTML=renderMarketing();
+  else if(_currentTab==='informes') renderInformes();
+  else if(_currentTab==='puntos') el.innerHTML=renderPuntos();
   else if(_currentTab==='usuarios') el.innerHTML=renderUsuarios();
 }
 
@@ -1173,30 +1176,6 @@ renderCurrentTab=function(){
 };
 
 // Agregar tab Panel e Informes a todas las vistas
-var _origBuildTabs=buildTabs;
-buildTabs=function(){
-  var role=currentUser.role;
-  var tabs={
-    super:[{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'usuarios',icon:'fa-screwdriver-wrench',label:'Gestión'}],
-    adminGeneral:[{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'}],
-    admin:[{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'}],
-    contador:[{id:'marketing',icon:'fa-receipt',label:'Marketing'}]
-  };
-  var tabList=tabs[role]||tabs.admin;
-  var html=tabList.map(function(t){
-    return '<button class="tab-btn'+(t.id===_currentTab?' active':'')+'" onclick="switchTab(this.dataset.tab)" data-tab="'+t.id+'">'
-      +'<i class="fa-solid '+t.icon+'"></i>'+t.label+'</button>';
-  }).join('');
-  document.getElementById('adminTabs').innerHTML=html;
-  if(!tabList.find(function(t){return t.id===_currentTab;})){
-    _currentTab=tabList[0].id;
-    buildTabs();return;
-  }
-  renderCurrentTab();
-};
-
-// Cambiar tab inicial a 'panel'
-_currentTab='panel';
 
 </script>
 </body>
