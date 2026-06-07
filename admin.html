@@ -330,10 +330,10 @@ function doLogout(){
 // ── TABS ──────────────────────────────────────────────────────
 var _currentTab='panel';
 var _tabs={
-  super:   [{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'usuarios',icon:'fa-user-gear',label:'Usuarios'}],
-  adminGeneral:[{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'}],
-  admin:   [{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'}],
-  contador:[{id:'marketing',icon:'fa-receipt',label:'Marketing'}]
+  super:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'puntos',icon:'fa-map-pin',label:'Puntos'},{id:'usuarios',icon:'fa-screwdriver-wrench',label:'Gestión'}],
+  adminGeneral:[{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'puntos',icon:'fa-map-pin',label:'Puntos'}],
+  admin:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'puntos',icon:'fa-map-pin',label:'Puntos'}],
+  contador:    [{id:'marketing',icon:'fa-receipt',label:'Marketing'}]
 };
 
 function buildTabs(){
@@ -1176,6 +1176,78 @@ renderCurrentTab=function(){
 };
 
 // Agregar tab Panel e Informes a todas las vistas
+
+// ── TAB PUNTOS ─────────────────────────────────────────────────
+function renderPuntos(){
+  var puntos=currentLabId?D.points.filter(function(p){
+    var u=D.users.find(function(x){return x.id===p.assignedTo;});
+    return u&&u.labId===currentLabId;
+  }):D.points;
+  var visitadores=D.users.filter(function(u){
+    return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId);
+  });
+  var html='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
+    +'<div><div style="font-size:18px;font-weight:800;">Puntos asignados</div>'
+    +'<div style="font-size:13px;color:var(--muted);">'+puntos.length+' puntos en total</div></div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button class="btn btn-primary btn-sm" onclick="abrirModalPunto()"><i class="fa-solid fa-plus"></i> Nuevo punto</button>'
+    +'<button class="btn btn-success btn-sm" onclick="abrirCargaExcel()"><i class="fa-solid fa-file-excel"></i> Cargar Excel</button>'
+    +'</div></div>';
+  if(!visitadores.length) return html+'<div class="empty"><i class="fa-solid fa-users"></i><p>Sin visitadores</p></div>';
+  visitadores.forEach(function(v){
+    var vPuntos=puntos.filter(function(p){return p.assignedTo===v.id;});
+    var col=avatarColor(v.name||'');
+    var lab=LABS.find(function(l){return l.id===v.labId;})||{name:'-',color:'#64748B'};
+    html+='<div class="card" style="margin-bottom:16px;">'
+      +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">'
+      +'<div class="avatar" style="background:'+col+';">'+initials(v.name)+'</div>'
+      +'<div style="flex:1;">'
+      +'<div style="font-weight:800;font-size:15px;">'+esc(v.name)+'</div>'
+      +'<div style="font-size:12px;color:var(--muted);">@'+esc(v.username)+' · <span style="color:'+lab.color+';font-weight:700;">'+esc(lab.name)+'</span> · '+vPuntos.length+' puntos</div>'
+      +'</div>'
+      +'<button class="btn btn-success btn-sm" onclick="abrirCargaExcelPara(this.dataset.id)" data-id="'+v.id+'"><i class="fa-solid fa-file-excel"></i></button>'
+      +'<button class="btn btn-primary btn-sm" onclick="abrirModalPuntoPara(this.dataset.id)" data-id="'+v.id+'"><i class="fa-solid fa-plus"></i></button>'
+      +'</div>';
+    if(!vPuntos.length){
+      html+='<div style="padding:14px;text-align:center;color:var(--muted);font-size:13px;background:var(--bg);border-radius:10px;">Sin puntos asignados — usa el botón Excel o + para agregar</div>';
+    } else {
+      var rutas={};
+      vPuntos.forEach(function(p){var r=p.routeName||'Sin ruta';if(!rutas[r])rutas[r]=[];rutas[r].push(p);});
+      Object.keys(rutas).sort().forEach(function(ruta){
+        var pts=rutas[ruta].sort(function(a,b){return (a.order||0)-(b.order||0);});
+        html+='<div style="margin-bottom:10px;">'
+          +'<div style="font-size:11px;font-weight:700;color:var(--primary);background:var(--primary-50);padding:4px 10px;border-radius:8px;display:inline-block;margin-bottom:6px;">'+esc(ruta)+' ('+pts.length+')</div>'
+          +'<div style="display:grid;gap:6px;">';
+        pts.forEach(function(p){
+          html+='<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">'
+            +'<div style="width:28px;height:28px;border-radius:8px;background:var(--primary-50);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0;">'+(p.order||'-')+'</div>'
+            +'<div style="flex:1;min-width:0;">'
+            +'<div style="font-weight:700;font-size:13px;">'+esc(p.name)+'</div>'
+            +'<div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(p.address||'Sin dirección')+'</div>'
+            +'</div>'
+            +'<button class="action-btn action-btn-edit" onclick="editarPunto(this.dataset.id)" data-id="'+p.id+'"><i class="fa-solid fa-pen"></i></button>'
+            +'<button class="action-btn action-btn-danger" onclick="eliminarPunto(this.dataset.id)" data-id="'+p.id+'"><i class="fa-solid fa-trash"></i></button>'
+            +'</div>';
+        });
+        html+='</div></div>';
+      });
+    }
+    html+='</div>';
+  });
+  return html;
+}
+
+function abrirModalPuntoPara(visitorId){
+  if(visitorId&&typeof visitorId==='object') visitorId=visitorId.dataset?visitorId.dataset.id:visitorId;
+  abrirModalPunto(null);
+  setTimeout(function(){var sel=document.getElementById('mp-visitor');if(sel) sel.value=visitorId;},150);
+}
+
+function abrirCargaExcelPara(visitorId){
+  if(visitorId&&typeof visitorId==='object') visitorId=visitorId.dataset?visitorId.dataset.id:visitorId;
+  abrirCargaExcel();
+  setTimeout(function(){var sel=document.getElementById('excelVisitorId');if(sel) sel.value=visitorId;},150);
+}
 
 </script>
 </body>
