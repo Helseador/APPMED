@@ -464,9 +464,9 @@ function doLogout(){
 // ── TABS ──────────────────────────────────────────────────────
 var _currentTab='panel';
 var _tabs={
-  super:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'puntos',icon:'fa-map-pin',label:'Puntos'},{id:'usuarios',icon:'fa-screwdriver-wrench',label:'Gestión'}],
-  adminGeneral:[{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'puntos',icon:'fa-map-pin',label:'Puntos'}],
-  admin:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'puntos',icon:'fa-map-pin',label:'Puntos'}],
+  super:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'usuarios',icon:'fa-screwdriver-wrench',label:'Gestión'}],
+  adminGeneral:[{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'usuarios',icon:'fa-screwdriver-wrench',label:'Gestión'}],
+  admin:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'usuarios',icon:'fa-screwdriver-wrench',label:'Gestión'}],
   contador:    [{id:'marketing',icon:'fa-receipt',label:'Marketing'}]
 };
 
@@ -503,7 +503,6 @@ function renderCurrentTab(){
   else if(_currentTab==='pendientes') el.innerHTML=renderPendientes();
   else if(_currentTab==='marketing') el.innerHTML=renderMarketing();
   else if(_currentTab==='informes') renderInformes();
-  else if(_currentTab==='puntos') el.innerHTML=renderPuntos();
   else if(_currentTab==='usuarios') el.innerHTML=renderUsuarios();
 }
 
@@ -1487,6 +1486,187 @@ function abrirModalPunto(puntoId){
 function editarPunto(pid){
   if(pid&&typeof pid==='object') pid=pid.dataset?pid.dataset.id:pid;
   abrirModalPunto(pid);
+}
+
+// ── GESTIÓN: VARIABLES ─────────────────────────────────────────
+var _gestionView="lista";
+var _gestionUserId=null;
+
+function renderUsuarios(){
+  if(_gestionView==="detalle"&&_gestionUserId){
+    return renderGestionDetalle(_gestionUserId);
+  }
+  return renderGestionLista();
+}
+
+function renderGestionLista(){
+  var isSuper=currentUser.role==="super";
+  var html="";
+  if(isSuper){
+    html+="<div class=\"card\" style=\"margin-bottom:20px;\">"
+      +"<div class=\"card-header\"><div class=\"card-title\"><i class=\"fa-solid fa-flask\" style=\"color:var(--primary);margin-right:6px;\"></i>Laboratorios ("+LABS.length+")</div>"
+      +"<button class=\"btn btn-primary btn-sm\" onclick=\"abrirModalLab()\"><i class=\"fa-solid fa-plus\"></i> Nuevo lab</button></div>"
+      +"<div class=\"table-wrap\"><table class=\"data-table\"><thead><tr><th>Lab</th><th>Color</th><th>Usuarios</th><th>Acciones</th></tr></thead><tbody>"
+      +LABS.map(function(l){
+        var m=D.users.filter(function(u){return u.labId===l.id;}).length;
+        return "<tr><td><div style=\"display:flex;align-items:center;gap:8px;\"><div style=\"width:14px;height:14px;border-radius:4px;background:"+l.color+";flex-shrink:0;\"></div><b>"+esc(l.name)+"</b></div></td><td><span style=\"font-size:11px;color:var(--muted);\">"+l.color+"</span></td><td>"+m+"</td><td><button class=\"action-btn action-btn-edit\" onclick=\"editarLab('"+l.id+"')\"><i class=\"fa-solid fa-pen\"></i> Editar</button></td></tr>";
+      }).join("")+"</tbody></table></div></div>";
+  }
+  var users=isSuper?D.users:D.users.filter(function(u){return u.labId===currentLabId;});
+  var visitadores=users.filter(function(u){return u.role==="visitor";});
+  var admins=users.filter(function(u){return u.role!=="visitor";});
+  html+="<div class=\"card\"><div class=\"card-header\"><div class=\"card-title\"><i class=\"fa-solid fa-users\" style=\"color:var(--primary);margin-right:6px;\"></i>Usuarios ("+users.length+")</div>"
+    +"<button class=\"btn btn-primary btn-sm\" onclick=\"abrirModalUsuario()\"><i class=\"fa-solid fa-plus\"></i> Nuevo</button></div>";
+  if(admins.length){
+    html+="<div style=\"font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;\">Administradores</div>"
+      +"<div style=\"display:flex;flex-direction:column;gap:6px;margin-bottom:16px;\">";
+    admins.forEach(function(u){
+      var col=avatarColor(u.name||"");
+      var activo=u.active!==false;
+      html+="<div style=\"display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg);border-radius:10px;cursor:pointer;border:1px solid var(--border);\" onclick=\"abrirModalUsuario('"+u.id+"')\">"
+        +"<div class=\"avatar\" style=\"background:"+col+";width:32px;height:32px;font-size:12px;\">"+initials(u.name)+"</div>"
+        +"<div style=\"flex:1;\"><div style=\"font-weight:700;font-size:13px;\">"+esc(u.name)+"</div>"
+        +"<div style=\"font-size:11px;color:var(--muted);\">"+"@"+esc(u.username)+" · "+getRoleLabel(u.role)+"</div></div>"
+        +(activo?"<span class=\"badge badge-ok\">Activo</span>":"<span class=\"badge badge-err\">Inactivo</span>")
+        +"<i class=\"fa-solid fa-chevron-right\" style=\"color:var(--muted);font-size:11px;\"></i></div>";
+    });
+    html+="</div>";
+  }
+  if(visitadores.length){
+    html+="<div style=\"font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;\">Visitadores ("+visitadores.length+")</div>"
+      +"<div style=\"display:flex;flex-direction:column;gap:6px;\">";
+    visitadores.forEach(function(u){
+      var col=avatarColor(u.name||"");
+      var activo=u.active!==false;
+      var lab=LABS.find(function(l){return l.id===u.labId;})||{name:"-",color:"#64748B"};
+      var pts=D.points.filter(function(p){return p.assignedTo===u.id;}).length;
+      html+="<div style=\"display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg);border-radius:10px;cursor:pointer;border:1px solid var(--border);\" onclick=\"abrirGestionDetalle('"+u.id+"')\">"
+        +"<div class=\"avatar\" style=\"background:"+col+";width:36px;height:36px;font-size:13px;\">"+initials(u.name)+"</div>"
+        +"<div style=\"flex:1;min-width:0;\"><div style=\"font-weight:700;font-size:13px;\">"+esc(u.name)+"</div>"
+        +"<div style=\"font-size:11px;color:var(--muted);\">"+"@"+esc(u.username)+" · <span style=\"color:"+lab.color+";font-weight:600;\">"+esc(lab.name)+"</span> · "+pts+" pts</div></div>"
+        +(activo?"<span class=\"badge badge-ok\">Activo</span>":"<span class=\"badge badge-err\">Inactivo</span>")
+        +(u.freeVisit?"<span class=\"badge\" style=\"background:#EDE9FE;color:#7C3AED;margin-left:4px;\">Libre</span>":"")
+        +"<i class=\"fa-solid fa-chevron-right\" style=\"color:var(--muted);font-size:11px;\"></i></div>";
+    });
+    html+="</div>";
+  }
+  html+="</div>";
+  return html;
+}
+
+function abrirGestionDetalle(uid){
+  _gestionView="detalle";_gestionUserId=uid;
+  document.getElementById("tabContent").innerHTML=renderGestionDetalle(uid);
+}
+
+function renderGestionDetalle(uid){
+  var u=D.users.find(function(x){return x.id===uid;});
+  if(!u) return "<div class=\"empty\"><p>No encontrado</p></div>";
+  var col=avatarColor(u.name||"");
+  var lab=LABS.find(function(l){return l.id===u.labId;})||{name:"-",color:"#64748B"};
+  var activo=u.active!==false;
+  var pts=D.points.filter(function(p){return p.assignedTo===uid;});
+  var hoy=today();
+  var hoyV=D.visits.filter(function(v){return (v.visitorId||v.userId)===uid&&v.date===hoy&&v.status==="completed";}).length;
+  var totalV=D.visits.filter(function(v){return (v.visitorId||v.userId)===uid&&v.status==="completed";}).length;
+  var html="<button class=\"btn btn-outline btn-sm\" onclick=\"_gestionView=\'lista\';renderCurrentTab()\" style=\"margin-bottom:16px;\"><i class=\"fa-solid fa-arrow-left\"></i> Volver</button>";
+  html+="<div class=\"card\" style=\"margin-bottom:14px;\">"
+    +"<div style=\"display:flex;align-items:center;gap:14px;margin-bottom:14px;\">"
+    +"<div class=\"avatar\" style=\"background:"+col+";width:52px;height:52px;font-size:20px;\">"+initials(u.name)+"</div>"
+    +"<div style=\"flex:1;\"><div style=\"font-size:17px;font-weight:800;\">"+esc(u.name)+"</div>"
+    +"<div style=\"font-size:12px;color:var(--muted);\">"+"@"+esc(u.username)+" · <span style=\"color:"+lab.color+";font-weight:700;\">"+esc(lab.name)+"</span></div></div>"
+    +(activo?"<span class=\"badge badge-ok\">Activo</span>":"<span class=\"badge badge-err\">Inactivo</span>")
+    +"</div>"
+    +"<div style=\"display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;\">"
+    +"<div style=\"text-align:center;background:var(--primary-50);border-radius:10px;padding:10px;\"><div style=\"font-size:22px;font-weight:900;color:var(--primary);\">"+hoyV+"</div><div style=\"font-size:11px;color:var(--muted);\">Hoy</div></div>"
+    +"<div style=\"text-align:center;background:#F0FDF4;border-radius:10px;padding:10px;\"><div style=\"font-size:22px;font-weight:900;color:#16A34A;\">"+totalV+"</div><div style=\"font-size:11px;color:var(--muted);\">Total</div></div>"
+    +"<div style=\"text-align:center;background:#FEF3C7;border-radius:10px;padding:10px;\"><div style=\"font-size:22px;font-weight:900;color:#D97706;\">"+pts.length+"</div><div style=\"font-size:11px;color:var(--muted);\">Puntos</div></div>"
+    +"</div>"
+    +"<div style=\"display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;\">"
+    +"<button class=\"btn btn-primary btn-sm\" style=\"flex:1;\" onclick=\"abrirModalUsuario('"+uid+"')\">"
+    +"<i class=\"fa-solid fa-pen\"></i> Editar datos</button>"
+    +"<button class=\"btn btn-sm "+(activo?"btn-danger":"btn-success")+"\" style=\"flex:1;\" onclick=\"toggleActivoVisitador('"+uid+"')\">"
+    +"<i class=\"fa-solid "+(activo?"fa-user-slash":"fa-user-check")+"\"></i> "+(activo?"Inactivar":"Activar")+"</button>"
+    +"</div>"
+    +"<div style=\"display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:10px;background:"+(u.freeVisit?"#EDE9FE":"var(--bg)")+";border:1px solid "+(u.freeVisit?"#7C3AED":"var(--border)")+"\">"
+    +"<div><div style=\"font-weight:700;font-size:13px;color:"+(u.freeVisit?"#7C3AED":"var(--fg)")+"\">"
+    +"<i class=\"fa-solid fa-"+(u.freeVisit?"unlock":"lock")+"\" style=\"margin-right:6px;\"></i>Visita libre</div>"
+    +"<div style=\"font-size:11px;color:var(--muted);\">"+(u.freeVisit?"Puede registrar visitas sin rutas fijas":"Solo puede visitar sus puntos asignados")+"</div></div>"
+    +"<button class=\"btn btn-sm\" style=\"background:"+(u.freeVisit?"#7C3AED":"var(--border)")+";color:"+(u.freeVisit?"#fff":"var(--muted)")+"\" data-id=\""+uid+"\" onclick=\"toggleFreeVisitDetalle(this.dataset.id)\">"+(u.freeVisit?"Desactivar":"Activar")+"</button>"
+    +"</div></div>";
+  html+="<div class=\"card\" style=\"margin-bottom:14px;\">"
+    +"<div class=\"card-header\"><div class=\"card-title\"><i class=\"fa-solid fa-map-pin\" style=\"color:var(--primary);margin-right:6px;\"></i>Puntos ("+pts.length+")</div>"
+    +"<div style=\"display:flex;gap:6px;\">"
+    +"<button class=\"btn btn-success btn-sm\" data-id=\""+uid+"\" onclick=\"abrirCargaExcelPara(this.dataset.id)\"><i class=\"fa-solid fa-file-excel\"></i> Excel</button>"
+    +"<button class=\"btn btn-primary btn-sm\" data-id=\""+uid+"\" onclick=\"abrirModalPuntoPara(this.dataset.id)\"><i class=\"fa-solid fa-plus\"></i> Nuevo</button>"
+    +"</div></div>";
+  if(!pts.length){
+    html+="<div style=\"text-align:center;padding:20px;color:var(--muted);font-size:13px;background:var(--bg);border-radius:10px;\">Sin puntos asignados</div>";
+  } else {
+    var rutas={};
+    pts.forEach(function(p){var r=p.routeName||"Sin ruta";if(!rutas[r])rutas[r]=[];rutas[r].push(p);});
+    Object.keys(rutas).sort().forEach(function(ruta){
+      var rPts=rutas[ruta].sort(function(a,b){return(a.order||0)-(b.order||0);});
+      var rutaInactiva=rPts.every(function(p){return p.inactive===true;});
+      html+="<div style=\"margin-bottom:12px;\">"
+        +"<div style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;\">"
+        +"<div style=\"font-size:11px;font-weight:700;color:var(--primary);background:var(--primary-50);padding:4px 10px;border-radius:8px;\">"+esc(ruta)+" ("+rPts.length+")</div>"
+        +"<button class=\"btn btn-sm\" style=\"font-size:11px;background:"+(rutaInactiva?"#DCFCE7":"#FEE2E2")+";color:"+(rutaInactiva?"#16A34A":"#DC2626")+";padding:4px 10px;\" data-uid=\""+uid+"\" data-ruta=\""+encodeURIComponent(ruta)+"\" onclick=\"toggleRuta(this.dataset.uid,this.dataset.ruta)\">"+(rutaInactiva?"Activar ruta":"Desactivar ruta")+"</button></div>"
+        +"<div style=\"display:grid;gap:5px;\">";
+      rPts.forEach(function(p){
+        html+="<div style=\"display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);opacity:"+(p.inactive?"0.5":"1")+"\">"
+          +"<div style=\"width:26px;height:26px;border-radius:7px;background:var(--primary-50);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;flex-shrink:0;\">"+(p.order||"-")+"</div>"
+          +"<div style=\"flex:1;min-width:0;\"><div style=\"font-weight:700;font-size:13px;"+(p.inactive?"text-decoration:line-through;color:var(--muted);":"")+"\">" +esc(p.name)+"</div>"
+          +"<div style=\"font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;\">"+esc(p.address||"")+"</div></div>"
+          +"<button class=\"action-btn "+(p.inactive?"action-btn-success":"action-btn-warn")+"\" data-pid=\""+p.id+"\" data-uid=\""+uid+"\" onclick=\"togglePuntoActivo(this.dataset.pid,this.dataset.uid)\" style=\"font-size:10px;\">"+(p.inactive?"<i class=\"fa-solid fa-eye\"></i>":"<i class=\"fa-solid fa-eye-slash\"></i>")+"</button>"
+          +"<button class=\"action-btn action-btn-edit\" data-id=\""+p.id+"\" onclick=\"editarPunto(this.dataset.id)\"><i class=\"fa-solid fa-pen\"></i></button>"
+          +"<button class=\"action-btn action-btn-danger\" data-pid=\""+p.id+"\" data-uid=\""+uid+"\" onclick=\"eliminarPuntoDetalle(this.dataset.pid,this.dataset.uid)\"><i class=\"fa-solid fa-trash\"></i></button>"
+          +"</div>";
+      });
+      html+="</div></div>";
+    });
+  }
+  html+="</div>";
+  return html;
+}
+
+function toggleFreeVisitDetalle(uid){
+  var u=D.users.find(function(x){return x.id===uid;});
+  if(!u) return;
+  u.freeVisit=!u.freeVisit;
+  db.ref("medvisit/users").set(D.users)
+    .then(function(){toast(u.freeVisit?"Visita libre activada":"Visita libre desactivada");document.getElementById("tabContent").innerHTML=renderGestionDetalle(uid);})
+    .catch(function(e){toast("Error: "+e.message,"err");u.freeVisit=!u.freeVisit;});
+}
+
+function togglePuntoActivo(pid,uid){
+  var p=D.points.find(function(x){return x.id===pid;});
+  if(!p) return;
+  p.inactive=!p.inactive;
+  db.ref("medvisit/points").set(D.points)
+    .then(function(){toast(p.inactive?"Punto desactivado":"Punto activado");document.getElementById("tabContent").innerHTML=renderGestionDetalle(uid);})
+    .catch(function(e){toast("Error: "+e.message,"err");p.inactive=!p.inactive;});
+}
+
+function toggleRuta(uid,rutaEncoded){
+  var ruta=decodeURIComponent(rutaEncoded);
+  var rPts=D.points.filter(function(p){return p.assignedTo===uid&&(p.routeName||"Sin ruta")===ruta;});
+  var rutaInactiva=rPts.every(function(p){return p.inactive===true;});
+  rPts.forEach(function(p){p.inactive=!rutaInactiva;});
+  db.ref("medvisit/points").set(D.points)
+    .then(function(){toast(rutaInactiva?"Ruta activada":"Ruta desactivada");document.getElementById("tabContent").innerHTML=renderGestionDetalle(uid);})
+    .catch(function(e){toast("Error: "+e.message,"err");rPts.forEach(function(p){p.inactive=rutaInactiva;});});
+}
+
+function eliminarPuntoDetalle(pid,uid){
+  var p=D.points.find(function(x){return x.id===pid;});
+  if(!p) return;
+  showConfirm("Eliminar punto","Vas a eliminar "+p.name+". No se puede deshacer.","fa-trash","danger",function(){
+    D.points=D.points.filter(function(x){return x.id!==pid;});
+    db.ref("medvisit/points").set(D.points)
+      .then(function(){toast("Punto eliminado");document.getElementById("tabContent").innerHTML=renderGestionDetalle(uid);})
+      .catch(function(e){toast("Error: "+e.message,"err");});
+  });
 }
 
 // ── MODAL HELPERS ──────────────────────────────────────────────
