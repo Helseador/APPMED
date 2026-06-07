@@ -209,6 +209,106 @@
   <div class="close-hint">Toca para cerrar</div>
 </div>
 
+<!-- MODAL: NUEVO/EDITAR USUARIO -->
+<div class="modal-overlay" id="modalUsuario">
+  <div class="modal-box">
+    <div class="modal-title" id="modalUsuarioTitle">Nuevo usuario</div>
+    <input type="hidden" id="mu-id">
+    <div class="form-group">
+      <label class="form-label">Nombre completo</label>
+      <input class="form-input" id="mu-name" placeholder="Ej: Juan Perez Garcia">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Usuario</label>
+      <input class="form-input" id="mu-username" placeholder="Ej: jperez" autocapitalize="off">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contraseña <span id="mu-pass-hint" style="font-size:11px;color:var(--muted);font-weight:400;">(dejar vacío para no cambiar)</span></label>
+      <input class="form-input" id="mu-password" type="text" placeholder="Mínimo 4 caracteres">
+    </div>
+    <div class="form-group" id="mu-rol-group">
+      <label class="form-label">Rol</label>
+      <select class="form-input" id="mu-role" onchange="onMuRoleChange()">
+        <option value="visitor">Visitador</option>
+        <option value="admin">Administrador</option>
+        <option value="adminGeneral">Admin General</option>
+        <option value="contador">Contador</option>
+      </select>
+    </div>
+    <div class="form-group" id="mu-lab-group">
+      <label class="form-label">Laboratorio</label>
+      <select class="form-input" id="mu-lab"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modalUsuario')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveUsuario()"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NUEVO/EDITAR LABORATORIO -->
+<div class="modal-overlay" id="modalLab">
+  <div class="modal-box">
+    <div class="modal-title" id="modalLabTitle">Nuevo laboratorio</div>
+    <input type="hidden" id="ml-id">
+    <div class="form-group">
+      <label class="form-label">Nombre del laboratorio</label>
+      <input class="form-input" id="ml-name" placeholder="Ej: Bayer, Pfizer...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Color</label>
+      <div class="color-picker" id="ml-color-picker"></div>
+      <input type="hidden" id="ml-color" value="#0303B5">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modalLab')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveLab()"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NUEVO/EDITAR PUNTO -->
+<div class="modal-overlay" id="modalPunto">
+  <div class="modal-box">
+    <div class="modal-title" id="modalPuntoTitle">Nuevo punto</div>
+    <input type="hidden" id="mp-id">
+    <div class="form-group">
+      <label class="form-label">Visitador asignado</label>
+      <select class="form-input" id="mp-visitor"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nombre del punto</label>
+      <input class="form-input" id="mp-name" placeholder="Ej: Farmacia San Rafael">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nombre de ruta</label>
+      <input class="form-input" id="mp-route" placeholder="Ej: Ruta Soacha">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Dirección completa</label>
+      <input class="form-input" id="mp-address" placeholder="Cra 7 #45-20, Bogotá...">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="form-group">
+        <label class="form-label">Orden en ruta</label>
+        <input class="form-input" type="number" id="mp-order" placeholder="1, 2..." min="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Latitud</label>
+        <input class="form-input" id="mp-lat" placeholder="4.71...">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Longitud</label>
+      <input class="form-input" id="mp-lng" placeholder="-74.07...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modalPunto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="savePunto()"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- LOGIN -->
 <div class="login-wrap" id="loginScreen">
   <div class="login-card">
@@ -1327,6 +1427,66 @@ function cancelConfirm(){
   document.getElementById('confirmOverlay').classList.remove('open');
   document.body.style.overflow='';
   _confirmCb=null;
+}
+
+function abrirModalUsuario(uid){
+  uid=uid||null;
+  var u=uid?D.users.find(function(x){return x.id===uid;}):null;
+  document.getElementById('modalUsuarioTitle').textContent=u?'Editar usuario':'Nuevo usuario';
+  document.getElementById('mu-id').value=uid||'';
+  document.getElementById('mu-name').value=u?u.name:'';
+  document.getElementById('mu-username').value=u?u.username:'';
+  document.getElementById('mu-password').value='';
+  var hint=document.getElementById('mu-pass-hint');
+  if(hint) hint.style.display=u?'':'none';
+  document.getElementById('mu-role').value=u?u.role:'visitor';
+  var labSel=document.getElementById('mu-lab');
+  labSel.innerHTML=LABS.map(function(l){return '<option value="'+l.id+'"'+(u&&u.labId===l.id?' selected':'')+'>'+esc(l.name)+'</option>';}).join('');
+  onMuRoleChange();
+  openModal('modalUsuario');
+}
+
+function editarUsuario(uid){abrirModalUsuario(uid);}
+
+function abrirModalLab(labId){
+  labId=labId||null;
+  var l=labId?LABS.find(function(x){return x.id===labId;}):null;
+  document.getElementById('modalLabTitle').textContent=l?'Editar laboratorio':'Nuevo laboratorio';
+  document.getElementById('ml-id').value=labId||'';
+  document.getElementById('ml-name').value=l?l.name:'';
+  var selColor=l?l.color:LAB_COLORS[0];
+  document.getElementById('ml-color').value=selColor;
+  var picker=document.getElementById('ml-color-picker');
+  picker.innerHTML=LAB_COLORS.map(function(c){
+    return '<div class="color-swatch'+(c===selColor?' selected':'')+'" style="background:'+c+';" onclick="selectLabColor(this.dataset.c,this)" data-c="'+c+'"></div>';
+  }).join('');
+  openModal('modalLab');
+}
+
+function editarLab(labId){abrirModalLab(labId);}
+
+function abrirModalPunto(puntoId){
+  puntoId=puntoId||null;
+  var p=puntoId?D.points.find(function(x){return x.id===puntoId;}):null;
+  document.getElementById('modalPuntoTitle').textContent=p?'Editar punto':'Nuevo punto';
+  document.getElementById('mp-id').value=puntoId||'';
+  document.getElementById('mp-name').value=p?p.name:'';
+  document.getElementById('mp-route').value=p?p.routeName||'':'';
+  document.getElementById('mp-address').value=p?p.address||'':'';
+  document.getElementById('mp-order').value=p?p.order||'':'';
+  document.getElementById('mp-lat').value=p?p.lat||'':'';
+  document.getElementById('mp-lng').value=p?p.lng||'':'';
+  var visSel=document.getElementById('mp-visitor');
+  var visitors=D.users.filter(function(u){return u.role==='visitor';});
+  visSel.innerHTML=visitors.map(function(u){
+    return '<option value="'+u.id+'"'+(p&&p.assignedTo===u.id?' selected':'')+'>'+esc(u.name)+' ('+esc(getLabName(u.labId))+')</option>';
+  }).join('');
+  openModal('modalPunto');
+}
+
+function editarPunto(pid){
+  if(pid&&typeof pid==='object') pid=pid.dataset?pid.dataset.id:pid;
+  abrirModalPunto(pid);
 }
 
 // ── MODAL HELPERS ──────────────────────────────────────────────
