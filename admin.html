@@ -174,9 +174,34 @@
     .modal-title{font-size:17px;font-weight:800;margin-bottom:20px;color:var(--fg);}
     .modal-actions{display:flex;gap:10px;margin-top:20px;}
     .modal-actions .btn{flex:1;}
+
+    /* CONFIRM OVERLAY */
+    .confirm-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.7);backdrop-filter:blur(4px);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s;}
+    .confirm-overlay.open{opacity:1;pointer-events:all;}
+    .confirm-box{background:var(--card);border-radius:18px;padding:28px 24px;width:100%;max-width:360px;text-align:center;transform:scale(0.95);transition:transform .25s;box-shadow:0 25px 60px rgba(0,0,0,0.2);}
+    .confirm-overlay.open .confirm-box{transform:scale(1);}
+    .confirm-icon{width:52px;height:52px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:22px;}
+    .confirm-icon.danger{background:#FEE2E2;color:var(--danger);}
+    .confirm-icon.warning{background:#FEF3C7;color:#D97706;}
   </style>
 </head>
 <body>
+<!-- TOAST WRAP -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- CONFIRM OVERLAY -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-icon danger" id="confirmIcon"><i id="confirmIconI" class="fa-solid fa-triangle-exclamation"></i></div>
+    <div style="font-size:16px;font-weight:800;margin-bottom:8px;" id="confirmTitle"></div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:20px;" id="confirmMsg"></div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="cancelConfirm()">Cancelar</button>
+      <button class="btn btn-danger" style="flex:1;" id="confirmOkBtn" onclick="executeConfirm()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- FOTO OVERLAY -->
 <div class="foto-overlay" id="fotoOverlay" onclick="this.classList.remove('open')">
