@@ -1270,6 +1270,40 @@ function abrirCargaExcelPara(visitorId){
   setTimeout(function(){var sel=document.getElementById('excelVisitorId');if(sel) sel.value=visitorId;},150);
 }
 
+// ── TOAST ──────────────────────────────────────────────────────
+function toast(msg,type){
+  type=type||'ok';
+  var w=document.getElementById('toastWrap'),t=document.createElement('div');
+  t.className='toast toast-'+type;
+  var icon=type==='err'?'fa-circle-xmark':'fa-circle-check';
+  t.innerHTML='<i class="fa-solid '+icon+'"></i><span>'+esc(msg)+'</span>';
+  w.appendChild(t);
+  setTimeout(function(){t.classList.add('out');setTimeout(function(){t.remove();},260);},3200);
+}
+
+// ── CONFIRM ────────────────────────────────────────────────────
+var _confirmCb=null;
+function showConfirm(title,msg,icon,type,cb){
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmMsg').textContent=msg;
+  document.getElementById('confirmIconI').className='fa-solid '+(icon||'fa-triangle-exclamation');
+  document.getElementById('confirmIcon').className='confirm-icon '+(type==='danger'?'danger':'warning');
+  var btn=document.getElementById('confirmOkBtn');
+  btn.className='btn '+(type==='danger'?'btn-danger':'btn-primary');
+  _confirmCb=cb;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function executeConfirm(){
+  document.getElementById('confirmOverlay').classList.remove('open');
+  document.body.style.overflow='';
+  if(_confirmCb){_confirmCb();_confirmCb=null;}
+}
+function cancelConfirm(){
+  document.getElementById('confirmOverlay').classList.remove('open');
+  document.body.style.overflow='';
+  _confirmCb=null;
+}
+
 // ── MODAL HELPERS ──────────────────────────────────────────────
 function openModal(id){
   var el=document.getElementById(id);
