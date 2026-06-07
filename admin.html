@@ -1260,6 +1260,16 @@ function abrirCargaExcelPara(visitorId){
   setTimeout(function(){var sel=document.getElementById('excelVisitorId');if(sel) sel.value=visitorId;},150);
 }
 
+// ── MODAL HELPERS ──────────────────────────────────────────────
+function openModal(id){
+  var el=document.getElementById(id);
+  if(el){el.classList.add('open');document.body.style.overflow='hidden';}
+}
+function closeModal(id){
+  var el=document.getElementById(id);
+  if(el){el.classList.remove('open');document.body.style.overflow='';}
+}
+
 </script>
 </body>
 </html>
