@@ -1018,37 +1018,48 @@ function _generarPPTX(labId){
 
 // ── CARGA MASIVA EXCEL DE PUNTOS ───────────────────────────────
 function abrirCargaExcel(){
-  // Crear modal de carga Excel si no existe
-  var modal=document.getElementById('modalCargaExcel');
-  if(!modal){
-    modal=document.createElement('div');
-    modal.id='modalCargaExcel';
-    modal.className='modal-overlay';
-    modal.innerHTML='<div class="modal-box" style="max-width:500px;">'
-      +'<div class="modal-title"><i class="fa-solid fa-file-excel" style="color:#16A34A;"></i> Cargar rutas desde Excel</div>'
-      +'<div style="font-size:13px;color:var(--muted);margin-bottom:14px;">El Excel debe tener los días en columnas (LUNES, MARTES...) con nombre del punto y dirección.</div>'
-      +'<div class="form-group"><label class="form-label">Visitador</label><select class="form-input" id="excelVisitorId"></select></div>'
-      +'<div class="form-group"><label class="form-label">Ciudad</label><input class="form-input" id="excelCiudad" value="Bogotá" placeholder="Ej: Medellín"></div>'
-      +'<div class="form-group"><label class="form-label">Archivo Excel (.xlsx)</label>'
-      +'<input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none;" onchange="previewExcel(this)">'
-      +'<div onclick="document.getElementById(&quot;excelFile&quot;).click()" style="border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;background:var(--bg);">'
-      +'<i class="fa-solid fa-file-excel" style="font-size:28px;color:#16A34A;"></i>'
-      +'<div style="font-size:13px;color:var(--muted);margin-top:8px;">Toca para subir Excel</div></div></div>'
-      +'<div id="excelPreviewArea" style="display:none;margin-bottom:12px;"></div>'
-      +'<div class="modal-actions">'
-      +'<button class="btn btn-outline" onclick="closeModal(&quot;modalCargaExcel&quot;)">Cancelar</button>'
-      +'<button class="btn btn-primary" id="excelImportBtn" onclick="importarDesdeExcel()" disabled><i class="fa-solid fa-upload"></i> Importar</button>'
-      +'</div></div>';
-    document.body.appendChild(modal);
-  }
-  // Poblar visitadores
-  var visSel=document.getElementById('excelVisitorId');
-  var visitors=D.users.filter(function(u){return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId);});
-  visSel.innerHTML=visitors.map(function(u){return '<option value="'+u.id+'">'+esc(u.name)+' ('+esc(getLabName(u.labId))+')</option>';}).join('');
-  document.getElementById('excelFile').value='';
-  document.getElementById('excelPreviewArea').style.display='none';
-  document.getElementById('excelImportBtn').disabled=true;
+  // Remover modal viejo si existe para refrescarlo
+  var old=document.getElementById('modalCargaExcel');
+  if(old) old.remove();
+  // Crear modal fresco
+  var modal=document.createElement('div');
+  modal.id='modalCargaExcel';
+  modal.className='modal-overlay';
+  // Construir lista de visitadores
+  var visitors=D.users.filter(function(u){return u.role==='visitor'&&u.active!==false&&(!currentLabId||u.labId===currentLabId);});
+  var visOpts=visitors.length
+    ?visitors.map(function(u){return '<option value="'+u.id+'">'+esc(u.name)+' — '+esc(getLabName(u.labId))+'</option>';}).join('')
+    :'<option value="">Sin visitadores disponibles</option>';
+  modal.innerHTML='<div class="modal-box" style="max-width:520px;">'
+    +'<div class="modal-title"><i class="fa-solid fa-file-excel" style="color:#16A34A;margin-right:8px;"></i>Cargar rutas desde Excel</div>'
+    +'<div style="font-size:13px;color:var(--muted);margin-bottom:16px;background:var(--primary-50);padding:10px 14px;border-radius:10px;">'
+    +'<b>Formato esperado:</b> Días en columnas (LUNES, MARTES...) con nombre del punto y dirección en filas alternas.</div>'
+    +'<div class="form-group">'
+    +'<label class="form-label">Visitador <span style="color:var(--danger);">*</span></label>'
+    +'<select class="form-input" id="excelVisitorId">'+visOpts+'</select>'
+    +'</div>'
+    +'<div class="form-group">'
+    +'<label class="form-label">Ciudad del visitador <span style="color:var(--danger);">*</span></label>'
+    +'<input class="form-input" id="excelCiudad" value="Bogotá" placeholder="Ej: Medellín, Cali...">'
+    +'<div style="font-size:11px;color:var(--muted);margin-top:4px;">Se usará para geocodificar las direcciones</div>'
+    +'</div>'
+    +'<div class="form-group">'
+    +'<label class="form-label">Archivo Excel (.xlsx) <span style="color:var(--danger);">*</span></label>'
+    +'<input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none;" onchange="previewExcel(this)">'
+    +'<div onclick="document.getElementById(&quot;excelFile&quot;).click()" style="border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;background:var(--bg);transition:all .2s;">'
+    +'<i class="fa-solid fa-file-excel" style="font-size:32px;color:#16A34A;"></i>'
+    +'<div style="font-size:13px;color:var(--muted);margin-top:8px;font-weight:600;">Toca para subir el archivo Excel</div>'
+    +'<div style="font-size:11px;color:var(--muted);margin-top:4px;">Formatos soportados: .xlsx, .xls</div>'
+    +'</div>'
+    +'</div>'
+    +'<div id="excelPreviewArea" style="display:none;margin-bottom:14px;"></div>'
+    +'<div class="modal-actions">'
+    +'<button class="btn btn-outline" onclick="closeModal(&quot;modalCargaExcel&quot;)">Cancelar</button>'
+    +'<button class="btn btn-primary" id="excelImportBtn" onclick="importarDesdeExcel()" disabled><i class="fa-solid fa-upload"></i> Importar puntos</button>'
+    +'</div></div>';
+  document.body.appendChild(modal);
   window._excelRoutes={};
+  window._excelDayCols={};
   openModal('modalCargaExcel');
 }
 
