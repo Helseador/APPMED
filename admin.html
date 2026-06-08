@@ -1208,10 +1208,13 @@ function previewExcel(input){
 }
 
 function _previewExcel(input){
+  var file=input.files&&input.files[0];
+  if(!file){toast("Selecciona un archivo Excel","err");return;}
   var reader=new FileReader();
   reader.onload=function(e){
     try{
-      var wb=XLSX.read(e.target.result,{type:'array'});
+      var data=new Uint8Array(e.target.result);
+      var wb=XLSX.read(data,{type:'array'});
       var ws=wb.Sheets[wb.SheetNames[0]];
       var raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
       // Detectar fila con días
