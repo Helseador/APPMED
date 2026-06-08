@@ -1772,6 +1772,12 @@ function renombrarRuta(uid, rutaEncoded){
     .catch(function(e){toast("Error: "+e.message,"err");rPts.forEach(function(p){p.routeName=rutaActual;});});
 }
 
+function onMuRoleChange(){
+  var role=document.getElementById('mu-role').value;
+  var labGroup=document.getElementById('mu-lab-group');
+  if(labGroup) labGroup.style.display=(role==='adminGeneral'||role==='super')?'none':'block';
+}
+
 // ── MODAL HELPERS ──────────────────────────────────────────────
 function openModal(id){
   var el=document.getElementById(id);
