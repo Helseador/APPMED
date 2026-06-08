@@ -738,20 +738,25 @@ function exportarExcelMarketing(){
   }
 }
 function _doExportMkt(rows){
-  rows=rows.map(function(r){return {fecha:r.fecha,userName:r.userName,userId:r.userId,labId:r.labId,lugar:r.lugar,nit:r.nit,razonSocial:r.razonSocial,valor:r.valor};});
   var header=['Fecha','Visitador','Laboratorio','Establecimiento','NIT','Razon Social','Valor ($)'];
   var data=rows.map(function(r){
-    return [r.fecha||'',r.userName||getUserName(r.userId),getLabName(r.labId),r.lugar||'',r.nit||'',r.razonSocial||'',parseFloat(r.valor)||0];
+    return [
+      String(r.fecha||''),
+      String(r.userName||getUserName(r.userId)||''),
+      String(getLabName(r.labId)||''),
+      String(r.lugar||''),
+      String(r.nit||''),
+      String(r.razonSocial||''),
+      parseFloat(r.valor)||0
+    ];
   });
-  // Limpiar fotos para no saturar el Excel
-  data=data.map(function(row){return row.map(function(cell){return typeof cell==='string'&&cell.length>500?'[foto]':cell;});});
   var total=data.reduce(function(s,r){return s+r[6];},0);
   data.push(['','','','','','TOTAL','$'+total.toLocaleString('es-CO')]);
   var ws=XLSX.utils.aoa_to_sheet([header].concat(data));
   ws['!cols']=[{wch:12},{wch:22},{wch:14},{wch:28},{wch:16},{wch:30},{wch:14}];
   var wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,'Marketing',ws);
-  var wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  var wbout=XLSX.write(wb,{bookType:'xlsx',type:'buffer'});
   var blob=new Blob([wbout],{type:'application/octet-stream'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');a.href=url;a.download='Marketing_APPMED_'+today()+'.xlsx';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
@@ -1031,7 +1036,7 @@ function _generarExcel(labId){
   var ws2=XLSX.utils.aoa_to_sheet([hPend].concat(rPend));
   XLSX.utils.book_append_sheet(wb,ws2,'Pendientes');
   var nombre='Visitas_APPMED_'+(labId?getLabName(labId):'General')+'_'+today()+'.xlsx';
-  var wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  var wbout=XLSX.write(wb,{bookType:'xlsx',type:'buffer'});
   var blob=new Blob([wbout],{type:'application/octet-stream'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');a.href=url;a.download=nombre;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
@@ -1073,7 +1078,7 @@ function _doExportMktPeriodo(rows,desde,hasta){
   ws['!cols']=[{wch:12},{wch:22},{wch:14},{wch:28},{wch:16},{wch:30},{wch:14}];
   var wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Marketing');
-  var wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  var wbout=XLSX.write(wb,{bookType:'xlsx',type:'buffer'});
   var blob=new Blob([wbout],{type:'application/octet-stream'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');a.href=url;a.download='Marketing_APPMED_'+desde+'_al_'+hasta+'.xlsx';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
