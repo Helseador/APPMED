@@ -738,10 +738,13 @@ function exportarExcelMarketing(){
   }
 }
 function _doExportMkt(rows){
+  rows=rows.map(function(r){return {fecha:r.fecha,userName:r.userName,userId:r.userId,labId:r.labId,lugar:r.lugar,nit:r.nit,razonSocial:r.razonSocial,valor:r.valor};});
   var header=['Fecha','Visitador','Laboratorio','Establecimiento','NIT','Razon Social','Valor ($)'];
   var data=rows.map(function(r){
     return [r.fecha||'',r.userName||getUserName(r.userId),getLabName(r.labId),r.lugar||'',r.nit||'',r.razonSocial||'',parseFloat(r.valor)||0];
   });
+  // Limpiar fotos para no saturar el Excel
+  data=data.map(function(row){return row.map(function(cell){return typeof cell==='string'&&cell.length>500?'[foto]':cell;});});
   var total=data.reduce(function(s,r){return s+r[6];},0);
   data.push(['','','','','','TOTAL','$'+total.toLocaleString('es-CO')]);
   var ws=XLSX.utils.aoa_to_sheet([header].concat(data));
@@ -1062,6 +1065,8 @@ function _doExportMktPeriodo(rows,desde,hasta){
   var data=rows.map(function(r){
     return [r.fecha||'',r.userName||getUserName(r.userId),getLabName(r.labId),r.lugar||'',r.nit||'',r.razonSocial||'',parseFloat(r.valor)||0];
   });
+  // Limpiar fotos para no saturar el Excel
+  data=data.map(function(row){return row.map(function(cell){return typeof cell==='string'&&cell.length>500?'[foto]':cell;});});
   var total=data.reduce(function(s,r){return s+r[6];},0);
   data.push(['','','','','','TOTAL','$'+total.toLocaleString('es-CO')]);
   var ws=XLSX.utils.aoa_to_sheet([header].concat(data));
