@@ -724,42 +724,46 @@ function exportarExcelMarketing(){
     if(currentLabId&&r.labId!==currentLabId) return false;
     return true;
   });
-  if(!filtered.length){alert('Sin datos para exportar');return;}
-
-  // Cargar XLSX si no está
-  window._mktPendingRows=filtered;
+  if(!filtered.length){toast('Sin datos para exportar','err');return;}
+  toast('Generando Excel...','ok');
+  // Cargar XLSX
+  function doExport(){
+    try{
+      var header=['Fecha','Visitador','Laboratorio','Establecimiento','NIT','Razon Social','Valor'];
+      var rows=[];
+      for(var i=0;i<filtered.length;i++){
+        var r=filtered[i];
+        rows.push([
+          r.fecha||'',
+          r.userName||getUserName(r.userId)||'',
+          getLabName(r.labId)||'',
+          r.lugar||'',
+          r.nit||'',
+          r.razonSocial||'',
+          parseFloat(r.valor)||0
+        ]);
+      }
+      var total=0;
+      for(var j=0;j<rows.length;j++) total+=rows[j][6];
+      rows.push(['','','','','','TOTAL',total]);
+      var wb=XLSX.utils.book_new();
+      var ws=XLSX.utils.aoa_to_sheet([header].concat(rows));
+      ws['!cols']=[{wch:12},{wch:22},{wch:14},{wch:28},{wch:16},{wch:30},{wch:14}];
+      XLSX.utils.book_append_sheet(wb,ws,'Marketing');
+      XLSX.writeFile(wb,'Marketing_APPMED_'+today()+'.xlsx');
+    }catch(err){
+      console.error('Excel error:',err);
+      toast('Error al generar Excel: '+err.message,'err');
+    }
+  }
   if(typeof XLSX==='undefined'){
     var s=document.createElement('script');
     s.src='https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js';
-    s.onload=function(){_doExportMkt(window._mktPendingRows);};
+    s.onload=doExport;
     document.head.appendChild(s);
   } else {
-    _doExportMkt(window._mktPendingRows);
+    doExport();
   }
-}
-function _doExportMkt(rows){
-  var header=['Fecha','Visitador','Laboratorio','Establecimiento','NIT','Razon Social','Valor ($)'];
-  var data=rows.map(function(r){
-    return [
-      String(r.fecha||''),
-      String(r.userName||getUserName(r.userId)||''),
-      String(getLabName(r.labId)||''),
-      String(r.lugar||''),
-      String(r.nit||''),
-      String(r.razonSocial||''),
-      parseFloat(r.valor)||0
-    ];
-  });
-  var total=data.reduce(function(s,r){return s+r[6];},0);
-  data.push(['','','','','','TOTAL','$'+total.toLocaleString('es-CO')]);
-  var ws=XLSX.utils.aoa_to_sheet([header].concat(data));
-  ws['!cols']=[{wch:12},{wch:22},{wch:14},{wch:28},{wch:16},{wch:30},{wch:14}];
-  var wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,'Marketing',ws);
-  var wbout=XLSX.write(wb,{bookType:'xlsx',type:'buffer'});
-  var blob=new Blob([wbout],{type:'application/octet-stream'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');a.href=url;a.download='Marketing_APPMED_'+today()+'.xlsx';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
 }
 
 // ── SESSION RESTORE ───────────────────────────────────────────
