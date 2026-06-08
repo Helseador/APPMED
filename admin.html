@@ -1280,7 +1280,7 @@ function _previewExcel(){
       window._excelDayCols=dayCols;
     }catch(err){toast('Error leyendo Excel: '+err.message,'err');}
   };
-  reader.readAsArrayBuffer(input.files[0]);
+  reader.readAsArrayBuffer(file);
 }
 
 function importarDesdeExcel(){
