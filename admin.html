@@ -1611,7 +1611,7 @@ function renderGestionDetalle(uid){
       html+="<div style=\"margin-bottom:12px;\">"
         +"<div style=\"display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;\">"
         +"<div style=\"font-size:11px;font-weight:700;color:var(--primary);background:var(--primary-50);padding:4px 10px;border-radius:8px;\">"+esc(ruta)+" ("+rPts.length+")</div>"
-        +"<button class=\"btn btn-sm\" style=\"font-size:11px;background:"+(rutaInactiva?"#DCFCE7":"#FEE2E2")+";color:"+(rutaInactiva?"#16A34A":"#DC2626")+";padding:4px 10px;\" data-uid=\""+uid+"\" data-ruta=\""+encodeURIComponent(ruta)+"\" onclick=\"toggleRuta(this.dataset.uid,this.dataset.ruta)\">"+(rutaInactiva?"Activar ruta":"Desactivar ruta")+"</button></div>"
+        +"<div style=\"display:flex;gap:6px;\">"+"<button class=\"btn btn-sm\" style=\"font-size:11px;background:"+(rutaInactiva?"#DCFCE7":"#FEE2E2")+";color:"+(rutaInactiva?"#16A34A":"#DC2626")+";padding:4px 10px;\" data-uid=\""+uid+"\" data-ruta=\""+encodeURIComponent(ruta)+"\" onclick=\"toggleRuta(this.dataset.uid,this.dataset.ruta)\">"+(rutaInactiva?"Activar ruta":"Desactivar ruta")+"</button>"+"<button class=\"btn btn-sm\" style=\"font-size:11px;background:#EDE9FE;color:#7C3AED;padding:4px 10px;\" data-uid=\""+uid+"\" data-ruta=\""+encodeURIComponent(ruta)+"\" onclick=\"renombrarRuta(this.dataset.uid,this.dataset.ruta)\"><i class=\"fa-solid fa-pen\"></i> Renombrar</button>"+"</div></div>"
         +"<div style=\"display:grid;gap:5px;\">";
       rPts.forEach(function(p){
         html+="<div style=\"display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);opacity:"+(p.inactive?"0.5":"1")+"\">"
@@ -1667,6 +1667,78 @@ function eliminarPuntoDetalle(pid,uid){
       .then(function(){toast("Punto eliminado");document.getElementById("tabContent").innerHTML=renderGestionDetalle(uid);})
       .catch(function(e){toast("Error: "+e.message,"err");});
   });
+}
+
+// ── GUARDAR PUNTO ──────────────────────────────────────────────
+function savePunto(){
+  var id=document.getElementById("mp-id").value;
+  var name=document.getElementById("mp-name").value.trim();
+  var route=document.getElementById("mp-route").value.trim();
+  var address=document.getElementById("mp-address").value.trim();
+  var order=parseInt(document.getElementById("mp-order").value)||1;
+  var lat=parseFloat(document.getElementById("mp-lat").value)||4.710989;
+  var lng=parseFloat(document.getElementById("mp-lng").value)||-74.072092;
+  var visitorId=document.getElementById("mp-visitor").value;
+  if(!name){toast("El nombre del punto es obligatorio","err");return;}
+  if(!visitorId){toast("Selecciona un visitador","err");return;}
+  var vis=D.users.find(function(u){return u.id===visitorId;})||{};
+  if(id){
+    var p=D.points.find(function(x){return x.id===id;});
+    if(!p){toast("Punto no encontrado","err");return;}
+    p.name=name;p.routeName=route||null;p.address=address;
+    p.order=order;p.lat=lat;p.lng=lng;p.assignedTo=visitorId;p.labId=vis.labId||p.labId;
+  } else {
+    D.points.push({id:"pt_"+Date.now()+"_"+Math.random().toString(36).substr(2,4),
+      name:name,routeName:route||null,address:address,order:order,lat:lat,lng:lng,
+      assignedTo:visitorId,labId:vis.labId||"",approved:true});
+  }
+  db.ref("medvisit/points").set(D.points)
+    .then(function(){
+      toast(id?"Punto actualizado":"Punto creado");
+      closeModal("modalPunto");
+      if(_gestionUserId) document.getElementById("tabContent").innerHTML=renderGestionDetalle(_gestionUserId);
+    })
+    .catch(function(e){toast("Error: "+e.message,"err");});
+}
+
+// ── ACTIVAR / INACTIVAR VISITADOR ──────────────────────────────
+function toggleActivoVisitador(uid){
+  var u=D.users.find(function(x){return x.id===uid;});
+  if(!u) return;
+  var nuevo=u.active===false?true:false;
+  showConfirm(
+    (nuevo?"Activar":"Inactivar")+" visitador",
+    "Vas a "+(nuevo?"activar":"inactivar")+" a "+u.name+". ¿Confirmas?",
+    nuevo?"fa-user-check":"fa-user-slash",
+    nuevo?"warning":"danger",
+    function(){
+      u.active=nuevo;
+      db.ref("medvisit/users").set(D.users)
+        .then(function(){
+          toast("Visitador "+(nuevo?"activado":"inactivado"));
+          if(_gestionUserId===uid) document.getElementById("tabContent").innerHTML=renderGestionDetalle(uid);
+        })
+        .catch(function(e){toast("Error: "+e.message,"err");u.active=!nuevo;});
+    }
+  );
+}
+
+// ── RENOMBRAR RUTA COMPLETA ────────────────────────────────────
+function renombrarRuta(uid, rutaEncoded){
+  var rutaActual=decodeURIComponent(rutaEncoded);
+  var nuevo=prompt("Nuevo nombre para la ruta \""+rutaActual+"\":", rutaActual);
+  if(!nuevo||!nuevo.trim()||nuevo.trim()===rutaActual) return;
+  nuevo=nuevo.trim();
+  var rPts=D.points.filter(function(p){
+    return p.assignedTo===uid&&(p.routeName||"Sin ruta")===rutaActual;
+  });
+  rPts.forEach(function(p){p.routeName=nuevo;});
+  db.ref("medvisit/points").set(D.points)
+    .then(function(){
+      toast("Ruta renombrada a \""+nuevo+"\"");
+      document.getElementById("tabContent").innerHTML=renderGestionDetalle(uid);
+    })
+    .catch(function(e){toast("Error: "+e.message,"err");rPts.forEach(function(p){p.routeName=rutaActual;});});
 }
 
 // ── MODAL HELPERS ──────────────────────────────────────────────
