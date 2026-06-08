@@ -1778,6 +1778,63 @@ function onMuRoleChange(){
   if(labGroup) labGroup.style.display=(role==='adminGeneral'||role==='super')?'none':'block';
 }
 
+// ── GUARDAR USUARIO ────────────────────────────────────────────
+function saveUsuario(){
+  var id=document.getElementById('mu-id').value;
+  var name=document.getElementById('mu-name').value.trim();
+  var username=document.getElementById('mu-username').value.trim().toLowerCase();
+  var password=document.getElementById('mu-password').value;
+  var role=document.getElementById('mu-role').value;
+  var labId=(role==='adminGeneral'||role==='super')?'':document.getElementById('mu-lab').value;
+  if(!name||!username){toast('Nombre y usuario son obligatorios','err');return;}
+  if(!id&&!password){toast('La contraseña es obligatoria para usuarios nuevos','err');return;}
+  var dup=D.users.find(function(u){return u.username===username&&u.id!==id;});
+  if(dup){toast('El usuario "'+username+'" ya existe','err');return;}
+  if(id){
+    var u=D.users.find(function(x){return x.id===id;});
+    if(!u){toast('Usuario no encontrado','err');return;}
+    u.name=name;u.username=username;u.role=role;u.labId=labId;
+    if(password) u.password=password;
+  } else {
+    D.users.push({id:'usr_'+Date.now()+'_'+Math.random().toString(36).substr(2,4),
+      name:name,username:username,password:password,role:role,labId:labId,active:true});
+  }
+  db.ref('medvisit/users').set(D.users)
+    .then(function(){toast(id?'Usuario actualizado':'Usuario creado');closeModal('modalUsuario');})
+    .catch(function(e){toast('Error: '+e.message,'err');});
+}
+
+// ── GUARDAR LAB ─────────────────────────────────────────────────
+var LAB_COLORS=['#0303B5','#E2001A','#009036','#F59E0B','#009CDE','#7C3AED','#DC2626','#DB2777','#0066CC','#EA580C'];
+function selectLabColor(color,el){
+  document.getElementById('ml-color').value=color;
+  document.querySelectorAll('.color-swatch').forEach(function(s){s.classList.remove('selected');});
+  if(el) el.classList.add('selected');
+}
+function saveLab(){
+  var id=document.getElementById('ml-id').value;
+  var name=document.getElementById('ml-name').value.trim();
+  var color=document.getElementById('ml-color').value||'#0303B5';
+  if(!name){toast('El nombre es obligatorio','err');return;}
+  var c=color.replace(/^#/,'');
+  var r=parseInt(c.substr(0,2),16),g=parseInt(c.substr(2,2),16),b=parseInt(c.substr(4,2),16);
+  var lr=Math.round(r+(255-r)*0.85),lg=Math.round(g+(255-g)*0.85),lb=Math.round(b+(255-b)*0.85);
+  var colorLight='#'+lr.toString(16).padStart(2,'0')+lg.toString(16).padStart(2,'0')+lb.toString(16).padStart(2,'0');
+  if(id){
+    var baseIdx=BASE_LABS.findIndex(function(l){return l.id===id;});
+    if(baseIdx>=0){BASE_LABS[baseIdx].name=name;BASE_LABS[baseIdx].color=color;BASE_LABS[baseIdx].colorLight=colorLight;}
+    var dynIdx=D.labs.findIndex(function(l){return l.id===id;});
+    if(dynIdx>=0){D.labs[dynIdx].name=name;D.labs[dynIdx].color=color;D.labs[dynIdx].colorLight=colorLight;}
+    else if(baseIdx<0){toast('Lab no encontrado','err');return;}
+  } else {
+    var newId='lab_'+name.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+Date.now();
+    D.labs.push({id:newId,name:name,color:color,colorLight:colorLight,icon:'fa-flask'});
+  }
+  db.ref('medvisit/labs').set(D.labs)
+    .then(function(){toast(id?'Laboratorio actualizado':'Laboratorio creado');closeModal('modalLab');})
+    .catch(function(e){toast('Error: '+e.message,'err');});
+}
+
 // ── MODAL HELPERS ──────────────────────────────────────────────
 function openModal(id){
   var el=document.getElementById(id);
