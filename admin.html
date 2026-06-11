@@ -520,7 +520,7 @@ function renderVisitas(){
 
   var html='<div class="stats-grid">'
     +'<div class="stat-card"><div class="stat-num">'+completadas+'</div><div class="stat-label">Completadas hoy</div></div>'
-    +'<div class="stat-card"><div class="stat-num">'+enCurso+'</div><div class="stat-label">En curso</div></div>'
+    
     +'<div class="stat-card"><div class="stat-num">'+hoyVisitas.length+'</div><div class="stat-label">Iniciadas hoy</div></div>'
     +'<div class="stat-card"><div class="stat-num">'+visits.length+'</div><div class="stat-label">Total registros</div></div>'
     +'</div>';
@@ -548,7 +548,7 @@ function renderVisitas(){
     if(hasta&&v.date>hasta) return false;
     if(lab&&v.labId!==lab) return false;
     if(vis&&(v.visitorId||v.userId)!==vis) return false;
-    return true;
+    return v.status==='completed';
   });
   filtradas.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
 
