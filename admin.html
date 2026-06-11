@@ -555,7 +555,7 @@ function renderVisitas(){
   if(!filtradas.length) return html+'<div class="empty"><i class="fa-solid fa-route"></i><p>Sin visitas en el periodo</p></div>';
 
   html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
-    +'<th>Visitador</th><th>Laboratorio</th><th>Punto</th><th>Fecha</th><th>Estado</th><th>Foto</th>'
+    +'<th>Visitador</th><th>Laboratorio</th><th>Punto</th><th>Jefe</th><th>Notas</th><th>Fecha</th><th>Estado</th><th>Foto</th>'
     +'</tr></thead><tbody>'
     +filtradas.map(function(v){
       var visName=getUserName(v.visitorId||v.userId);
@@ -563,7 +563,7 @@ function renderVisitas(){
       var punto=v.pointName||v.placeName||'-';
       var estado=v.status==='completed'?'<span class="badge badge-ok">Completada</span>':v.status==='in-progress'?'<span class="badge badge-warn">En curso</span>':'<span class="badge badge-info">Pendiente</span>';
       var foto=v.photo?'<button class="btn btn-sm btn-outline" onclick="openFoto(\''+v.photo+'\')"><i class="fa-solid fa-image"></i></button>':'-';
-      return '<tr><td><b>'+esc(visName)+'</b></td><td>'+esc(labName)+'</td><td>'+esc(punto)+'</td><td>'+fmtDate(v.date)+'</td><td>'+estado+'</td><td>'+foto+'</td></tr>';
+      return '<tr><td><b>'+esc(visName)+'</b></td><td>'+esc(labName)+'</td><td>'+esc(punto)+'</td><td>'+esc(v.jefe||'-')+'</td><td>'+(v.notes?'<span title="'+esc(v.notes)+'" style="cursor:help;">'+esc(v.notes.substring(0,30))+(v.notes.length>30?'...':'')+'</span>':'-')+'</td><td>'+fmtDate(v.date)+'</td><td>'+estado+'</td><td>'+foto+'</td></tr>';
     }).join('')
     +'</tbody></table></div>';
 
@@ -607,7 +607,12 @@ function renderVisitadores(){
 // ── TAB PENDIENTES ────────────────────────────────────────────
 function renderPendientes(){
   var pends=D.pendientes.filter(function(p){
-    return p&&p.id&&!p.eliminado&&(!currentLabId||p.labId===currentLabId);
+    if(!p||!p.id||p.eliminado) return false;
+    if(!currentLabId) return true;
+    // Buscar lab del visitador si el pendiente no tiene labId
+    if(p.labId) return p.labId===currentLabId;
+    var u=D.users.find(function(x){return x.id===p.userId;});
+    return u&&u.labId===currentLabId;
   });
   var activos=pends.filter(function(p){return !p.resuelto;});
   var resueltos=pends.filter(function(p){return p.resuelto===true;});
