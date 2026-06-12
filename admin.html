@@ -978,6 +978,28 @@ function renderInformes(){
     +'<div style="position:relative;height:240px;"><canvas id="chartCumplimiento"></canvas></div>'
     +'</div>';
   html+='<div class="section-title">Por laboratorio</div><div id="rptLabCards"></div>';
+
+  // SECCIÓN: Informes individuales por visitador
+  var visitadoresInf=D.users.filter(function(u){return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId)&&u.active!==false;});
+  html+='<div class="section-title" style="margin-top:14px;">Informes individuales (reporte semanal)</div>';
+  if(!visitadoresInf.length){
+    html+='<div class="empty"><i class="fa-solid fa-user"></i><p>Sin visitadores</p></div>';
+  } else {
+    html+='<div class="card"><div style="display:flex;flex-direction:column;gap:6px;">';
+    visitadoresInf.forEach(function(u){
+      var lab=LABS.find(function(l){return l.id===u.labId;})||{name:'-',color:'#64748B'};
+      var col=avatarColor(u.name||'');
+      html+='<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">'
+        +'<div class="avatar" style="background:'+col+';width:34px;height:34px;font-size:12px;">'+initials(u.name)+'</div>'
+        +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">'+esc(u.name)+'</div>'
+        +'<div style="font-size:11px;color:var(--muted);"><span style="color:'+lab.color+';font-weight:600;">'+esc(lab.name)+'</span></div></div>'
+        +'<button class="btn btn-success btn-sm" data-id="'+u.id+'" onclick="generarExcelVisitador(this.dataset.id)"><i class="fa-solid fa-file-excel"></i></button>'
+        +'<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" data-id="'+u.id+'" onclick="generarPPTXVisitador(this.dataset.id)"><i class="fa-solid fa-file-powerpoint"></i></button>'
+        +'</div>';
+    });
+    html+='</div></div>';
+  }
+
   el.innerHTML=html;
   setRptPreset('hoy');
 }
@@ -1127,6 +1149,22 @@ function generarPPTX(labId){
   } else { _generarPPTX(labId); }
 }
 
+
+// ── RENDERIZAR GRAFICA A IMAGEN (para PPTX) ────────────────────
+function chartToImage(config, width, height){
+  width=width||600;height=height||350;
+  var canvas=document.createElement('canvas');
+  canvas.width=width;canvas.height=height;
+  config.options=config.options||{};
+  config.options.responsive=false;
+  config.options.animation=false;
+  config.options.devicePixelRatio=2;
+  var chart=new Chart(canvas,config);
+  var dataUrl=canvas.toDataURL('image/png');
+  chart.destroy();
+  return dataUrl;
+}
+
 function _generarPPTX(labId){
   var lab=labId?LABS.find(function(l){return l.id===labId;})||{name:'General',color:'#0303B5'}:{name:'General',color:'#0303B5'};
   var visits=D.visits.filter(function(v){
@@ -1147,6 +1185,46 @@ function _generarPPTX(labId){
   s1.addText('Periodo: '+(rptDesde||'Todo')+' al '+(rptHasta||today()),{x:0.5,y:2.3,w:9,h:0.4,fontSize:14,color:'CADCFC'});
   s1.addText(visits.length+' visitas completadas',{x:0.5,y:2.8,w:9,h:0.4,fontSize:14,color:'EDE9FE'});
   s1.addText('Generado: '+today()+' | '+currentUser.name,{x:0.5,y:5.05,w:9,h:0.3,fontSize:9,color:'8FAFD4'});
+
+  // Slide gráficas: tendencia y por laboratorio/visitador
+  var visitors=D.users.filter(function(u){return u.role==='visitor'&&(!labId||u.labId===labId);});
+  var labsForChart=labId?[LABS.find(function(l){return l.id===labId;})]:LABS;
+
+  // Tendencia diaria
+  var desdeC=rptDesde||today();
+  var hastaC=rptHasta||today();
+  var dC0=new Date(desdeC+'T00:00:00');var dC1=new Date(hastaC+'T00:00:00');
+  var diffC=Math.max(1,Math.round((dC1-dC0)/86400000)+1);
+  if(diffC>31){dC0=new Date(dC1.getTime()-30*86400000);diffC=31;}
+  var datesC=[];for(var i=0;i<diffC;i++){datesC.push(new Date(dC0.getTime()+i*86400000).toISOString().slice(0,10));}
+  var trendC=datesC.map(function(dt){return D.visits.filter(function(v){return v.status==='completed'&&v.date===dt&&(!labId||v.labId===labId);}).length;});
+
+  var sCharts=pptx.addSlide();
+  sCharts.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:0.9,fill:{color:'0303B5'}});
+  sCharts.addText('Tendencia y comparativas',{x:0.3,y:0.2,w:9,h:0.5,fontSize:16,bold:true,color:'FFFFFF'});
+  var imgTrend=chartToImage({type:'line',data:{labels:datesC.map(function(d){return fmtDate(d);}),
+    datasets:[{label:'Visitas',data:trendC,borderColor:'#0303B5',backgroundColor:'rgba(3,3,181,0.15)',fill:true,tension:0.3,pointRadius:2}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}},700,320);
+  sCharts.addImage({data:imgTrend,x:0.3,y:1.0,w:6.2,h:2.8});
+
+  var labCountsC=labsForChart.map(function(l){return D.visits.filter(function(v){return v.status==='completed'&&v.labId===l.id&&v.date>=desdeC&&v.date<=hastaC;}).length;});
+  var imgLabs=chartToImage({type:'bar',data:{labels:labsForChart.map(function(l){return l.name;}),
+    datasets:[{data:labCountsC,backgroundColor:labsForChart.map(function(l){return l.color;}),borderRadius:6}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}},500,320);
+  sCharts.addImage({data:imgLabs,x:6.7,y:1.0,w:6.3,h:2.8});
+
+  // Visitas por visitador (bar horizontal)
+  var visDataC=visitors.map(function(u){
+    var c=D.visits.filter(function(v){return (v.visitorId||v.userId)===u.id&&v.status==='completed'&&v.date>=desdeC&&v.date<=hastaC;}).length;
+    return {name:u.name,count:c};
+  }).sort(function(a,b){return b.count-a.count;}).slice(0,15);
+  if(visDataC.length){
+    var imgVis=chartToImage({type:'bar',data:{labels:visDataC.map(function(v){return v.name;}),
+      datasets:[{data:visDataC.map(function(v){return v.count;}),backgroundColor:'#0303B5',borderRadius:6}]},
+      options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0}}}}},1200,400);
+    sCharts.addImage({data:imgVis,x:0.3,y:3.9,w:12.7,h:1.7});
+  }
+
   // Slide 2: Resumen por visitador
   var visitors=D.users.filter(function(u){return u.role==='visitor'&&(!labId||u.labId===labId);});
   if(visitors.length){
@@ -1963,6 +2041,128 @@ function renderInformesCharts(){
         scales:{y:{beginAtZero:true,max:100,ticks:{callback:function(v){return v+'%';}}}}}
     });
   }
+}
+
+// ── INFORME INDIVIDUAL POR VISITADOR ───────────────────────────
+function generarExcelVisitador(uid){
+  if(uid&&typeof uid==='object') uid=uid.dataset?uid.dataset.id:uid;
+  window._excelPendingUid=uid;
+  toast('Generando Excel...','ok');
+  if(typeof XLSX==='undefined'){
+    var s=document.createElement('script');
+    s.src='https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js';
+    s.onload=function(){_generarExcelVisitador(window._excelPendingUid);};
+    document.head.appendChild(s);
+  } else { _generarExcelVisitador(uid); }
+}
+
+function _generarExcelVisitador(uid){
+  var u=D.users.find(function(x){return x.id===uid;});
+  if(!u){toast('Visitador no encontrado','err');return;}
+  var visits=D.visits.filter(function(v){
+    if((v.visitorId||v.userId)!==uid) return false;
+    if(rptDesde&&v.date<rptDesde) return false;
+    if(rptHasta&&v.date>rptHasta) return false;
+    return v.status==='completed';
+  });
+  var header=['Fecha','Tipo','Punto / Profesional','Especialidad','Telefono','Direccion','Obsequio','Firma','Notas','Jefe'];
+  var rows=visits.map(function(v){
+    var isProf=v.type==='profesional';
+    return [v.date||'',isProf?'Profesional':'General',
+      isProf?v.placeName||'':v.pointName||v.placeName||'',
+      v.speciality||'',v.phone||'',isProf?v.address||'':v.direccion||'',
+      v.gift||'',v.firma?'Si':'No',v.notes||'',v.jefe||''];
+  });
+  var wb=XLSX.utils.book_new();
+  var ws=XLSX.utils.aoa_to_sheet([header].concat(rows));
+  ws['!cols']=[{wch:12},{wch:12},{wch:30},{wch:18},{wch:14},{wch:28},{wch:20},{wch:6},{wch:28},{wch:18}];
+  XLSX.utils.book_append_sheet(wb,ws,'Visitas');
+  // Hoja de puntos
+  var pts=D.points.filter(function(p){return p.assignedTo===uid;});
+  var hPts=['Ruta','Orden','Punto','Direccion','Estado'];
+  var rPts=pts.map(function(p){return [p.routeName||'Sin ruta',p.order||'',p.name||'',p.address||'',p.inactive?'Inactivo':'Activo'];});
+  var ws2=XLSX.utils.aoa_to_sheet([hPts].concat(rPts));
+  XLSX.utils.book_append_sheet(wb,ws2,'Puntos');
+  XLSX.writeFile(wb,'Reporte_'+u.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+today()+'.xlsx');
+}
+
+function generarPPTXVisitador(uid){
+  if(uid&&typeof uid==='object') uid=uid.dataset?uid.dataset.id:uid;
+  window._pptxPendingUid=uid;
+  toast('Generando PPTX...','ok');
+  if(typeof PptxGenJS==='undefined'){
+    var s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js';
+    s.onload=function(){_generarPPTXVisitador(window._pptxPendingUid);};
+    document.head.appendChild(s);
+  } else { _generarPPTXVisitador(uid); }
+}
+
+function _generarPPTXVisitador(uid){
+  var u=D.users.find(function(x){return x.id===uid;});
+  if(!u){toast('Visitador no encontrado','err');return;}
+  var lab=LABS.find(function(l){return l.id===u.labId;})||{name:'-',color:'#0303B5'};
+  var desde=rptDesde||today();
+  var hasta=rptHasta||today();
+  var visits=D.visits.filter(function(v){
+    return (v.visitorId||v.userId)===uid&&v.status==='completed'&&v.date>=desde&&v.date<=hasta;
+  });
+  var pts=D.points.filter(function(p){return p.assignedTo===uid;});
+
+  var pptx=new PptxGenJS();
+  pptx.layout='LAYOUT_WIDE';
+  // Portada
+  var s1=pptx.addSlide();
+  s1.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:'100%',fill:{color:'1B3A6B'}});
+  s1.addShape(pptx.ShapeType.rect,{x:0,y:4.8,w:'100%',h:0.825,fill:{color:lab.color.replace('#','')}});
+  s1.addText('APPMED',{x:0.5,y:0.6,w:9,h:1,fontSize:48,bold:true,color:'FFFFFF',fontFace:'Arial Black'});
+  s1.addText('Reporte semanal — '+esc(u.name),{x:0.5,y:1.7,w:9,h:0.5,fontSize:18,color:'CADCFC'});
+  s1.addText('Laboratorio: '+esc(lab.name),{x:0.5,y:2.2,w:9,h:0.4,fontSize:14,color:'CADCFC'});
+  s1.addText('Periodo: '+desde+' al '+hasta,{x:0.5,y:2.6,w:9,h:0.4,fontSize:14,color:'CADCFC'});
+  s1.addText(visits.length+' visitas completadas · '+pts.length+' puntos asignados',{x:0.5,y:3.0,w:9,h:0.4,fontSize:14,color:'EDE9FE'});
+  s1.addText('Generado: '+today()+' | '+currentUser.name,{x:0.5,y:5.05,w:9,h:0.3,fontSize:9,color:'8FAFD4'});
+
+  // Tendencia diaria individual
+  var d0=new Date(desde+'T00:00:00');var d1=new Date(hasta+'T00:00:00');
+  var diff=Math.max(1,Math.round((d1-d0)/86400000)+1);
+  if(diff>31){d0=new Date(d1.getTime()-30*86400000);diff=31;}
+  var dates=[];for(var i=0;i<diff;i++){dates.push(new Date(d0.getTime()+i*86400000).toISOString().slice(0,10));}
+  var trend=dates.map(function(dt){return visits.filter(function(v){return v.date===dt;}).length;});
+
+  var s2=pptx.addSlide();
+  s2.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:0.9,fill:{color:'0303B5'}});
+  s2.addText('Tendencia de visitas — '+esc(u.name),{x:0.3,y:0.2,w:9,h:0.5,fontSize:16,bold:true,color:'FFFFFF'});
+  var imgTrend=chartToImage({type:'line',data:{labels:dates.map(function(d){return fmtDate(d);}),
+    datasets:[{label:'Visitas',data:trend,borderColor:lab.color,backgroundColor:lab.color+'33',fill:true,tension:0.3,pointRadius:3}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}},1200,500);
+  s2.addImage({data:imgTrend,x:0.6,y:1.1,w:12.1,h:3.6});
+
+  // Detalle de visitas
+  if(visits.length){
+    var s3=pptx.addSlide();
+    s3.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:0.9,fill:{color:'0303B5'}});
+    s3.addText('Detalle de visitas ('+visits.length+')',{x:0.3,y:0.2,w:9,h:0.5,fontSize:16,bold:true,color:'FFFFFF'});
+    var rows3=[[
+      {text:'Fecha',options:{bold:true,fill:'0303B5',color:'FFFFFF',fontSize:9}},
+      {text:'Tipo',options:{bold:true,fill:'0303B5',color:'FFFFFF',fontSize:9}},
+      {text:'Punto / Profesional',options:{bold:true,fill:'0303B5',color:'FFFFFF',fontSize:9}},
+      {text:'Jefe',options:{bold:true,fill:'0303B5',color:'FFFFFF',fontSize:9}},
+      {text:'Notas',options:{bold:true,fill:'0303B5',color:'FFFFFF',fontSize:9}}
+    ]];
+    visits.slice(0,25).forEach(function(v,i){
+      var bg=i%2===0?'EEEEFF':'FFFFFF';
+      rows3.push([
+        {text:v.date||'',options:{fill:bg,fontSize:9}},
+        {text:v.type==='profesional'?'Prof.':'General',options:{fill:bg,fontSize:9}},
+        {text:v.placeName||v.pointName||'',options:{fill:bg,fontSize:9}},
+        {text:v.jefe||'-',options:{fill:bg,fontSize:9}},
+        {text:(v.notes||'').substring(0,45),options:{fill:bg,fontSize:9}}
+      ]);
+    });
+    s3.addTable(rows3,{x:0.3,y:1.05,w:12.7,fontSize:9});
+  }
+
+  pptx.writeFile({fileName:'Reporte_'+u.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+today()+'.pptx'});
 }
 
 // ── MODAL HELPERS ──────────────────────────────────────────────
