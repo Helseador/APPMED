@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root{
       --primary:#0303B5;
@@ -956,6 +957,26 @@ function renderInformes(){
       +'<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="generarPPTX(null)"><i class="fa-solid fa-file-powerpoint"></i> PPTX</button>'
       +'</div></div>';
   }
+  // Sección comparativas
+  html+='<div class="card" style="margin-bottom:14px;">'
+    +'<div class="section-title" style="margin-bottom:12px;">Visitas completadas por laboratorio</div>'
+    +'<div style="position:relative;height:240px;"><canvas id="chartLabs"></canvas></div>'
+    +'</div>';
+  if(isSuper||isGeneral||!currentLabId){
+    // ya cubierto
+  }
+  html+='<div class="card" style="margin-bottom:14px;">'
+    +'<div class="section-title" style="margin-bottom:12px;">Tendencia diaria</div>'
+    +'<div style="position:relative;height:220px;"><canvas id="chartTrend"></canvas></div>'
+    +'</div>';
+  html+='<div class="card" style="margin-bottom:14px;">'
+    +'<div class="section-title" style="margin-bottom:12px;">Visitas por visitador</div>'
+    +'<div style="position:relative;height:280px;"><canvas id="chartVisitadores"></canvas></div>'
+    +'</div>';
+  html+='<div class="card" style="margin-bottom:14px;">'
+    +'<div class="section-title" style="margin-bottom:12px;">Cumplimiento por laboratorio</div>'
+    +'<div style="position:relative;height:240px;"><canvas id="chartCumplimiento"></canvas></div>'
+    +'</div>';
   html+='<div class="section-title">Por laboratorio</div><div id="rptLabCards"></div>';
   el.innerHTML=html;
   setRptPreset('hoy');
@@ -976,6 +997,7 @@ function setRptPreset(preset){
 }
 
 function renderInformesCards(){
+  renderInformesCharts();
   var el=document.getElementById('rptLabCards');
   if(!el) return;
   var labsToShow=currentLabId?LABS.filter(function(l){return l.id===currentLabId;}):LABS;
@@ -1838,6 +1860,109 @@ function saveLab(){
   db.ref('medvisit/labs').set(D.labs)
     .then(function(){toast(id?'Laboratorio actualizado':'Laboratorio creado');closeModal('modalLab');})
     .catch(function(e){toast('Error: '+e.message,'err');});
+}
+
+// ── GRAFICAS DE INFORMES ─────────────────────────────────────
+var _chartInstances={};
+function destroyChart(id){
+  if(_chartInstances[id]){_chartInstances[id].destroy();delete _chartInstances[id];}
+}
+function renderInformesCharts(){
+  if(typeof Chart==='undefined') return;
+  var desde=rptDesde||today();
+  var hasta=rptHasta||today();
+  var labsToShow=currentLabId?LABS.filter(function(l){return l.id===currentLabId;}):LABS;
+  var visitsInRange=D.visits.filter(function(v){
+    return v.status==='completed'&&v.date>=desde&&v.date<=hasta&&(!currentLabId||v.labId===currentLabId);
+  });
+
+  // 1. Visitas por laboratorio
+  var elLabs=document.getElementById('chartLabs');
+  if(elLabs){
+    destroyChart('chartLabs');
+    var labCounts=labsToShow.map(function(l){
+      return visitsInRange.filter(function(v){return v.labId===l.id;}).length;
+    });
+    _chartInstances['chartLabs']=new Chart(elLabs,{
+      type:'bar',
+      data:{labels:labsToShow.map(function(l){return l.name;}),
+        datasets:[{label:'Visitas completadas',data:labCounts,
+          backgroundColor:labsToShow.map(function(l){return l.color;}),borderRadius:6}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{y:{beginAtZero:true,ticks:{precision:0}}}}
+    });
+  }
+
+  // 2. Tendencia diaria
+  var elTrend=document.getElementById('chartTrend');
+  if(elTrend){
+    destroyChart('chartTrend');
+    // Generar lista de fechas entre desde y hasta (max 31 dias)
+    var dates=[];
+    var d0=new Date(desde+'T00:00:00');
+    var d1=new Date(hasta+'T00:00:00');
+    var diffDays=Math.max(1,Math.round((d1-d0)/86400000)+1);
+    if(diffDays>31){
+      // limitar a últimos 31 dias del rango
+      d0=new Date(d1.getTime()-30*86400000);
+      diffDays=31;
+    }
+    for(var i=0;i<diffDays;i++){
+      var dd=new Date(d0.getTime()+i*86400000);
+      dates.push(dd.toISOString().slice(0,10));
+    }
+    var trendCounts=dates.map(function(dt){
+      return D.visits.filter(function(v){return v.status==='completed'&&v.date===dt&&(!currentLabId||v.labId===currentLabId);}).length;
+    });
+    _chartInstances['chartTrend']=new Chart(elTrend,{
+      type:'line',
+      data:{labels:dates.map(function(dt){return fmtDate(dt);}),
+        datasets:[{label:'Visitas',data:trendCounts,borderColor:'#0303B5',
+          backgroundColor:'rgba(3,3,181,0.1)',fill:true,tension:0.3,pointRadius:3}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{ticks:{maxRotation:60,minRotation:45}}}}
+    });
+  }
+
+  // 3. Visitas por visitador (top 15)
+  var elVis=document.getElementById('chartVisitadores');
+  if(elVis){
+    destroyChart('chartVisitadores');
+    var visitors=D.users.filter(function(u){return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId);});
+    var visData=visitors.map(function(u){
+      var c=visitsInRange.filter(function(v){return (v.visitorId||v.userId)===u.id;}).length;
+      return {name:u.name,count:c,color:avatarColor(u.name||'')};
+    }).sort(function(a,b){return b.count-a.count;}).slice(0,15);
+    _chartInstances['chartVisitadores']=new Chart(elVis,{
+      type:'bar',
+      data:{labels:visData.map(function(v){return v.name;}),
+        datasets:[{label:'Visitas completadas',data:visData.map(function(v){return v.count;}),
+          backgroundColor:visData.map(function(v){return v.color;}),borderRadius:6}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{beginAtZero:true,ticks:{precision:0}}}}
+    });
+  }
+
+  // 4. Cumplimiento por laboratorio (puntos completados hoy / total puntos)
+  var elCump=document.getElementById('chartCumplimiento');
+  if(elCump){
+    destroyChart('chartCumplimiento');
+    var hoy=today();
+    var cumpData=labsToShow.map(function(l){
+      var myUsers=D.users.filter(function(u){return u.role==='visitor'&&u.labId===l.id&&u.active!==false;});
+      var totalPts=D.points.filter(function(p){return myUsers.some(function(u){return u.id===p.assignedTo;})&&!p.inactive;}).length;
+      var done=D.visits.filter(function(v){return v.labId===l.id&&v.date===hoy&&v.status==='completed';}).length;
+      return totalPts>0?Math.round(done/totalPts*100):0;
+    });
+    _chartInstances['chartCumplimiento']=new Chart(elCump,{
+      type:'bar',
+      data:{labels:labsToShow.map(function(l){return l.name;}),
+        datasets:[{label:'% Cumplimiento hoy',data:cumpData,
+          backgroundColor:labsToShow.map(function(l){return l.color;}),borderRadius:6}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{y:{beginAtZero:true,max:100,ticks:{callback:function(v){return v+'%';}}}}}
+    });
+  }
 }
 
 // ── MODAL HELPERS ──────────────────────────────────────────────
