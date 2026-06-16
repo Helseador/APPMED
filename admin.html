@@ -1013,7 +1013,6 @@ function renderCanvasDashboard(){
   if(!el) return;
   var isSuper=currentUser.role==='super';
   var isGeneral=currentUser.role==='adminGeneral';
-  // Si adminGeneral o super sin lab seleccionado, mostrar selector de labs
   if((isSuper||isGeneral)&&!currentLabId){
     el.innerHTML=renderLabSelector();
     return;
@@ -1023,45 +1022,86 @@ function renderCanvasDashboard(){
   var hoy=today();
   var todayVisits=D.visits.filter(function(v){return v.labId===currentLabId&&v.date===hoy;});
   var completadas=todayVisits.filter(function(v){return v.status==='completed';}).length;
-  var totalPts=D.points.filter(function(p){
-    return myUsers.some(function(u){return u.id===p.assignedTo;});
-  }).length;
+  var totalPts=D.points.filter(function(p){return myUsers.some(function(u){return u.id===p.assignedTo;});}).length;
   var pct=totalPts?Math.round(completadas/totalPts*100):0;
-  var html='<div class="canvas-hero" style="background:linear-gradient(135deg,'+lab.color+','+lab.color+'99);">'
-    +'<div class="hero-big">'+pct+'%</div>'
-    +'<div class="hero-label">Cumplimiento hoy</div>'
-    +'<div class="hero-sub">'+completadas+' de '+totalPts+' puntos completados</div>'
+  var totalVisitasLab=D.visits.filter(function(v){return v.labId===currentLabId&&v.status==='completed';}).length;
+
+  // HERO con gradiente y anillo de progreso
+  var ringColor=pct>=80?'#4ADE80':pct>=40?'#FCD34D':'#FCA5A5';
+  var circ=2*Math.PI*42;
+  var dash=(pct/100)*circ;
+  var html='<div style="position:relative;border-radius:20px;padding:26px 24px;margin-bottom:18px;overflow:hidden;background:linear-gradient(135deg,'+lab.color+' 0%,'+lab.color+'CC 100%);color:#fff;box-shadow:0 8px 24px '+lab.color+'40;">'
+    +'<div style="position:absolute;top:-30px;right:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.08);"></div>'
+    +'<div style="position:absolute;bottom:-50px;right:40px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.06);"></div>'
+    +'<div style="position:relative;z-index:2;display:flex;align-items:center;gap:22px;flex-wrap:wrap;">'
+    +'<div style="position:relative;width:100px;height:100px;flex-shrink:0;">'
+    +'<svg width="100" height="100" viewBox="0 0 100 100" style="transform:rotate(-90deg);">'
+    +'<circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="9"></circle>'
+    +'<circle cx="50" cy="50" r="42" fill="none" stroke="'+ringColor+'" stroke-width="9" stroke-linecap="round" stroke-dasharray="'+dash+' '+circ+'"></circle>'
+    +'</svg>'
+    +'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">'
+    +'<div style="font-size:24px;font-weight:900;line-height:1;">'+pct+'%</div>'
+    +'</div></div>'
+    +'<div style="flex:1;min-width:160px;">'
+    +'<div style="font-size:12px;opacity:0.8;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">'+esc(lab.name)+'</div>'
+    +'<div style="font-size:20px;font-weight:800;margin-top:2px;">Cumplimiento de hoy</div>'
+    +'<div style="font-size:13px;opacity:0.85;margin-top:4px;">'+completadas+' de '+totalPts+' puntos completados</div>'
+    +'</div>'
+    +'</div></div>';
+
+  // Stats en fila tipo chips
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:20px;">'
+    +'<div style="background:#fff;border-radius:14px;padding:16px;border:1px solid var(--border);text-align:center;">'
+    +'<div style="width:36px;height:36px;border-radius:10px;background:var(--primary-50);color:var(--primary);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:14px;"><i class="fa-solid fa-users"></i></div>'
+    +'<div style="font-size:22px;font-weight:900;color:var(--fg);">'+myUsers.length+'</div><div style="font-size:11px;color:var(--muted);font-weight:600;">Visitadores</div></div>'
+    +'<div style="background:#fff;border-radius:14px;padding:16px;border:1px solid var(--border);text-align:center;">'
+    +'<div style="width:36px;height:36px;border-radius:10px;background:#DCFCE7;color:#16A34A;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:14px;"><i class="fa-solid fa-calendar-check"></i></div>'
+    +'<div style="font-size:22px;font-weight:900;color:var(--fg);">'+completadas+'</div><div style="font-size:11px;color:var(--muted);font-weight:600;">Visitas hoy</div></div>'
+    +'<div style="background:#fff;border-radius:14px;padding:16px;border:1px solid var(--border);text-align:center;">'
+    +'<div style="width:36px;height:36px;border-radius:10px;background:#FEF3C7;color:#D97706;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:14px;"><i class="fa-solid fa-route"></i></div>'
+    +'<div style="font-size:22px;font-weight:900;color:var(--fg);">'+totalVisitasLab+'</div><div style="font-size:11px;color:var(--muted);font-weight:600;">Total visitas</div></div>'
+    +'<div style="background:#fff;border-radius:14px;padding:16px;border:1px solid var(--border);text-align:center;">'
+    +'<div style="width:36px;height:36px;border-radius:10px;background:#E0E7FF;color:#4F46E5;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:14px;"><i class="fa-solid fa-map-pin"></i></div>'
+    +'<div style="font-size:22px;font-weight:900;color:var(--fg);">'+totalPts+'</div><div style="font-size:11px;color:var(--muted);font-weight:600;">Puntos totales</div></div>'
     +'</div>';
-  html+='<div class="stat-grid-2">'
-    +'<div class="stat-mini"><div class="stat-mini-num">'+myUsers.length+'</div><div class="stat-mini-label">Visitadores</div></div>'
-    +'<div class="stat-mini"><div class="stat-mini-num">'+completadas+'</div><div class="stat-mini-label">Visitas hoy</div></div>'
-    +'<div class="stat-mini"><div class="stat-mini-num">'+D.visits.filter(function(v){return v.labId===currentLabId&&v.status==="completed";}).length+'</div><div class="stat-mini-label">Total visitas</div></div>'
-    +'<div class="stat-mini"><div class="stat-mini-num">'+totalPts+'</div><div class="stat-mini-label">Puntos totales</div></div>'
-    +'</div>';
+
   if(isSuper||isGeneral){
-    html+='<button class="btn btn-outline btn-sm" onclick="currentLabId=null;renderCurrentTab()" style="margin-bottom:14px;"><i class="fa-solid fa-arrow-left"></i> Cambiar laboratorio</button>';
+    html+='<button class="btn btn-outline btn-sm" onclick="currentLabId=null;renderCurrentTab()" style="margin-bottom:18px;"><i class="fa-solid fa-arrow-left"></i> Cambiar laboratorio</button>';
   }
-  html+='<div class="section-title">Equipo</div><div class="canvas-grid">';
-  myUsers.forEach(function(u){
-    var uPts=D.points.filter(function(p){return p.assignedTo===u.id;});
-    var uDone=D.visits.filter(function(v){return v.visitorId===u.id&&v.date===hoy&&v.status==="completed";}).length;
-    var uPct=uPts.length?Math.round(uDone/uPts.length*100):0;
-    var col=avatarColor(u.id);
-    html+='<div class="canvas-card">'
-      +'<div class="card-stripe" style="background:'+col+';"></div>'
-      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
-      +'<div class="card-avatar" style="background:'+col+';">'+initials(u.name)+'</div>'
-      +'<div><div class="card-name">'+esc(u.name)+'</div><div class="card-username">@'+esc(u.username)+'</div></div>'
-      +'</div>'
-      +'<div class="card-pct" style="color:'+col+';">'+uPct+'%</div>'
-      +'<div class="card-bar"><div class="card-bar-fill" style="width:'+uPct+'%;background:'+col+';"></div></div>'
-      +'<div class="card-stats"><span><i class="fa-solid fa-check"></i>'+uDone+'</span><span><i class="fa-solid fa-map-pin"></i>'+uPts.length+'</span></div>'
-      +'</div>';
-  });
-  html+='</div>';
+
+  html+='<div class="section-title" style="margin-bottom:12px;">Equipo</div>';
+
+  if(!myUsers.length){
+    html+='<div class="empty"><i class="fa-solid fa-users"></i><p>Sin visitadores en este laboratorio</p></div>';
+  } else {
+    html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;">';
+    myUsers.forEach(function(u){
+      var uPts=D.points.filter(function(p){return p.assignedTo===u.id;});
+      var uDone=D.visits.filter(function(v){return v.visitorId===u.id&&v.date===hoy&&v.status==='completed';}).length;
+      var uPct=uPts.length?Math.round(uDone/uPts.length*100):0;
+      var col=avatarColor(u.id);
+      var barColor=uPct>=80?'#16A34A':uPct>=40?'#D97706':'#DC2626';
+      html+='<div style="background:#fff;border-radius:16px;padding:18px;border:1px solid var(--border);position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 8px 20px rgba(0,0,0,0.08)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'">'
+        +'<div style="position:absolute;left:0;top:0;bottom:0;width:5px;background:'+col+';"></div>'
+        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
+        +'<div class="avatar" style="background:'+col+';width:42px;height:42px;font-size:14px;">'+initials(u.name)+'</div>'
+        +'<div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(u.name)+'</div>'
+        +'<div style="font-size:11px;color:var(--muted);">@'+esc(u.username)+'</div></div>'
+        +'</div>'
+        +'<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;">'
+        +'<span style="font-size:28px;font-weight:900;color:'+barColor+';line-height:1;">'+uPct+'%</span>'
+        +'<span style="font-size:11px;color:var(--muted);font-weight:600;">'+uDone+'/'+uPts.length+' hoy</span>'
+        +'</div>'
+        +'<div style="height:7px;background:var(--border);border-radius:4px;overflow:hidden;">'
+        +'<div style="height:100%;width:'+uPct+'%;background:'+barColor+';border-radius:4px;transition:width .6s ease;"></div>'
+        +'</div>'
+        +'</div>';
+    });
+    html+='</div>';
+  }
+
   el.innerHTML=html;
 }
-
 // ── SELECTOR DE LABORATORIOS (adminGeneral y super) ────────────
 function renderLabSelector(){
   var html='<div style="margin-bottom:20px;"><div style="font-size:20px;font-weight:800;margin-bottom:4px;">Selecciona un laboratorio</div>'
