@@ -396,7 +396,7 @@ var LABS=BASE_LABS.slice();
 var AV_COLORS=['#0303B5','#D97706','#DC2626','#7C3AED','#DB2777','#EA580C','#4F46E5','#0891B2'];
 
 var db=null, currentUser=null, currentLabId=null;
-var D={users:[],visits:[],points:[],pendientes:[],labs:[],marketing:[]};
+var D={users:[],visits:[],points:[],pendientes:[],labs:[],marketing:[],ausencias:[]};
 
 // ── UTILS ──────────────────────────────────────────────────────
 function esc(s){if(!s) return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -433,6 +433,7 @@ function initFirebase(){
     db.ref('medvisit/visits').on('value',function(snap){D.visits=toArray(snap.val());render();});
     db.ref('medvisit/points').on('value',function(snap){D.points=toArray(snap.val());render();});
     db.ref('medvisit/pendientes').on('value',function(snap){D.pendientes=toArray(snap.val()||[]);render();});
+    db.ref('medvisit/ausencias').on('value',function(snap){D.ausencias=toArray(snap.val()||[]);render();});
     db.ref('medvisit/labs').on('value',function(snap){
       var extra=toArray(snap.val());
       LABS=BASE_LABS.slice().concat(extra.filter(function(l){return !BASE_LABS.some(function(b){return b.id===l.id;});}));
@@ -500,9 +501,9 @@ function doLogout(){
 // ── TABS ──────────────────────────────────────────────────────
 var _currentTab='panel';
 var _tabs={
-  super:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'usuarios',icon:'fa-screwdriver-wrench',label:'Gestión'}],
-  adminGeneral:[{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'usuarios',icon:'fa-screwdriver-wrench',label:'Gestión'}],
-  admin:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'usuarios',icon:'fa-screwdriver-wrench',label:'Gestión'}],
+  super:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'usuarios',icon:'fa-screwdriver-wrench',label:'Gestión'}],
+  adminGeneral:[{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'}],
+  admin:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'}],
   contador:    [{id:'marketing',icon:'fa-receipt',label:'Marketing'}]
 };
 
@@ -537,6 +538,7 @@ function renderCurrentTab(){
   else if(_currentTab==='visitas') el.innerHTML=renderVisitas();
   else if(_currentTab==='visitadores') el.innerHTML=renderVisitadores();
   else if(_currentTab==='pendientes') el.innerHTML=renderPendientes();
+  else if(_currentTab==='ausencias') el.innerHTML=renderAusencias();
   else if(_currentTab==='marketing') el.innerHTML=renderMarketing();
   else if(_currentTab==='informes') renderInformes();
   else if(_currentTab==='usuarios') el.innerHTML=renderUsuarios();
@@ -645,7 +647,6 @@ function renderPendientes(){
   var pends=D.pendientes.filter(function(p){
     if(!p||!p.id||p.eliminado) return false;
     if(!currentLabId) return true;
-    // Buscar lab del visitador si el pendiente no tiene labId
     if(p.labId) return p.labId===currentLabId;
     var u=D.users.find(function(x){return x.id===p.userId;});
     return u&&u.labId===currentLabId;
@@ -658,18 +659,188 @@ function renderPendientes(){
     +'<div class="stat-card"><div class="stat-num">'+resueltos.length+'</div><div class="stat-label">Resueltos</div></div>'
     +'</div>';
 
+  html+='<div style="display:flex;justify-content:flex-end;margin-bottom:14px;">'
+    +'<button class="btn btn-primary btn-sm" onclick="abrirModalCrearPendiente()"><i class="fa-solid fa-plus"></i> Nuevo pendiente</button>'
+    +'</div>';
+
   if(!activos.length) return html+'<div class="empty"><i class="fa-solid fa-list-check"></i><p>Sin pendientes activos</p></div>';
 
+  // Ordenar por prioridad: urgente/alta primero
+  var ordenPrio={urgente:0,alta:0,semana:1,normal:2,baja:3};
+  activos=activos.slice().sort(function(a,b){return (ordenPrio[a.prioridad]!=null?ordenPrio[a.prioridad]:2)-(ordenPrio[b.prioridad]!=null?ordenPrio[b.prioridad]:2);});
+
   html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
-    +'<th>Visitador</th><th>Pendiente</th><th>Prioridad</th><th>Creado por</th><th>Fecha límite</th>'
+    +'<th>Visitador</th><th>Pendiente</th><th>Prioridad</th><th>Creado por</th><th>Fecha límite</th><th>Acciones</th>'
     +'</tr></thead><tbody>'
     +activos.map(function(p){
       var visName=getUserName(p.userId);
-      var prio=p.prioridad==='alta'?'<span class="badge badge-err">Alta</span>':p.prioridad==='baja'?'<span class="badge badge-ok">Baja</span>':'<span class="badge badge-warn">Normal</span>';
-      return '<tr><td><b>'+esc(visName)+'</b></td><td>'+esc(p.texto)+'</td><td>'+prio+'</td><td>'+esc(p.creadoPorNombre||'-')+'</td><td>'+fmtDate(p.fechaLimite)+'</td></tr>';
+      var prio=(p.prioridad==='urgente'||p.prioridad==='alta')?'<span class="badge badge-err">'+(p.prioridad==='urgente'?'Urgente':'Alta')+'</span>'
+        :p.prioridad==='semana'?'<span class="badge badge-warn">Esta semana</span>'
+        :p.prioridad==='baja'?'<span class="badge badge-ok">Baja</span>'
+        :'<span class="badge badge-warn">Normal</span>';
+      var creadoPorVisitador=p.creadoPor===p.userId;
+      var creador=creadoPorVisitador?'<span style="color:var(--muted);">Visitador</span>':esc(p.creadoPorNombre||'-');
+      return '<tr><td><b>'+esc(visName)+'</b></td><td>'+esc(p.texto)+'</td><td>'+prio+'</td><td>'+creador+'</td><td>'+fmtDate(p.fechaLimite)+'</td>'
+        +'<td style="white-space:nowrap;">'
+        +'<button class="action-btn action-btn-success" style="margin-right:4px;" data-id="'+p.id+'" onclick="resolverPendienteAdmin(this.dataset.id)"><i class="fa-solid fa-check"></i> Resolver</button>'
+        +'<button class="action-btn action-btn-danger" data-id="'+p.id+'" onclick="eliminarPendienteAdmin(this.dataset.id)"><i class="fa-solid fa-trash"></i></button>'
+        +'</td></tr>';
     }).join('')
     +'</tbody></table></div>';
   return html;
+}
+
+function resolverPendienteAdmin(pid){
+  var p=D.pendientes.find(function(x){return x.id===pid;});
+  if(!p) return;
+  p.resuelto=true;
+  p.resueltoAt=new Date().toISOString();
+  p.ocultoVisitador=true;
+  var save=function(){
+    db.ref('medvisit/pendientes/'+p._fbKey).set(p)
+      .then(function(){toast('Pendiente resuelto');renderCurrentTab();})
+      .catch(function(e){toast('Error: '+e.message,'err');p.resuelto=false;});
+  };
+  if(p._fbKey) save();
+  else {
+    db.ref('medvisit/pendientes').orderByChild('id').equalTo(pid).once('value',function(snap){
+      snap.forEach(function(c){p._fbKey=c.key;});
+      save();
+    });
+  }
+}
+
+function abrirModalCrearPendiente(){
+  var modal=document.getElementById('modalCrearPendiente');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='modalCrearPendiente';
+    modal.className='modal-overlay';
+    modal.innerHTML='<div class="modal-box">'
+      +'<div class="modal-title">Nuevo pendiente</div>'
+      +'<div class="form-group"><label class="form-label">Visitador</label><select class="form-input" id="cp-visitor"></select></div>'
+      +'<div class="form-group"><label class="form-label">Pendiente</label><textarea class="form-input" id="cp-texto" placeholder="Describe el pendiente..."></textarea></div>'
+      +'<div class="form-group"><label class="form-label">Prioridad</label><select class="form-input" id="cp-prioridad"><option value="normal">Normal</option><option value="semana">Esta semana</option><option value="urgente">Urgente</option></select></div>'
+      +'<div class="form-group"><label class="form-label">Fecha límite</label><input class="form-input" type="date" id="cp-fecha"></div>'
+      +'<div class="modal-actions">'
+      +'<button class="btn btn-outline" onclick="closeModal(&quot;modalCrearPendiente&quot;)">Cancelar</button>'
+      +'<button class="btn btn-primary" onclick="crearPendienteAdmin()"><i class="fa-solid fa-plus"></i> Crear</button>'
+      +'</div></div>';
+    document.body.appendChild(modal);
+  }
+  var sel=document.getElementById('cp-visitor');
+  var visitors=D.users.filter(function(u){return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId);});
+  sel.innerHTML=visitors.map(function(u){return '<option value="'+u.id+'">'+esc(u.name)+' ('+esc(getLabName(u.labId))+')</option>';}).join('');
+  document.getElementById('cp-texto').value='';
+  document.getElementById('cp-prioridad').value='normal';
+  document.getElementById('cp-fecha').value='';
+  openModal('modalCrearPendiente');
+}
+
+function crearPendienteAdmin(){
+  var userId=document.getElementById('cp-visitor').value;
+  var texto=document.getElementById('cp-texto').value.trim();
+  var prioridad=document.getElementById('cp-prioridad').value;
+  var fechaLimite=document.getElementById('cp-fecha').value;
+  if(!userId||!texto){toast('Selecciona visitador y escribe el pendiente','err');return;}
+  var u=D.users.find(function(x){return x.id===userId;});
+  var p={
+    id:'pnd_'+Date.now()+'_'+Math.random().toString(36).substr(2,4),
+    userId:userId,texto:texto,prioridad:prioridad,fechaLimite:fechaLimite||'',
+    labId:u?u.labId||'':'',creadoPor:currentUser.id,creadoPorNombre:currentUser.name,
+    creadoAt:new Date().toISOString(),resuelto:false,resueltoAt:null,ocultoVisitador:false,eliminado:false
+  };
+  var ref=db.ref('medvisit/pendientes').push();
+  p._fbKey=ref.key;
+  ref.set(p)
+    .then(function(){toast('Pendiente creado');closeModal('modalCrearPendiente');})
+    .catch(function(e){toast('Error: '+e.message,'err');});
+}
+
+// ── TAB AUSENCIAS ────────────────────────────────────────────
+function renderAusencias(){
+  var ausencias=D.ausencias.filter(function(a){
+    if(!a||!a.id) return false;
+    return !currentLabId||a.labId===currentLabId;
+  });
+  ausencias.sort(function(a,b){return (b.creadoAt||'').localeCompare(a.creadoAt||'');});
+  var pendRev=ausencias.filter(function(a){return !a.revisado;});
+  var revisadas=ausencias.filter(function(a){return a.revisado;});
+
+  var html='<div class="stats-grid">'
+    +'<div class="stat-card"><div class="stat-num">'+pendRev.length+'</div><div class="stat-label">Sin revisar</div></div>'
+    +'<div class="stat-card"><div class="stat-num">'+revisadas.length+'</div><div class="stat-label">Revisadas</div></div>'
+    +'<div class="stat-card"><div class="stat-num">'+ausencias.length+'</div><div class="stat-label">Total</div></div>'
+    +'</div>';
+
+  if(!ausencias.length) return html+'<div class="empty"><i class="fa-solid fa-file-medical"></i><p>Sin ausencias reportadas</p></div>';
+
+  var motivoLabel={incapacidad:'Incapacidad médica',calamidad:'Calamidad doméstica',cita_medica:'Cita médica',otro:'Otro'};
+
+  html+='<div style="display:flex;flex-direction:column;gap:10px;">';
+  ausencias.forEach(function(a){
+    var u=D.users.find(function(x){return x.id===a.userId;});
+    var lab=LABS.find(function(l){return l.id===a.labId;})||{name:'-',color:'#64748B'};
+    var col=avatarColor(a.userName||'');
+    html+='<div class="card" style="border-left:4px solid '+(a.revisado?'var(--success)':'var(--warning)')+';">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
+      +'<div class="avatar" style="background:'+col+';width:34px;height:34px;font-size:12px;">'+initials(a.userName)+'</div>'
+      +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">'+esc(a.userName||getUserName(a.userId))+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);"><span style="color:'+lab.color+';font-weight:600;">'+esc(lab.name)+'</span> · '+fmtDate(a.fecha)+'</div></div>'
+      +(a.revisado?'<span class="badge badge-ok">Revisada</span>':'<span class="badge badge-warn">Sin revisar</span>')
+      +'</div>'
+      +'<div style="background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:10px;">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--primary);margin-bottom:4px;">'+esc(motivoLabel[a.motivo]||a.motivo||'-')+'</div>'
+      +'<div style="font-size:13px;">'+esc(a.detalle||'')+'</div>'
+      +'</div>'
+      +(a.foto?'<img src="'+a.foto+'" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;cursor:pointer;margin-bottom:10px;" onclick="openFoto(this.src)">':'')
+      +'<div style="display:flex;gap:8px;">'
+      +(!a.revisado?'<button class="btn btn-success btn-sm" style="flex:1;" data-id="'+a.id+'" onclick="marcarAusenciaRevisada(this.dataset.id)"><i class="fa-solid fa-check"></i> Marcar revisada</button>':'')
+      +'<button class="btn btn-outline btn-sm" style="flex:1;" data-id="'+a.id+'" onclick="eliminarAusencia(this.dataset.id)"><i class="fa-solid fa-trash"></i> Eliminar</button>'
+      +'</div>'
+      +'</div>';
+  });
+  html+='</div>';
+  return html;
+}
+
+function marcarAusenciaRevisada(aid){
+  var a=D.ausencias.find(function(x){return x.id===aid;});
+  if(!a) return;
+  a.revisado=true;
+  a.revisadoPor=currentUser.name;
+  a.revisadoAt=new Date().toISOString();
+  var save=function(){
+    db.ref('medvisit/ausencias/'+a._fbKey).set(a)
+      .then(function(){toast('Marcada como revisada');renderCurrentTab();})
+      .catch(function(e){toast('Error: '+e.message,'err');a.revisado=false;});
+  };
+  if(a._fbKey) save();
+  else {
+    db.ref('medvisit/ausencias').orderByChild('id').equalTo(aid).once('value',function(snap){
+      snap.forEach(function(c){a._fbKey=c.key;});
+      save();
+    });
+  }
+}
+
+function eliminarAusencia(aid){
+  var a=D.ausencias.find(function(x){return x.id===aid;});
+  if(!a) return;
+  showConfirm('Eliminar ausencia','¿Eliminar este registro de ausencia? No se puede deshacer.','fa-trash','danger',function(){
+    var doDelete=function(){
+      db.ref('medvisit/ausencias/'+a._fbKey).remove()
+        .then(function(){toast('Ausencia eliminada');D.ausencias=D.ausencias.filter(function(x){return x.id!==aid;});renderCurrentTab();})
+        .catch(function(e){toast('Error: '+e.message,'err');});
+    };
+    if(a._fbKey) doDelete();
+    else {
+      db.ref('medvisit/ausencias').orderByChild('id').equalTo(aid).once('value',function(snap){
+        snap.forEach(function(c){a._fbKey=c.key;});
+        doDelete();
+      });
+    }
+  });
 }
 
 // ── TAB MARKETING ─────────────────────────────────────────────
@@ -1460,6 +1631,7 @@ renderCurrentTab=function(){
   if(_currentTab==='visitas') el.innerHTML=renderVisitas();
   else if(_currentTab==='visitadores') el.innerHTML=renderVisitadores();
   else if(_currentTab==='pendientes') el.innerHTML=renderPendientes();
+  else if(_currentTab==='ausencias') el.innerHTML=renderAusencias();
   else if(_currentTab==='marketing') el.innerHTML=renderMarketing();
   else if(_currentTab==='usuarios') el.innerHTML=renderUsuarios();
   else if(_currentTab==='panel') renderCanvasDashboard();
