@@ -593,7 +593,7 @@ function renderVisitas(){
   if(!filtradas.length) return html+'<div class="empty"><i class="fa-solid fa-route"></i><p>Sin visitas en el periodo</p></div>';
 
   html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
-    +'<th>Visitador</th><th>Laboratorio</th><th>Punto</th><th>Jefe</th><th>Notas</th><th>Fecha</th><th>Estado</th><th>Foto</th>'
+    +'<th>Visitador</th><th>Laboratorio</th><th>Punto</th><th>Jefe</th><th>Notas</th><th>Fecha</th><th>Estado</th><th>Ubicación</th><th>Foto</th>'
     +'</tr></thead><tbody>'
     +filtradas.map(function(v){
       var visName=getUserName(v.visitorId||v.userId);
@@ -601,7 +601,8 @@ function renderVisitas(){
       var punto=v.pointName||v.placeName||'-';
       var estado=v.status==='completed'?'<span class="badge badge-ok">Completada</span>':v.status==='in-progress'?'<span class="badge badge-warn">En curso</span>':'<span class="badge badge-info">Pendiente</span>';
       var foto=v.photo?'<button class="btn btn-sm btn-outline" onclick="openFoto(\''+v.photo+'\')"><i class="fa-solid fa-image"></i></button>':'-';
-      return '<tr><td><b>'+esc(visName)+'</b></td><td>'+esc(labName)+'</td><td>'+esc(punto)+'</td><td>'+esc(v.jefe||'-')+'</td><td>'+(v.notes?'<span title="'+esc(v.notes)+'" style="cursor:help;">'+esc(v.notes.substring(0,30))+(v.notes.length>30?'...':'')+'</span>':'-')+'</td><td>'+fmtDate(v.date)+'</td><td>'+estado+'</td><td>'+foto+'</td></tr>';
+      var ubicacion=(v.lat&&v.lng)?'<a href="https://www.google.com/maps?q='+v.lat+','+v.lng+'" target="_blank" class="btn btn-sm btn-outline"><i class="fa-solid fa-location-dot"></i></a>':'-';
+      return '<tr><td><b>'+esc(visName)+'</b></td><td>'+esc(labName)+'</td><td>'+esc(punto)+'</td><td>'+esc(v.jefe||'-')+'</td><td>'+(v.notes?'<span title="'+esc(v.notes)+'" style="cursor:help;">'+esc(v.notes.substring(0,30))+(v.notes.length>30?'...':'')+'</span>':'-')+'</td><td>'+fmtDate(v.date)+'</td><td>'+estado+'</td><td>'+ubicacion+'</td><td>'+foto+'</td></tr>';
     }).join('')
     +'</tbody></table></div>';
 
