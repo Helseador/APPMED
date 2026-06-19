@@ -762,6 +762,7 @@ function crearPendienteAdmin(){
 function renderAusencias(){
   var ausencias=D.ausencias.filter(function(a){
     if(!a||!a.id) return false;
+    if(a.visibleSoloAdmin&&currentUser.role!=='super') return false;
     return !currentLabId||a.labId===currentLabId;
   });
   ausencias.sort(function(a,b){return (b.creadoAt||'').localeCompare(a.creadoAt||'');});
@@ -774,21 +775,27 @@ function renderAusencias(){
     +'<div class="stat-card"><div class="stat-num">'+ausencias.length+'</div><div class="stat-label">Total</div></div>'
     +'</div>';
 
+  if(currentUser.role==='super'){
+    html+='<div style="display:flex;justify-content:flex-end;margin-bottom:14px;">'
+      +'<button class="btn btn-primary btn-sm" onclick="abrirModalRegistrarAusencia()"><i class="fa-solid fa-plus"></i> Registrar ausencia</button>'
+      +'</div>';
+  }
+
   if(!ausencias.length) return html+'<div class="empty"><i class="fa-solid fa-file-medical"></i><p>Sin ausencias reportadas</p></div>';
 
-  var motivoLabel={incapacidad:'Incapacidad médica',calamidad:'Calamidad doméstica',cita_medica:'Cita médica',otro:'Otro'};
+  var motivoLabel={incapacidad:'Incapacidad médica',calamidad:'Calamidad doméstica',cita_medica:'Cita médica',otro:'Otro',admin:'Registrada por superadmin'};
 
   html+='<div style="display:flex;flex-direction:column;gap:10px;">';
   ausencias.forEach(function(a){
     var u=D.users.find(function(x){return x.id===a.userId;});
     var lab=LABS.find(function(l){return l.id===a.labId;})||{name:'-',color:'#64748B'};
     var col=avatarColor(a.userName||'');
-    html+='<div class="card" style="border-left:4px solid '+(a.revisado?'var(--success)':'var(--warning)')+';">'
+    html+='<div class="card" style="border-left:4px solid '+(a.creadoPorAdmin?'#7C3AED':(a.revisado?'var(--success)':'var(--warning)'))+';">'
       +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
       +'<div class="avatar" style="background:'+col+';width:34px;height:34px;font-size:12px;">'+initials(a.userName)+'</div>'
       +'<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">'+esc(a.userName||getUserName(a.userId))+'</div>'
       +'<div style="font-size:11px;color:var(--muted);"><span style="color:'+lab.color+';font-weight:600;">'+esc(lab.name)+'</span> · '+fmtDate(a.fecha)+'</div></div>'
-      +(a.revisado?'<span class="badge badge-ok">Revisada</span>':'<span class="badge badge-warn">Sin revisar</span>')
+      +(a.creadoPorAdmin?'<span class="badge" style="background:#EDE9FE;color:#7C3AED;">Solo superadmin</span>':(a.revisado?'<span class="badge badge-ok">Revisada</span>':'<span class="badge badge-warn">Sin revisar</span>'))
       +'</div>'
       +'<div style="background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:10px;">'
       +'<div style="font-size:11px;font-weight:700;color:var(--primary);margin-bottom:4px;">'+esc(motivoLabel[a.motivo]||a.motivo||'-')+'</div>'
@@ -796,7 +803,7 @@ function renderAusencias(){
       +'</div>'
       +(a.foto?'<img src="'+a.foto+'" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;cursor:pointer;margin-bottom:10px;" onclick="openFoto(this.src)">':'')
       +'<div style="display:flex;gap:8px;">'
-      +(!a.revisado?'<button class="btn btn-success btn-sm" style="flex:1;" data-id="'+a.id+'" onclick="marcarAusenciaRevisada(this.dataset.id)"><i class="fa-solid fa-check"></i> Marcar revisada</button>':'')
+      +(!a.revisado&&!a.creadoPorAdmin?'<button class="btn btn-success btn-sm" style="flex:1;" data-id="'+a.id+'" onclick="marcarAusenciaRevisada(this.dataset.id)"><i class="fa-solid fa-check"></i> Marcar revisada</button>':'')
       +'<button class="btn btn-outline btn-sm" style="flex:1;" data-id="'+a.id+'" onclick="eliminarAusencia(this.dataset.id)"><i class="fa-solid fa-trash"></i> Eliminar</button>'
       +'</div>'
       +'</div>';
@@ -842,6 +849,66 @@ function eliminarAusencia(aid){
       });
     }
   });
+}
+
+// ── REGISTRAR AUSENCIA (solo superadmin) ───────────────────────
+function abrirModalRegistrarAusencia(){
+  if(currentUser.role!=='super'){toast('Solo el superadmin puede usar esta función','err');return;}
+  var modal=document.getElementById('modalRegistrarAusencia');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='modalRegistrarAusencia';
+    modal.className='modal-overlay';
+    modal.innerHTML='<div class="modal-box">'
+      +'<div class="modal-title">Registrar ausencia (superadmin)</div>'
+      +'<div style="background:#EDE9FE;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:#5B21B6;">'
+      +'<i class="fa-solid fa-circle-info"></i> Este registro solo será visible para ti. No aparecerá como pendiente de revisión.'
+      +'</div>'
+      +'<div class="form-group"><label class="form-label">Visitador</label><select class="form-input" id="ra-visitor"></select></div>'
+      +'<div class="form-group"><label class="form-label">Fecha</label><input class="form-input" type="date" id="ra-fecha"></div>'
+      +'<div class="form-group"><label class="form-label">Motivo</label><select class="form-input" id="ra-motivo">'
+      +'<option value="incapacidad">Incapacidad médica</option>'
+      +'<option value="calamidad">Calamidad doméstica</option>'
+      +'<option value="cita_medica">Cita médica</option>'
+      +'<option value="admin">Autorizada por superadmin</option>'
+      +'<option value="otro">Otro</option>'
+      +'</select></div>'
+      +'<div class="form-group"><label class="form-label">Detalle</label><textarea class="form-input" id="ra-detalle" placeholder="Justificación..."></textarea></div>'
+      +'<div class="modal-actions">'
+      +'<button class="btn btn-outline" onclick="closeModal(&quot;modalRegistrarAusencia&quot;)">Cancelar</button>'
+      +'<button class="btn btn-primary" onclick="crearAusenciaAdmin()"><i class="fa-solid fa-plus"></i> Registrar</button>'
+      +'</div></div>';
+    document.body.appendChild(modal);
+  }
+  var sel=document.getElementById('ra-visitor');
+  var visitors=D.users.filter(function(u){return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId);});
+  sel.innerHTML=visitors.map(function(u){return '<option value="'+u.id+'">'+esc(u.name)+' ('+esc(getLabName(u.labId))+')</option>';}).join('');
+  document.getElementById('ra-fecha').value=today();
+  document.getElementById('ra-motivo').value='incapacidad';
+  document.getElementById('ra-detalle').value='';
+  openModal('modalRegistrarAusencia');
+}
+
+function crearAusenciaAdmin(){
+  var userId=document.getElementById('ra-visitor').value;
+  var fecha=document.getElementById('ra-fecha').value;
+  var motivo=document.getElementById('ra-motivo').value;
+  var detalle=document.getElementById('ra-detalle').value.trim();
+  if(!userId||!fecha){toast('Selecciona visitador y fecha','err');return;}
+  var u=D.users.find(function(x){return x.id===userId;});
+  var reg={
+    id:'aus_'+Date.now()+'_'+Math.random().toString(36).substr(2,4),
+    userId:userId,userName:u?u.name:'',labId:u?u.labId||'':'',
+    motivo:motivo,detalle:detalle||'Registrada por superadmin',foto:null,
+    fecha:fecha,creadoAt:new Date().toISOString(),
+    revisado:true,revisadoPor:currentUser.name,revisadoAt:new Date().toISOString(),
+    creadoPorAdmin:true,creadoPorNombre:currentUser.name,visibleSoloAdmin:true
+  };
+  var ref=db.ref('medvisit/ausencias').push();
+  reg._fbKey=ref.key;
+  ref.set(reg)
+    .then(function(){toast('Ausencia registrada');closeModal('modalRegistrarAusencia');})
+    .catch(function(e){toast('Error: '+e.message,'err');});
 }
 
 // ── TAB MARKETING ─────────────────────────────────────────────
