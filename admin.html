@@ -430,7 +430,9 @@ function initFirebase(){
     });
     // Cargar datos
     db.ref('medvisit/users').on('value',function(snap){D.users=toArray(snap.val());render();});
-    db.ref('medvisit/visits').on('value',function(snap){D.visits=toArray(snap.val());render();});
+    var _fechaLimiteAdmin=new Date();_fechaLimiteAdmin.setDate(_fechaLimiteAdmin.getDate()-7);
+    var _fechaLimiteAdminStr=_fechaLimiteAdmin.toISOString().slice(0,10);
+    db.ref('medvisit/visits').orderByChild('date').startAt(_fechaLimiteAdminStr).on('value',function(snap){D.visits=toArray(snap.val());render();},function(err){console.error('Error visits:',err);toast('No se pudieron cargar todas las visitas (datos muy pesados). Contacta soporte.','err');});
     db.ref('medvisit/points').on('value',function(snap){D.points=toArray(snap.val());render();});
     db.ref('medvisit/pendientes').on('value',function(snap){D.pendientes=toArray(snap.val()||[]);render();});
     db.ref('medvisit/ausencias').on('value',function(snap){D.ausencias=toArray(snap.val()||[]);render();});
