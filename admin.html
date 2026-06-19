@@ -762,7 +762,6 @@ function crearPendienteAdmin(){
 function renderAusencias(){
   var ausencias=D.ausencias.filter(function(a){
     if(!a||!a.id) return false;
-    if(a.visibleSoloAdmin&&currentUser.role!=='super') return false;
     return !currentLabId||a.labId===currentLabId;
   });
   ausencias.sort(function(a,b){return (b.creadoAt||'').localeCompare(a.creadoAt||'');});
@@ -902,7 +901,7 @@ function crearAusenciaAdmin(){
     motivo:motivo,detalle:detalle||'Registrada por superadmin',foto:null,
     fecha:fecha,creadoAt:new Date().toISOString(),
     revisado:true,revisadoPor:currentUser.name,revisadoAt:new Date().toISOString(),
-    creadoPorAdmin:true,creadoPorNombre:currentUser.name,visibleSoloAdmin:true
+    creadoPorAdmin:true,creadoPorNombre:currentUser.name
   };
   var ref=db.ref('medvisit/ausencias').push();
   reg._fbKey=ref.key;
