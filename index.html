@@ -24,12 +24,8 @@
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
     body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--fg);overflow-x:hidden;min-height:100vh;}
     input,select,textarea,button{font-family:inherit;}
-
-    /* SCREENS */
     .screen{display:none;min-height:100vh;flex-direction:column;}
     .screen.active{display:flex;}
-
-    /* LOGIN */
     #loginScreen{background:linear-gradient(160deg,#0303B5 0%,#020280 50%,#022C22 100%);justify-content:center;align-items:center;padding:24px;text-align:center;}
     .login-logo{width:72px;height:72px;background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;border:1px solid rgba(255,255,255,0.2);}
     .login-logo i{font-size:32px;color:#fff;}
@@ -42,19 +38,13 @@
     .login-btn{width:100%;padding:15px;border-radius:12px;border:none;background:var(--primary-light);color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
     .login-btn:active{transform:scale(0.98);}
     .login-error{color:#FCA5A5;font-size:13px;margin-top:12px;min-height:18px;}
-
-    /* BLOQUEADO */
     #blockedScreen{background:linear-gradient(160deg,#1e1b4b 0%,#312e81 50%,#0f172a 100%);justify-content:center;align-items:center;padding:24px;text-align:center;}
     .blocked-card{background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:36px 24px;width:100%;max-width:360px;}
-
-    /* HEADER */
     .app-header{background:var(--card);padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;}
     .app-header h2{font-size:18px;font-weight:800;line-height:1.2;}
     .app-header .sub{font-size:11px;color:var(--muted);}
     .header-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--fg);font-size:15px;}
     .header-btn:active{transform:scale(0.92);}
-
-    /* SYNC BADGE - indicador de sincronizacion */
     .sync-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;transition:all .3s;}
     .sync-badge.synced{background:var(--success-light);color:var(--success);}
     .sync-badge.syncing{background:var(--accent-light);color:#92400E;}
@@ -64,8 +54,6 @@
     .sync-badge.syncing .sync-dot{animation:spin-dot .8s linear infinite;}
     @keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:0.3;}}
     @keyframes spin-dot{to{transform:rotate(360deg);}}
-
-    /* TABS */
     .tab-bar{display:flex;background:var(--card);border-top:1px solid var(--border);position:fixed;bottom:0;left:0;right:0;z-index:30;padding:6px 4px;padding-bottom:max(6px,env(safe-area-inset-bottom));}
     .tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border:none;background:none;color:var(--muted);font-size:10px;font-weight:600;cursor:pointer;}
     .tab-btn i{font-size:18px;}
@@ -73,8 +61,6 @@
     .app-body{flex:1;padding:14px 14px 88px;overflow-y:auto;}
     .tab-content{display:none;}
     .tab-content.active{display:block;}
-
-    /* CARDS */
     .card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:12px;}
     .btn{padding:11px 18px;border-radius:12px;border:none;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:all .15s;width:100%;}
     .btn:active{transform:scale(0.97);}
@@ -99,8 +85,6 @@
     .empty-state i{font-size:44px;color:var(--border);margin-bottom:10px;display:block;}
     .empty-state p{color:var(--muted);font-size:14px;}
     .avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0;}
-
-    /* MODALES */
     .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
     .modal-overlay.open{opacity:1;pointer-events:all;}
     .modal-sheet{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;padding:8px 18px 24px;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
@@ -115,8 +99,6 @@
     .confirm-icon.danger{background:var(--danger-light);color:var(--danger);}
     .confirm-actions{display:flex;gap:10px;margin-top:20px;}
     .confirm-actions .btn{flex:1;}
-
-    /* TOAST */
     .toast-wrap{position:fixed;top:14px;left:14px;right:14px;z-index:200;display:flex;flex-direction:column;gap:7px;pointer-events:none;}
     .toast{padding:12px 16px;border-radius:12px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:9px;box-shadow:0 8px 28px rgba(0,0,0,0.15);animation:toastIn .3s ease;pointer-events:all;}
     .toast-ok{background:var(--primary);color:#fff;}
@@ -126,18 +108,12 @@
     .toast.out{animation:toastOut .25s forwards;}
     @keyframes toastIn{from{transform:translateY(-18px);opacity:0;}to{transform:translateY(0);opacity:1;}}
     @keyframes toastOut{to{transform:translateY(-18px);opacity:0;}}
-
-    /* FOTOS */
     .photo-preview{width:100%;max-height:200px;object-fit:cover;border-radius:12px;border:2px solid var(--border);margin:8px 0;}
     .photo-capture-btn{width:100%;padding:18px;border:2px dashed var(--border);border-radius:12px;background:var(--bg);display:flex;flex-direction:column;align-items:center;gap:7px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;}
     .photo-capture-btn:active{border-color:var(--primary);color:var(--primary);}
     .photo-capture-btn i{font-size:26px;}
-
-    /* FIRMA */
     .firma-canvas{width:100%;height:140px;border:1.5px solid var(--border);border-radius:10px;background:#fafafa;cursor:crosshair;display:block;touch-action:none;}
     .firma-canvas.signed{border-color:var(--success);}
-
-    /* TOGGLE */
     .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border-radius:10px;}
     .toggle{position:relative;width:44px;height:24px;flex-shrink:0;}
     .toggle input{opacity:0;width:0;height:0;}
@@ -147,47 +123,31 @@
     .toggle input:checked~.toggle-thumb{transform:translateX(20px);}
     .obsequio-detail{display:none;margin-top:8px;}
     .obsequio-detail.show{display:block;}
-
-    /* GPS CHIP */
     .gps-chip{display:flex;align-items:center;gap:7px;padding:7px 11px;background:var(--primary-50);border:1px solid rgba(3,3,181,0.15);border-radius:9px;font-size:11px;color:var(--primary);font-weight:600;margin-bottom:10px;}
-
-    /* VISIT TYPE */
     .visit-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
     .visit-type-btn{border:2px solid var(--border);border-radius:14px;padding:14px 10px;cursor:pointer;background:var(--bg);text-align:left;display:flex;flex-direction:column;gap:5px;}
     .visit-type-btn.active{border-color:var(--primary);background:var(--primary-50);}
     .visit-type-icon{font-size:22px;margin-bottom:3px;}
     .visit-type-name{font-size:13px;font-weight:700;color:var(--fg);}
     .visit-type-desc{font-size:11px;color:var(--muted);line-height:1.3;}
-
-    /* PUNTO CARD */
     .punto-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:14px;margin-bottom:10px;}
     .punto-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
     .punto-num{width:32px;height:32px;border-radius:9px;background:var(--primary-50);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;}
     .punto-name{font-size:14px;font-weight:700;}
     .punto-addr{font-size:12px;color:var(--muted);margin-top:1px;}
-
-    /* PENDIENTE */
     .pend-card{border-radius:10px;padding:10px 12px;margin-bottom:8px;}
     .pend-urgente{background:#FCEBEB;border:1px solid #F09595;}
     .pend-semana{background:#FAEEDA;border:1px solid #FAC775;}
     .pend-normal{background:var(--bg);border:1px solid var(--border);}
-
-    /* SPINNER */
     .spin{animation:spinA .6s linear infinite;display:inline-block;}
     @keyframes spinA{to{transform:rotate(360deg);}}
-
-    /* QUEUE INDICATOR - visitas en cola */
     .queue-bar{background:var(--accent-light);border-bottom:1px solid #F59E0B;padding:7px 14px;font-size:12px;font-weight:700;color:#92400E;display:flex;align-items:center;gap:7px;}
     .queue-bar.hidden{display:none;}
-
     @media(min-width:600px){.app-body{padding:18px 22px 88px;}.modal-sheet{border-radius:20px;margin-bottom:18px;}}
   </style>
 </head>
 <body>
-
 <div class="toast-wrap" id="toastWrap"></div>
-
-<!-- CONFIRM GPS -->
 <div class="confirm-overlay" id="gpsPermOverlay">
   <div style="background:var(--card);border-radius:18px;padding:30px 22px;max-width:320px;width:100%;text-align:center;">
     <div style="width:52px;height:52px;border-radius:50%;margin:0 auto 14px;background:var(--primary-50);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:22px;"><i class="fa-solid fa-location-crosshairs"></i></div>
@@ -199,8 +159,6 @@
     </div>
   </div>
 </div>
-
-<!-- LOGIN -->
 <div class="screen active" id="loginScreen">
   <div class="login-logo"><i class="fa-solid fa-stethoscope"></i></div>
   <div class="login-card">
@@ -213,8 +171,6 @@
     <div id="loginStatus" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:10px;"><i class="spin fa-solid fa-circle-notch" style="font-size:10px;"></i> Conectando...</div>
   </div>
 </div>
-
-<!-- BLOQUEADO -->
 <div class="screen" id="blockedScreen">
   <div class="blocked-card">
     <div style="font-size:44px;margin-bottom:16px;">🕐</div>
@@ -228,8 +184,6 @@
     <button class="btn btn-outline" style="border-color:rgba(255,255,255,0.3);color:rgba(255,255,255,0.7);" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar sesion</button>
   </div>
 </div>
-
-<!-- VISITADOR -->
 <div class="screen" id="visitorScreen">
   <div class="app-header">
     <div style="flex:1;min-width:0;">
@@ -242,13 +196,10 @@
       <button class="header-btn" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
     </div>
   </div>
-
-  <!-- BARRA DE COLA: visible solo si hay visitas pendientes de subir -->
   <div class="queue-bar hidden" id="queueBar">
     <i class="fa-solid fa-arrow-up-from-bracket"></i>
     <span id="queueBarMsg">Sincronizando visitas...</span>
   </div>
-
   <div class="app-body">
     <div class="tab-content active" id="vTab-hoy">
       <div id="visitorPendientesSection"></div>
@@ -269,7 +220,6 @@
       </div>
     </div>
   </div>
-
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('hoy',this)"><i class="fa-solid fa-calendar-day"></i>Hoy</button>
     <button class="tab-btn" onclick="switchTab('rutas',this)"><i class="fa-solid fa-route"></i>Rutas</button>
@@ -277,8 +227,6 @@
     <button class="tab-btn" onclick="switchTab('mkt',this)"><i class="fa-solid fa-receipt"></i>Facturas</button>
   </div>
 </div>
-
-<!-- MODAL: CERRAR VISITA -->
 <div class="modal-overlay" id="modalCloseVisit">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -302,13 +250,10 @@
     </div>
   </div>
 </div>
-
-<!-- MODAL: NUEVA VISITA LIBRE -->
 <div class="modal-overlay" id="modalNuevaVisita">
   <div class="modal-sheet" style="max-height:94vh;">
     <div class="modal-handle"></div>
     <div class="modal-title">Nueva visita</div>
-
     <div id="visitaTipoSelector">
       <div class="visit-type-grid">
         <button class="visit-type-btn" id="btnTipoGeneral" onclick="selectVisitType('general')">
@@ -323,8 +268,6 @@
         </button>
       </div>
     </div>
-
-    <!-- FORM GENERAL -->
     <div id="formVisitaGeneral" style="display:none;">
       <button onclick="selectVisitType(null)" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:13px;font-weight:600;padding:0;margin-bottom:14px;"><i class="fa-solid fa-arrow-left"></i> Cambiar tipo</button>
       <div class="gps-chip" id="gpsChipGeneral"><i class="fa-solid fa-satellite-dish" style="font-size:10px;"></i> <span id="gpsTextGeneral">Obteniendo ubicacion...</span></div>
@@ -343,8 +286,6 @@
         <button class="btn btn-success" style="flex:1;" onclick="guardarVisitaGeneral()"><i class="fa-solid fa-check"></i> Guardar</button>
       </div>
     </div>
-
-    <!-- FORM PROFESIONAL -->
     <div id="formVisitaProfesional" style="display:none;">
       <button onclick="selectVisitType(null)" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:13px;font-weight:600;padding:0;margin-bottom:14px;"><i class="fa-solid fa-arrow-left"></i> Cambiar tipo</button>
       <div class="gps-chip" id="gpsChipProf"><i class="fa-solid fa-satellite-dish" style="font-size:10px;"></i> <span id="gpsTextProf">Obteniendo ubicacion...</span></div>
@@ -383,8 +324,6 @@
     </div>
   </div>
 </div>
-
-<!-- MODAL: VER FOTO -->
 <div class="modal-overlay" id="modalPhoto">
   <div class="modal-sheet" style="padding:8px 8px 22px;">
     <div class="modal-handle"></div>
@@ -393,8 +332,6 @@
     <button class="btn btn-outline" style="margin-top:14px;" onclick="closeModal('modalPhoto')">Cerrar</button>
   </div>
 </div>
-
-<!-- MODAL: MARKETING -->
 <div class="modal-overlay" id="modalMarketing">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -411,11 +348,11 @@
     <div class="form-group"><label class="form-label">Valor *</label><input class="form-input" type="number" id="mkt-valor" placeholder="Ej: 85000"></div>
     <div class="form-group">
       <label class="form-label">Foto de la factura *</label>
-      <input type="file" id="mkt-foto-input" accept="image/*" capture="environment" style="display:none;" onchange="mktPreviewFoto(this)">
+      <input type="file" id="mkt-foto-input" accept="image/*,application/pdf" style="display:none;" onchange="mktPreviewFoto(this)">
       <div onclick="document.getElementById('mkt-foto-input').click()" style="border:2px dashed var(--border);border-radius:12px;padding:18px;text-align:center;cursor:pointer;background:var(--bg);">
         <div id="mkt-foto-preview-wrap" style="display:none;margin-bottom:8px;"><img id="mkt-foto-preview" style="max-height:150px;border-radius:8px;width:100%;object-fit:cover;"></div>
         <i class="fa-solid fa-camera" style="font-size:22px;color:var(--muted);"></i>
-        <div style="font-size:12px;color:var(--muted);margin-top:5px;">Toca para capturar</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:5px;">Toca para capturar foto o subir PDF</div>
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-top:14px;">
@@ -424,8 +361,55 @@
     </div>
   </div>
 </div>
-
-<!-- CONFIRM -->
+<div class="modal-overlay" id="modalAusencia">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Reportar ausencia</div>
+    <div style="background:#FEF3C7;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#92400E;">
+      <i class="fa-solid fa-circle-info"></i> Usa esto solo si no podrás salir a ruta hoy por incapacidad médica, calamidad u otro motivo de fuerza mayor.
+    </div>
+    <div class="form-group">
+      <label class="form-label">Motivo *</label>
+      <select class="form-input" id="aus-motivo">
+        <option value="incapacidad">Incapacidad médica</option>
+        <option value="calamidad">Calamidad doméstica</option>
+        <option value="cita_medica">Cita médica</option>
+        <option value="otro">Otro</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Explica brevemente *</label>
+      <textarea class="form-input" id="aus-detalle" placeholder="Ej: Incapacidad por 2 dias, gripa fuerte..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Foto del soporte (incapacidad, certificado, etc.) *</label>
+      <input type="file" id="aus-foto-input" accept="image/*" capture="environment" style="display:none;" onchange="ausPreviewFoto(this)">
+      <div onclick="document.getElementById('aus-foto-input').click()" style="border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;background:var(--bg);">
+        <div id="aus-foto-preview-wrap" style="display:none;margin-bottom:8px;"><img id="aus-foto-preview" style="max-height:160px;border-radius:8px;width:100%;object-fit:cover;"></div>
+        <i class="fa-solid fa-file-medical" style="font-size:24px;color:var(--muted);"></i>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;">Toca para tomar foto o subir imagen</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalAusencia')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="guardarAusencia()"><i class="fa-solid fa-paper-plane"></i> Enviar</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalNuevoPendiente">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nuevo pendiente</div>
+    <div class="form-group">
+      <label class="form-label">Que tienes pendiente?</label>
+      <textarea class="form-input" id="np-texto" placeholder="Ej: Necesito que me autoricen muestras para el Dr. Gomez..."></textarea>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalNuevoPendiente')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="guardarPendienteVisitador()"><i class="fa-solid fa-plus"></i> Crear</button>
+    </div>
+  </div>
+</div>
 <div class="confirm-overlay" id="confirmOverlay">
   <div class="confirm-box">
     <div class="confirm-icon danger" id="confirmIcon"><i id="confirmIconI"></i></div>
@@ -437,14 +421,7 @@
     </div>
   </div>
 </div>
-
 <script>
-// ── 1. FIREBASE INIT ───────────────────────────────────────────
-// Firebase Realtime Database compat v10 en web NO tiene setPersistenceEnabled.
-// La resiliencia ante señal inestable (5G->3G) se maneja con:
-//   a) Cola local en localStorage (pushVisit la usa como respaldo)
-//   b) flushQueue() que reintenta cuando vuelve la conexion
-//   c) Listeners .on() de Firebase que reconectan solos al recuperar señal
 (function initFirebaseWhenReady(){
   var MAX=40, retry=0;
   function tryInit(){
@@ -467,8 +444,6 @@
   }
   tryInit();
 })();
-
-// ── 2. CONFIG ──────────────────────────────────────────────────
 var FIREBASE_CONFIG={
   apiKey:"AIzaSyAx8FiXFZutVSDqHrh5ANKfoZlBZTRB2ic",
   authDomain:"appmed-helse.firebaseapp.com",
@@ -490,9 +465,7 @@ var BASE_LABS=[
   {id:'abbott',  name:'Abbott',    color:'#009CDE'}
 ];
 var LABS=BASE_LABS.slice();
-
-// ── 3. ESTADO ──────────────────────────────────────────────────
-var D={users:[],visits:[],points:[],pendientes:[]};
+var D={users:[],visits:[],points:[],pendientes:[],ausencias:[]};
 var currentUser=null;
 var gpsPermission='unknown';
 var _visitRoute=null;
@@ -502,12 +475,11 @@ var _profFirmaCanvas=null, _profFirmaCtx=null, _profFirmaActiva=false;
 var _currentTab='hoy';
 var _confirmCb=null;
 var _mktFoto=null;
+var _mktFotoTipo='image';
 var _lockoutEnd=0, _loginAttempts=0, _lockoutInterval=null;
 var _renderTimer=null;
-var _pendingQueue=[];   // visitas guardadas localmente esperando subir
+var _pendingQueue=[];
 var _online=false;
-
-// ── 4. UTILS ──────────────────────────────────────────────────
 function uid(){return 'v'+Date.now()+'_'+Math.random().toString(36).substr(2,5);}
 function today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
 function pad(n){return String(n).padStart(2,'0');}
@@ -527,9 +499,6 @@ function toArray(val){
 }
 function mapsLink(lat,lng,addr){if(lat&&lng)return'https://www.google.com/maps?q='+lat+','+lng;return'https://www.google.com/maps/search/'+encodeURIComponent(addr||'');}
 function showLoginStatus(msg,isErr){var el=document.getElementById('loginStatus');if(el){el.innerHTML=isErr?'<span style="color:#FCA5A5;">'+esc(msg)+'</span>':'<i class="spin fa-solid fa-circle-notch" style="font-size:10px;"></i> '+esc(msg);}}
-
-// ── 5. COLA LOCAL (visitas sin confirmar por Firebase) ─────────
-// Guarda en localStorage para sobrevivir recargas
 function loadQueue(){
   try{var s=localStorage.getItem('appmed_queue');_pendingQueue=s?JSON.parse(s):[];}catch(e){_pendingQueue=[];}
 }
@@ -558,24 +527,19 @@ function updateQueueBar(){
   }
 }
 function flushQueue(){
-  // Intenta subir todas las visitas en cola cuando hay conexion
   if(!_online||!window._db||!_pendingQueue.length)return;
   var toFlush=_pendingQueue.slice();
   toFlush.forEach(function(visit){
     var ref=window._db.ref('medvisit/visits').push();
     ref.set(visit).then(function(){
       removeFromQueue(visit.id);
-      // Agregar a D.visits si no esta
       if(D.visits.findIndex(function(v){return v.id===visit.id;})<0){
         D.visits.push(visit);
       }
     }).catch(function(e){console.error('Queue flush error:',e);});
   });
 }
-
-// ── 6. SYNC BADGE ─────────────────────────────────────────────
 function setSyncState(state){
-  // state: 'synced' | 'syncing' | 'offline'
   var badge=document.getElementById('syncBadge');
   var label=document.getElementById('syncLabel');
   if(!badge||!label)return;
@@ -584,29 +548,14 @@ function setSyncState(state){
   else if(state==='syncing') label.textContent='Sync...';
   else label.textContent='Local';
 }
-
-// ── 7. GUARDAR VISITA (robusto) ────────────────────────────────
-// Estrategia:
-// 1. Guardar en D.visits inmediatamente (UI actualizada al instante)
-// 2. Agregar a cola local (localStorage)
-// 3. Intentar subir a Firebase
-//    - Si hay conexion: sube, saca de cola → badge "Cloud"
-//    - Si hay señal lenta: Firebase reintenta solo (persistence)
-//    - Si falla: queda en cola, se sube cuando vuelve la señal
 function pushVisit(visit){
-  // Paso 1: guardar en memoria local para que la UI responda YA
   D.visits.push(visit);
-
-  // Paso 2: cola local como respaldo
   addToQueue(visit);
   setSyncState('syncing');
-
   if(!window._db){
     toast('Visita guardada localmente','warn');
     return;
   }
-
-  // Paso 3: intentar Firebase
   var ref=window._db.ref('medvisit/visits').push();
   visit._fbKey=ref.key;
   ref.set(visit)
@@ -615,16 +564,12 @@ function pushVisit(visit){
       setSyncState(_pendingQueue.length?'syncing':'synced');
     })
     .catch(function(e){
-      // Firebase persistence reintentara automaticamente
-      // La visita ya esta en la cola local como respaldo
       console.warn('Firebase pending, will retry:',e.message);
       setSyncState('syncing');
       toast('Guardado localmente, sincronizando...','warn');
     });
 }
-
 function saveVisitUpdate(visit){
-  // Actualizar campos de una visita existente (cerrar visita)
   if(!window._db)return;
   var update={status:visit.status,completedAt:visit.completedAt||null,photo:visit.photo||null,jefe:visit.jefe||null,notes:visit.notes||null};
   setSyncState('syncing');
@@ -642,17 +587,12 @@ function saveVisitUpdate(visit){
     });
   }
 }
-
-// ── 8. FIREBASE INIT COMPLETO ─────────────────────────────────
 function finishFirebaseInit(db){
-  // Monitorear conexion
   db.ref('.info/connected').on('value',function(snap){
     _online=snap.val()===true;
     setSyncState(_online?(_pendingQueue.length?'syncing':'synced'):'offline');
     if(_online && _pendingQueue.length) flushQueue();
   });
-
-  // Cargar usuarios (necesario para login)
   var _usersReady=false;
   db.ref('medvisit/users').on('value',function(snap){
     try{
@@ -663,8 +603,6 @@ function finishFirebaseInit(db){
       scheduleRender();
     }catch(e){console.error(e);}
   });
-
-  // Labs dinamicos
   db.ref('medvisit/labs').on('value',function(snap){
     try{
       var extra=toArray(snap.val()||[]);
@@ -672,36 +610,52 @@ function finishFirebaseInit(db){
     }catch(e){}
   });
 }
-
 function setupVisitorListeners(){
   var db=window._db;
   if(!db||!currentUser)return;
   var _init=false;
-
-  // Solo visitas de este visitador - ultimas 60
-  var qRef=db.ref('medvisit/visits').orderByChild('visitorId').equalTo(currentUser.id).limitToLast(60);
-  qRef.once('value',function(snap){
+  // Visitas de HOY (con foto completa) - lo que se muestra en la ruta del dia
+  var qHoy=db.ref('medvisit/visits').orderByChild('visitorId').equalTo(currentUser.id);
+  qHoy.once('value',function(snap){
     try{
-      toArray(snap.val()).forEach(function(v){
+      toArray(snap.val()).filter(function(v){return v.date===today();}).forEach(function(v){
         if(D.visits.findIndex(function(o){return o.id===v.id;})<0) D.visits.push(v);
       });
       scheduleRender();
     }catch(e){}
     _init=true;
   });
-  qRef.on('child_changed',function(snap){
-    try{var v=snap.val();if(!v||!v.id)return;var i=D.visits.findIndex(function(o){return o.id===v.id;});if(i>=0){D.visits[i]=v;scheduleRender();}}catch(e){}
+  qHoy.on('child_changed',function(snap){
+    try{
+      var v=snap.val();if(!v||!v.id||v.date!==today())return;
+      var i=D.visits.findIndex(function(o){return o.id===v.id;});
+      if(i>=0){D.visits[i]=v;scheduleRender();}
+    }catch(e){}
   });
-  qRef.on('child_added',function(snap){
+  qHoy.on('child_added',function(snap){
     if(!_init)return;
-    try{var v=snap.val();if(!v||!v.id)return;if(D.visits.findIndex(function(o){return o.id===v.id;})<0){D.visits.push(v);scheduleRender();}}catch(e){}
+    try{
+      var v=snap.val();if(!v||!v.id||v.date!==today())return;
+      if(D.visits.findIndex(function(o){return o.id===v.id;})<0){D.visits.push(v);scheduleRender();}
+    }catch(e){}
   });
-
-  // Puntos y pendientes
+  // Historico LIGERO (sin foto/firma) - solo para contadores de Perfil y % de Rutas
+  var qHist=db.ref('medvisit/visits').orderByChild('visitorId').equalTo(currentUser.id).limitToLast(400);
+  qHist.once('value',function(snap){
+    try{
+      toArray(snap.val()).forEach(function(v){
+        if(v.date===today())return; // hoy ya viene completo por el otro listener
+        var liviano={id:v.id,pointId:v.pointId,visitorId:v.visitorId,labId:v.labId,date:v.date,status:v.status,type:v.type,arrivedAt:v.arrivedAt,completedAt:v.completedAt};
+        if(D.visits.findIndex(function(o){return o.id===v.id;})<0) D.visits.push(liviano);
+      });
+      scheduleRender();
+    }catch(e){}
+  });
   db.ref('medvisit/points').on('value',function(snap){try{D.points=toArray(snap.val());scheduleRender();}catch(e){}});
   db.ref('medvisit/pendientes').on('value',function(snap){try{D.pendientes=toArray(snap.val()||[]);scheduleRender();}catch(e){}});
+  var qAus=db.ref('medvisit/ausencias').orderByChild('userId').equalTo(currentUser.id).limitToLast(20);
+  qAus.on('value',function(snap){try{D.ausencias=toArray(snap.val()||[]);scheduleRender();}catch(e){}});
 }
-
 function scheduleRender(){
   if(_renderTimer)clearTimeout(_renderTimer);
   _renderTimer=setTimeout(function(){
@@ -709,8 +663,6 @@ function scheduleRender(){
     if(currentUser&&currentUser.role==='visitor') renderHoy();
   },500);
 }
-
-// ── 9. HORARIO ─────────────────────────────────────────────────
 function horaBogota(){var d=new Date();return new Date(d.getTime()+d.getTimezoneOffset()*60000+(-5*3600000));}
 function dentroDeHorario(){var h=horaBogota().getHours();return h>=CAPTURE_HORA_INICIO&&h<CAPTURE_HORA_FIN;}
 function verificarHorario(){
@@ -733,8 +685,6 @@ function actualizarRelojBloqueado(){
   var el=document.getElementById('blockedClock');
   if(el)el.textContent=fmt(b.getHours(),b.getMinutes())+':'+pad(b.getSeconds());
 }
-
-// ── 10. LOGIN / SESION ─────────────────────────────────────────
 function doLogin(){
   if(Date.now()<_lockoutEnd)return;
   var u=document.getElementById('loginUser').value.trim();
@@ -817,8 +767,6 @@ function skipGpsAndInit(){
   if(verificarHorario())return;
   showScreen('visitorScreen');renderVisitor();
 }
-
-// ── 11. GPS ────────────────────────────────────────────────────
 function getGPS(){
   return new Promise(function(resolve,reject){
     if(!navigator.geolocation){reject('GPS no disponible');return;}
@@ -834,8 +782,6 @@ function obtenerGPS(textId){
   _visitaGps=null;
   getGPS().then(function(g){_visitaGps=g;if(el)el.textContent=g.lat.toFixed(5)+', '+g.lng.toFixed(5)+' ('+g.acc+'m)';}).catch(function(){if(el)el.textContent='No disponible';});
 }
-
-// ── 12. RENDER PRINCIPAL ───────────────────────────────────────
 function renderVisitor(){
   var h=horaBogota().getHours();
   var sal=h<12?'Buenos dias':h<18?'Buenas tardes':'Buenas noches';
@@ -851,43 +797,45 @@ function renderVisitor(){
 function renderHoy(){
   var el=document.getElementById('visitorTodayPoints');
   if(!el)return;
-
-  // Pendientes
   renderPendientes(currentUser.id);
-
   var allPts=(D.points||[]).filter(function(p){return p.assignedTo===currentUser.id;});
   var routes=[];
   allPts.forEach(function(p){var rn=p.routeName||'Sin ruta';if(routes.indexOf(rn)<0)routes.push(rn);});
-
+  var diaSemana=horaBogota().getDay();
+  var esLaborable=diaSemana>=1&&diaSemana<=5;
+  var doneCtGlobal=(D.visits||[]).filter(function(v){return v.visitorId===currentUser.id&&v.date===today()&&v.status==='completed';}).length;
+  var totalPtsGlobal=allPts.length;
+  var rutaSinCompletar=totalPtsGlobal===0||doneCtGlobal<totalPtsGlobal;
+  var yaReportoHoy=(D.ausencias||[]).some(function(a){return a.userId===currentUser.id&&a.fecha===today();});
+  var mostrarBtnAusencia=esLaborable&&rutaSinCompletar&&!yaReportoHoy;
+  if(mostrarBtnAusencia){
+    el.innerHTML='<button class="btn btn-outline" style="border-color:#D97706;color:#92400E;margin-bottom:12px;" onclick="abrirModalAusencia()"><i class="fa-solid fa-file-medical"></i> No puedo salir a ruta hoy</button>';
+  } else {
+    el.innerHTML='';
+  }
   if(!routes.length){
     if(currentUser.freeVisit){
-      el.innerHTML='<div style="padding:20px 0;">'
+      el.innerHTML+='<div style="padding:20px 0;">'
         +'<div style="text-align:center;margin-bottom:20px;"><i class="fa-solid fa-unlock" style="font-size:34px;color:#7C3AED;display:block;margin-bottom:8px;"></i><div style="font-weight:700;font-size:15px;">Visitas libres</div><div style="font-size:12px;color:var(--muted);margin-top:3px;">Registra visitas donde necesites</div></div>'
         +'<button class="btn btn-primary" style="margin-bottom:10px;" onclick="abrirVisitaLibre()"><i class="fa-solid fa-plus"></i> Registrar visita general</button>'
         +'<button class="btn btn-purple" onclick="abrirNuevaVisita()"><i class="fa-solid fa-user-doctor"></i> Visita a profesional</button>'
         +'</div>';
     } else {
-      el.innerHTML='<div class="empty-state"><i class="fa-solid fa-map-pin"></i><p>No tienes puntos asignados</p></div>';
+      el.innerHTML+='<div class="empty-state"><i class="fa-solid fa-map-pin"></i><p>No tienes puntos asignados</p></div>';
     }
     return;
   }
-
   if(!_visitRoute||routes.indexOf(_visitRoute)===-1) _visitRoute=routes[0];
-
-  // Selector de rutas
   var sel='<div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;">';
   routes.forEach(function(r){
     var act=r===_visitRoute;
     sel+='<button onclick="cambiarRuta(\''+esc(r)+'\')" style="flex-shrink:0;padding:6px 12px;border-radius:10px;border:'+(act?'2px solid var(--primary)':'1.5px solid var(--border)')+';background:'+(act?'var(--primary)':'var(--card)')+';color:'+(act?'#fff':'var(--fg)')+';font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;">'+esc(r)+'</button>';
   });
   sel+='</div>';
-
   var myPts=allPts.filter(function(p){return (p.routeName||'Sin ruta')===_visitRoute;}).sort(function(a,b){return (a.order||0)-(b.order||0);});
   var doneCt=(D.visits||[]).filter(function(v){return v.visitorId===currentUser.id&&v.date===today()&&v.status==='completed';}).length;
   var mapsUrl=buildMapsUrl(myPts);
   var allDone=myPts.length>0&&doneCt>=myPts.length;
-
-  // Resumen de ruta
   var resumen='<div class="card" style="border-left:4px solid '+(allDone?'var(--success)':'var(--primary)')+';padding:14px;margin-bottom:12px;">'
     +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">'
     +'<div style="width:38px;height:38px;border-radius:10px;background:'+(allDone?'var(--success-light)':'var(--primary-50)')+';color:'+(allDone?'var(--success)':'var(--primary)')+';display:flex;align-items:center;justify-content:center;"><i class="fa-solid '+(allDone?'fa-circle-check':'fa-route')+'"></i></div>'
@@ -899,8 +847,6 @@ function renderHoy(){
     +'</div>'
     +(currentUser.freeVisit?'<div style="display:flex;gap:7px;margin-top:8px;"><button class="btn btn-sm btn-primary" style="flex:1;" onclick="abrirVisitaLibre()"><i class="fa-solid fa-plus"></i> General</button><button class="btn btn-sm btn-purple" style="flex:1;" onclick="abrirNuevaVisita()"><i class="fa-solid fa-user-doctor"></i> Profesional</button></div>':'')
     +'</div>';
-
-  // Lista de puntos
   var pts=myPts.map(function(p){
     var vHoy=(D.visits||[]).find(function(v){return v.pointId===p.id&&v.visitorId===currentUser.id&&v.date===today();});
     var vReciente=(D.visits||[]).find(function(v){return v.pointId===p.id&&v.visitorId===currentUser.id&&v.arrivedAt&&(Date.now()-new Date(v.arrivedAt).getTime())<43200000;});
@@ -928,32 +874,39 @@ function renderHoy(){
       +'<span class="badge '+badgeCls+'">'+badgeLbl+'</span>'
       +'</div>'+action+'</div>';
   }).join('');
-
-  el.innerHTML=sel+resumen+pts;
+  el.innerHTML+=sel+resumen+pts;
 }
 function cambiarRuta(r){_visitRoute=r;renderHoy();}
-
 function renderPendientes(userId){
   var el=document.getElementById('visitorPendientesSection');
   if(!el)return;
   var activos=(D.pendientes||[]).filter(function(p){return p&&p.id&&p.userId===userId&&!p.resuelto&&!p.eliminado&&!p.ocultoVisitador;});
-  if(!activos.length){el.innerHTML='';return;}
-  activos.sort(function(a,b){var o={urgente:0,semana:1,normal:2};return(o[a.prioridad]||2)-(o[b.prioridad]||2);});
-  var html='<div class="card" style="margin-bottom:12px;">'
-    +'<div style="font-weight:700;font-size:13px;margin-bottom:10px;"><i class="fa-solid fa-clipboard-list" style="color:var(--primary);margin-right:5px;"></i>Pendientes ('+activos.length+')</div>';
-  activos.forEach(function(p){
-    var cls=p.prioridad==='urgente'?'pend-urgente':p.prioridad==='semana'?'pend-semana':'pend-normal';
-    var lbl=p.prioridad==='urgente'?'Urgente':p.prioridad==='semana'?'Esta semana':'Normal';
-    html+='<div class="pend-card '+cls+'">'
-      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
-      +'<div style="flex:1;"><div style="font-size:10px;font-weight:700;color:#92400E;margin-bottom:4px;">'+lbl+(p.fechaLimite?' · '+p.fechaLimite:'')+'</div>'
-      +'<div style="font-size:13px;">'+esc(p.texto)+'</div>'
-      +(p.creadoPorNombre&&p.creadoPor!==userId?'<div style="font-size:11px;color:var(--muted);margin-top:3px;">Por: '+esc(p.creadoPorNombre)+'</div>':'')
-      +'</div>'
-      +'<button onclick="resolverPendiente(\''+p.id+'\')" style="font-size:11px;padding:4px 8px;border-radius:8px;border:1px solid rgba(0,0,0,0.1);background:#fff;cursor:pointer;white-space:nowrap;">Listo</button>'
-      +'</div></div>';
-  });
-  html+='</div>';
+  var html='';
+  if(activos.length){
+    activos.sort(function(a,b){var o={urgente:0,semana:1,normal:2};return(o[a.prioridad]||2)-(o[b.prioridad]||2);});
+    html='<div class="card" style="margin-bottom:12px;">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+      +'<div style="font-weight:700;font-size:13px;"><i class="fa-solid fa-clipboard-list" style="color:var(--primary);margin-right:5px;"></i>Pendientes ('+activos.length+')</div>'
+      +'<button onclick="abrirModalNuevoPendiente()" style="font-size:11px;padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-weight:600;color:var(--primary);"><i class="fa-solid fa-plus"></i> Nuevo</button>'
+      +'</div>';
+    activos.forEach(function(p){
+      var cls=p.prioridad==='urgente'?'pend-urgente':p.prioridad==='semana'?'pend-semana':'pend-normal';
+      var lbl=p.prioridad==='urgente'?'Urgente':p.prioridad==='semana'?'Esta semana':'Normal';
+      html+='<div class="pend-card '+cls+'">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
+        +'<div style="flex:1;"><div style="font-size:10px;font-weight:700;color:#92400E;margin-bottom:4px;">'+lbl+(p.fechaLimite?' · '+p.fechaLimite:'')+'</div>'
+        +'<div style="font-size:13px;">'+esc(p.texto)+'</div>'
+        +(p.creadoPorNombre&&p.creadoPor!==userId?'<div style="font-size:11px;color:var(--muted);margin-top:3px;">Por: '+esc(p.creadoPorNombre)+'</div>':(p.creadoPor===userId?'<div style="font-size:11px;color:var(--muted);margin-top:3px;">Creado por ti</div>':''))
+        +'</div>'
+        +'<button onclick="resolverPendiente(\''+p.id+'\')" style="font-size:11px;padding:4px 8px;border-radius:8px;border:1px solid rgba(0,0,0,0.1);background:#fff;cursor:pointer;white-space:nowrap;">Listo</button>'
+        +'</div></div>';
+    });
+    html+='</div>';
+  } else {
+    html='<div style="display:flex;justify-content:flex-end;margin-bottom:12px;">'
+      +'<button onclick="abrirModalNuevoPendiente()" style="font-size:11px;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-weight:600;color:var(--primary);"><i class="fa-solid fa-plus"></i> Nuevo pendiente</button>'
+      +'</div>';
+  }
   el.innerHTML=html;
 }
 function resolverPendiente(pid){
@@ -971,7 +924,87 @@ function resolverPendiente(pid){
   renderPendientes(currentUser.id);
   toast('Pendiente resuelto');
 }
-
+function abrirModalNuevoPendiente(){
+  document.getElementById('np-texto').value='';
+  openModal('modalNuevoPendiente');
+}
+function guardarPendienteVisitador(){
+  var texto=document.getElementById('np-texto').value.trim();
+  if(!texto){toast('Escribe el pendiente','err');return;}
+  if(!window._db){toast('Sin conexion, intenta en un momento','err');return;}
+  var p={
+    id:'pnd_'+Date.now()+'_'+Math.random().toString(36).substr(2,4),
+    userId:currentUser.id,
+    texto:texto,
+    prioridad:'normal',
+    fechaLimite:'',
+    labId:currentUser.labId||'',
+    creadoPor:currentUser.id,
+    creadoPorNombre:currentUser.name,
+    creadoAt:new Date().toISOString(),
+    resuelto:false,resueltoAt:null,ocultoVisitador:false,eliminado:false
+  };
+  var ref=window._db.ref('medvisit/pendientes').push();
+  p._fbKey=ref.key;
+  D.pendientes.push(p);
+  ref.set(p)
+    .then(function(){toast('Pendiente creado');closeModal('modalNuevoPendiente');renderPendientes(currentUser.id);})
+    .catch(function(err){toast('Error: '+err.message,'err');});
+}
+var _ausFotoData=null;
+function abrirModalAusencia(){
+  _ausFotoData=null;
+  document.getElementById('aus-motivo').value='incapacidad';
+  document.getElementById('aus-detalle').value='';
+  document.getElementById('aus-foto-input').value='';
+  document.getElementById('aus-foto-preview-wrap').style.display='none';
+  openModal('modalAusencia');
+}
+function ausPreviewFoto(input){
+  if(!input.files||!input.files[0])return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var img=new Image();
+    img.onload=function(){
+      var MAX=1000,w=img.width,h=img.height;
+      if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+      var c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      _ausFotoData=c.toDataURL('image/jpeg',0.6);
+      document.getElementById('aus-foto-preview').src=_ausFotoData;
+      document.getElementById('aus-foto-preview-wrap').style.display='block';
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+function guardarAusencia(){
+  var motivo=document.getElementById('aus-motivo').value;
+  var detalle=document.getElementById('aus-detalle').value.trim();
+  if(!detalle){toast('Explica brevemente el motivo','err');return;}
+  if(!_ausFotoData){toast('Adjunta la foto del soporte','err');return;}
+  if(!window._db){toast('Sin conexion, intenta en un momento','err');return;}
+  var reg={
+    id:'aus_'+Date.now()+'_'+Math.random().toString(36).substr(2,4),
+    userId:currentUser.id,userName:currentUser.name,labId:currentUser.labId||'',
+    motivo:motivo,detalle:detalle,foto:_ausFotoData,
+    fecha:today(),creadoAt:new Date().toISOString(),revisado:false
+  };
+  var btn=document.querySelector('#modalAusencia .btn-primary');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="spin fa-solid fa-circle-notch"></i> Enviando...';}
+  window._db.ref('medvisit/ausencias').push(reg)
+    .then(function(){
+      toast('Ausencia reportada');
+      closeModal('modalAusencia');
+      if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-paper-plane"></i> Enviar';}
+      D.ausencias.push(reg);
+      renderHoy();
+    })
+    .catch(function(err){
+      toast('Error al enviar: '+err.message,'err');
+      if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-paper-plane"></i> Enviar';}
+    });
+}
 function renderRutas(){
   var el=document.getElementById('visitorRutas');
   if(!el)return;
@@ -999,25 +1032,31 @@ function renderRutas(){
   el.innerHTML=html;
 }
 function irARuta(rn){_visitRoute=rn;switchTab('hoy',document.querySelectorAll('#visitorScreen .tab-btn')[0]);}
-
 function renderMktVisitador(){
   var el=document.getElementById('visitorMktList');
   if(!el)return;
   el.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px;">Cargando...</div>';
   if(!window._db){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-wifi-slash"></i><p>Sin conexion</p></div>';return;}
+  var hace30=new Date();hace30.setDate(hace30.getDate()-30);
+  var hace30Str=hace30.toISOString().slice(0,10);
   window._db.ref('medvisit/marketing').orderByChild('userId').equalTo(currentUser.id).once('value',function(snap){
     var items=[];
     snap.forEach(function(c){items.push(c.val());});
+    items=items.filter(function(r){return (r.fecha||'')>=hace30Str;});
     items.reverse();
-    if(!items.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">No has cargado facturas aun</div>';return;}
+    if(!items.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">No has cargado facturas en los ultimos 30 dias</div>';return;}
     var total=items.reduce(function(s,r){return s+(r.valor||0);},0);
     el.innerHTML='<div style="background:var(--primary-50);border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;">'
-      +'<span style="font-size:12px;color:var(--muted);">'+items.length+' facturas</span>'
+      +'<span style="font-size:12px;color:var(--muted);">'+items.length+' facturas (ult. 30 dias)</span>'
       +'<span style="font-weight:800;color:var(--primary);">$'+total.toLocaleString()+'</span></div>'
-      +items.map(function(r){return '<div class="card" style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="font-weight:700;font-size:13px;">'+esc(r.lugar||'')+'</span><span style="font-weight:800;color:var(--primary);">$'+(r.valor||0).toLocaleString()+'</span></div><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">'+esc(r.fecha||'')+'</div>'+(r.foto?'<img src="'+r.foto+'" style="width:100%;max-height:130px;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="abrirFotoOverlay(this.src)">':'')+'</div>';}).join('');
+      +items.map(function(r){
+        var media=r.fotoTipo==='pdf'
+          ?'<div style="display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:8px;padding:10px;"><i class="fa-solid fa-file-pdf" style="font-size:22px;color:#DC2626;"></i><span style="font-size:11px;color:var(--muted);">Documento PDF</span></div>'
+          :(r.foto?'<img src="'+r.foto+'" style="width:100%;max-height:130px;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="abrirFotoOverlay(this.src)">':'');
+        return '<div class="card" style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="font-weight:700;font-size:13px;">'+esc(r.lugar||'')+'</span><span style="font-weight:800;color:var(--primary);">$'+(r.valor||0).toLocaleString()+'</span></div><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">'+esc(r.fecha||'')+'</div>'+media+'</div>';
+      }).join('');
   });
 }
-
 function renderPerfil(){
   var av=document.getElementById('vProfileAvatar');
   if(av){av.style.background=avatarColor(currentUser.id);av.textContent=initials(currentUser.name);}
@@ -1031,8 +1070,6 @@ function renderPerfil(){
   var td=document.getElementById('vProfileToday');if(td)td.textContent=hoyV;
   var wk=document.getElementById('vProfileWeek');if(wk)wk.textContent=semV;
 }
-
-// ── 13. ACCIONES ──────────────────────────────────────────────
 function arriveToPoint(pid){
   var p=pointById(pid);
   if(!p)return;
@@ -1095,8 +1132,6 @@ function verFoto(vid){
   document.getElementById('modalPhotoImg').src=v.photo;
   openModal('modalPhoto');
 }
-
-// Mapa
 function buildMapsUrl(pts){
   var v=pts.filter(function(p){return p.lat&&p.lng;});
   if(!v.length)return'';
@@ -1104,8 +1139,6 @@ function buildMapsUrl(pts){
   var wp=v.slice(1,-1).map(function(p){return p.lat+','+p.lng;}).join('|');
   return'https://www.google.com/maps/dir/?api=1&origin='+v[0].lat+','+v[0].lng+'&destination='+v[v.length-1].lat+','+v[v.length-1].lng+(wp?'&waypoints='+wp:'');
 }
-
-// ── 14. VISITAS LIBRES ────────────────────────────────────────
 function abrirVisitaLibre(){
   _visitaGps=null;_visitaFotoGeneral=null;
   ['vg-lugar','vg-direccion','vg-contacto','vg-notas'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
@@ -1204,8 +1237,6 @@ function guardarVisitaProfesional(){
   renderHoy();
   toast('Visita profesional guardada');
 }
-
-// ── 15. MARKETING ─────────────────────────────────────────────
 var NIT_DB=[
   {n:['exito','almacenes exito'],r:'Almacenes Exito S.A.',nit:'890.900.608-9'},
   {n:['jumbo'],r:'Cencosud Colombia S.A.',nit:'900.155.107-1'},
@@ -1226,15 +1257,40 @@ function autocompletarNit(v){
 }
 function abrirMarketing(){
   _mktFoto=null;
+  _mktFotoTipo='image';
   ['mkt-lugar','mkt-valor'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var n=document.getElementById('mkt-nit');if(n){n.value='';n.readOnly=false;n.style.background='var(--bg)';}
   var r=document.getElementById('mkt-razon');if(r)r.textContent='';
-  document.getElementById('mkt-foto-preview-wrap').style.display='none';
+  var wrap=document.getElementById('mkt-foto-preview-wrap');
+  wrap.innerHTML='<img id="mkt-foto-preview" style="max-height:150px;border-radius:8px;width:100%;object-fit:cover;">';
+  wrap.style.display='none';
   document.getElementById('mkt-foto-input').value='';
   openModal('modalMarketing');
 }
 function mktPreviewFoto(input){
   if(!input.files||!input.files[0])return;
+  var file=input.files[0];
+  var MAX_SIZE=8*1024*1024; // 8MB limite razonable
+  if(file.size>MAX_SIZE){
+    toast('El archivo pesa demasiado (máx. 8MB). Usa un PDF más liviano o toma la foto.','err');
+    input.value='';
+    return;
+  }
+  var wrap=document.getElementById('mkt-foto-preview-wrap');
+  var prev=document.getElementById('mkt-foto-preview');
+  if(file.type==='application/pdf'){
+    var readerPdf=new FileReader();
+    readerPdf.onload=function(ev){
+      _mktFoto=ev.target.result;
+      _mktFotoTipo='pdf';
+      prev.style.display='none';
+      wrap.innerHTML='<div style="display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:8px;padding:12px;"><i class="fa-solid fa-file-pdf" style="font-size:28px;color:#DC2626;"></i><div style="text-align:left;font-size:12px;font-weight:600;">'+esc(file.name)+'</div></div>';
+      wrap.style.display='block';
+    };
+    readerPdf.readAsDataURL(file);
+    return;
+  }
+  _mktFotoTipo='image';
   var reader=new FileReader();
   reader.onload=function(ev){
     var img=new Image();
@@ -1244,12 +1300,13 @@ function mktPreviewFoto(input){
       var c=document.createElement('canvas');c.width=w;c.height=h;
       c.getContext('2d').drawImage(img,0,0,w,h);
       _mktFoto=c.toDataURL('image/jpeg',0.65);
+      wrap.innerHTML='<img id="mkt-foto-preview" style="max-height:150px;border-radius:8px;width:100%;object-fit:cover;">';
       document.getElementById('mkt-foto-preview').src=_mktFoto;
-      document.getElementById('mkt-foto-preview-wrap').style.display='block';
+      wrap.style.display='block';
     };
     img.src=ev.target.result;
   };
-  reader.readAsDataURL(input.files[0]);
+  reader.readAsDataURL(file);
 }
 function guardarMarketing(){
   var lugar=document.getElementById('mkt-lugar').value.trim();
@@ -1258,7 +1315,7 @@ function guardarMarketing(){
   if(!valor){toast('Escribe el valor','err');return;}
   if(!_mktFoto){toast('Toma la foto de la factura','err');return;}
   if(!window._db){toast('Sin conexion, intenta en un momento','err');return;}
-  var reg={id:'mkt_'+Date.now(),userId:currentUser.id,userName:currentUser.name,labId:currentUser.labId||'',lugar:lugar,nit:document.getElementById('mkt-nit').value.trim(),razonSocial:document.getElementById('mkt-razon').textContent.trim(),valor:parseFloat(valor),foto:_mktFoto,fecha:today(),creadoAt:new Date().toISOString()};
+  var reg={id:'mkt_'+Date.now(),userId:currentUser.id,userName:currentUser.name,labId:currentUser.labId||'',lugar:lugar,nit:document.getElementById('mkt-nit').value.trim(),razonSocial:document.getElementById('mkt-razon').textContent.trim(),valor:parseFloat(valor),foto:_mktFoto,fotoTipo:_mktFotoTipo,fecha:today(),creadoAt:new Date().toISOString()};
   var btn=document.querySelector('#modalMarketing .btn-primary');
   if(btn){btn.disabled=true;btn.innerHTML='<i class="spin fa-solid fa-circle-notch"></i> Subiendo...';}
   window._db.ref('medvisit/marketing').push(reg)
@@ -1280,8 +1337,6 @@ function abrirFotoOverlay(src){
   var hint=document.createElement('div');hint.textContent='Toca para cerrar';hint.style.cssText='color:rgba(255,255,255,0.5);font-size:12px;margin-top:10px;';
   o.appendChild(img);o.appendChild(hint);document.body.appendChild(o);
 }
-
-// ── 16. TABS / MODALS / UI ────────────────────────────────────
 function switchTab(tab,btn){
   _currentTab=tab;
   document.querySelectorAll('#visitorScreen .tab-content').forEach(function(t){t.classList.remove('active');});
@@ -1315,17 +1370,12 @@ function showConfirm(title,msg,icon,cb,btnCls){
 }
 function executeConfirm(){document.getElementById('confirmOverlay').classList.remove('open');if(_confirmCb){_confirmCb();_confirmCb=null;}}
 function cancelConfirm(){document.getElementById('confirmOverlay').classList.remove('open');_confirmCb=null;}
-
-// ── 17. INIT ──────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded',function(){
   loadQueue();
   updateQueueBar();
 });
 </script>
-
-<!-- Firebase SDK - DEFER para no bloquear render -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js" defer></script>
-
 </body>
 </html>
