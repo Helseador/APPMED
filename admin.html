@@ -2224,7 +2224,12 @@ function saveLab(){
     else if(baseIdx<0){toast('Lab no encontrado','err');return;}
   } else {
     var newId='lab_'+name.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+Date.now();
-    D.labs.push({id:newId,name:name,color:color,colorLight:colorLight,icon:'fa-flask'});
+    var newLab={id:newId,name:name,color:color,colorLight:colorLight,icon:'fa-flask'};
+    D.labs.push(newLab);
+    db.ref('medvisit/labs').push(newLab)
+      .then(function(){toast('Laboratorio creado');closeModal('modalLab');})
+      .catch(function(e){toast('Error: '+e.message,'err');});
+    return;
   }
   db.ref('medvisit/labs').set(D.labs)
     .then(function(){toast(id?'Laboratorio actualizado':'Laboratorio creado');closeModal('modalLab');})
