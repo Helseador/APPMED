@@ -1378,6 +1378,22 @@ function _generarExcel(labId){
   });
   var ws2=XLSX.utils.aoa_to_sheet([hPend].concat(rPend));
   XLSX.utils.book_append_sheet(wb,ws2,'Pendientes');
+  // Hoja 3: Ausencias
+  var ausAll=D.ausencias.filter(function(a){
+    if(!a||!a.id) return false;
+    if(labId) return a.labId===labId;
+    return true;
+  });
+  var motivoLbl={incapacidad:'Incapacidad médica',calamidad:'Calamidad doméstica',cita_medica:'Cita médica',admin:'Autorizada por admin',otro:'Otro'};
+  var hAus=['Fecha','Visitador','Laboratorio','Motivo','Detalle','Estado','Revisado por'];
+  var rAus=ausAll.map(function(a){
+    return [a.fecha||'',a.userName||getUserName(a.userId),getLabName(a.labId),
+      motivoLbl[a.motivo]||a.motivo||'',a.detalle||'',
+      a.revisado?'Revisada':'Sin revisar',a.revisadoPor||''];
+  });
+  var ws3=XLSX.utils.aoa_to_sheet([hAus].concat(rAus));
+  ws3['!cols']=[{wch:12},{wch:22},{wch:14},{wch:22},{wch:40},{wch:14},{wch:22}];
+  XLSX.utils.book_append_sheet(wb,ws3,'Ausencias');
   var nombre='Visitas_APPMED_'+(labId?getLabName(labId):'General')+'_'+today()+'.xlsx';
   var wbout=XLSX.write(wb,{bookType:'xlsx',type:'buffer'});
   var blob=new Blob([wbout],{type:'application/octet-stream'});
@@ -2379,6 +2395,21 @@ function _generarExcelVisitador(uid){
   var rPts=pts.map(function(p){return [p.routeName||'Sin ruta',p.order||'',p.name||'',p.address||'',p.inactive?'Inactivo':'Activo'];});
   var ws2=XLSX.utils.aoa_to_sheet([hPts].concat(rPts));
   XLSX.utils.book_append_sheet(wb,ws2,'Puntos');
+  // Hoja de pendientes
+  var pends=D.pendientes.filter(function(p){return p&&p.userId===uid&&!p.eliminado;});
+  var hPend=['Texto','Prioridad','Estado','Creado por','Fecha límite','Resuelto en'];
+  var rPend=pends.map(function(p){return [p.texto||'',p.prioridad||'normal',p.resuelto?'Resuelto':'Activo',p.creadoPorNombre||'',p.fechaLimite||'',p.resueltoAt?p.resueltoAt.slice(0,10):''];});
+  var ws3=XLSX.utils.aoa_to_sheet([hPend].concat(rPend));
+  ws3['!cols']=[{wch:40},{wch:12},{wch:10},{wch:22},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws3,'Pendientes');
+  // Hoja de ausencias
+  var motivoLabel={incapacidad:'Incapacidad médica',calamidad:'Calamidad doméstica',cita_medica:'Cita médica',admin:'Autorizada por admin',otro:'Otro'};
+  var aus=D.ausencias.filter(function(a){return a&&a.userId===uid;});
+  var hAus=['Fecha','Motivo','Detalle','Estado','Revisado por'];
+  var rAus=aus.map(function(a){return [a.fecha||'',motivoLabel[a.motivo]||a.motivo||'',a.detalle||'',a.revisado?'Revisada':'Sin revisar',a.revisadoPor||''];});
+  var ws4=XLSX.utils.aoa_to_sheet([hAus].concat(rAus));
+  ws4['!cols']=[{wch:12},{wch:22},{wch:40},{wch:14},{wch:22}];
+  XLSX.utils.book_append_sheet(wb,ws4,'Ausencias');
   XLSX.writeFile(wb,'Reporte_'+u.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+today()+'.xlsx');
 }
 
