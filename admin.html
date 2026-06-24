@@ -1355,11 +1355,13 @@ function generarExcel(labId){
 }
 
 function _generarExcel(labId){
+  var desde=rptDesde||(function(){var d=new Date();d.setDate(d.getDate()-29);return d.toISOString().slice(0,10);})();
+  var hasta=rptHasta||today();
   var visits=D.visits.filter(function(v){
     if(labId&&v.labId!==labId) return false;
     if(!labId&&currentLabId&&v.labId!==currentLabId) return false;
-    if(rptDesde&&v.date<rptDesde) return false;
-    if(rptHasta&&v.date>rptHasta) return false;
+    if(v.date<desde) return false;
+    if(v.date>hasta) return false;
     return v.status==='completed';
   });
   var wb=XLSX.utils.book_new();
@@ -1377,7 +1379,7 @@ function _generarExcel(labId){
   var ws1=XLSX.utils.aoa_to_sheet([header].concat(rows));
   ws1['!cols']=[{wch:12},{wch:22},{wch:14},{wch:12},{wch:30},{wch:18},{wch:14},{wch:28},{wch:20},{wch:6},{wch:28}];
   XLSX.utils.book_append_sheet(wb,ws1,'Visitas');
-  // Hoja 2: Pendientes
+  // Hoja 2: Pendientes (todos, sin filtro de fecha — son acumulativos)
   var pends=D.pendientes.filter(function(p){
     if(!p||!p.id) return false;
     if(labId){var u=D.users.find(function(x){return x.id===p.userId;});return u&&u.labId===labId;}
@@ -1391,11 +1393,11 @@ function _generarExcel(labId){
   });
   var ws2=XLSX.utils.aoa_to_sheet([hPend].concat(rPend));
   XLSX.utils.book_append_sheet(wb,ws2,'Pendientes');
-  // Hoja 3: Ausencias
+  // Hoja 3: Ausencias del periodo
   var ausAll=D.ausencias.filter(function(a){
     if(!a||!a.id) return false;
-    if(rptDesde&&a.fecha<rptDesde) return false;
-    if(rptHasta&&a.fecha>rptHasta) return false;
+    if(a.fecha<desde) return false;
+    if(a.fecha>hasta) return false;
     if(labId) return a.labId===labId;
     return true;
   });
@@ -2386,10 +2388,12 @@ function generarExcelVisitador(uid){
 function _generarExcelVisitador(uid){
   var u=D.users.find(function(x){return x.id===uid;});
   if(!u){toast('Visitador no encontrado','err');return;}
+  var desde=rptDesde||(function(){var d=new Date();d.setDate(d.getDate()-29);return d.toISOString().slice(0,10);})();
+  var hasta=rptHasta||today();
   var visits=D.visits.filter(function(v){
     if((v.visitorId||v.userId)!==uid) return false;
-    if(rptDesde&&v.date<rptDesde) return false;
-    if(rptHasta&&v.date>rptHasta) return false;
+    if(v.date<desde) return false;
+    if(v.date>hasta) return false;
     return v.status==='completed';
   });
   var header=['Fecha','Tipo','Punto / Profesional','Especialidad','Telefono','Direccion','Obsequio','Firma','Notas','Jefe'];
@@ -2421,8 +2425,8 @@ function _generarExcelVisitador(uid){
   var motivoLabel={incapacidad:'Incapacidad médica',calamidad:'Calamidad doméstica',cita_medica:'Cita médica',admin:'Autorizada por admin',otro:'Otro'};
   var aus=D.ausencias.filter(function(a){
     if(!a||a.userId!==uid) return false;
-    if(rptDesde&&a.fecha<rptDesde) return false;
-    if(rptHasta&&a.fecha>rptHasta) return false;
+    if(a.fecha<desde) return false;
+    if(a.fecha>hasta) return false;
     return true;
   });
   var hAus=['Fecha','Motivo','Detalle','Estado','Revisado por'];
