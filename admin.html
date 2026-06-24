@@ -960,9 +960,13 @@ function renderMarketing(){
 
   html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
     +'<th>Fecha</th><th>Visitador</th><th>Lab</th><th>Establecimiento</th><th>NIT</th><th>Valor</th><th>Foto</th>'
+    +(currentUser.role==='super'?'<th></th>':'')
     +'</tr></thead><tbody>'
     +filtered.map(function(r){
       var foto=r.foto?'<button class="btn btn-sm btn-outline" onclick="openFoto(\''+r.foto+'\')"><i class="fa-solid fa-image"></i></button>':'-';
+      var editBtn=currentUser.role==='super'
+        ?'<td><button class="btn btn-sm btn-outline" data-key="'+(r._fbKey||'')+'" data-valor="'+((parseFloat(r.valor)||0))+'" onclick="editarValorMarketing(this.dataset.key,this.dataset.valor)"><i class="fa-solid fa-pen"></i></button></td>'
+        :'';
       return '<tr>'
         +'<td>'+fmtDate(r.fecha)+'</td>'
         +'<td>'+esc(r.userName||getUserName(r.userId))+'</td>'
@@ -971,6 +975,7 @@ function renderMarketing(){
         +'<td>'+esc(r.nit||'-')+'</td>'
         +'<td style="font-weight:700;color:var(--primary);">$'+(parseFloat(r.valor)||0).toLocaleString('es-CO')+'</td>'
         +'<td>'+foto+'</td>'
+        +editBtn
         +'</tr>';
     }).join('')
     +'</tbody></table></div>';
@@ -1389,6 +1394,8 @@ function _generarExcel(labId){
   // Hoja 3: Ausencias
   var ausAll=D.ausencias.filter(function(a){
     if(!a||!a.id) return false;
+    if(rptDesde&&a.fecha<rptDesde) return false;
+    if(rptHasta&&a.fecha>rptHasta) return false;
     if(labId) return a.labId===labId;
     return true;
   });
@@ -2412,7 +2419,12 @@ function _generarExcelVisitador(uid){
   XLSX.utils.book_append_sheet(wb,ws3,'Pendientes');
   // Hoja de ausencias
   var motivoLabel={incapacidad:'Incapacidad médica',calamidad:'Calamidad doméstica',cita_medica:'Cita médica',admin:'Autorizada por admin',otro:'Otro'};
-  var aus=D.ausencias.filter(function(a){return a&&a.userId===uid;});
+  var aus=D.ausencias.filter(function(a){
+    if(!a||a.userId!==uid) return false;
+    if(rptDesde&&a.fecha<rptDesde) return false;
+    if(rptHasta&&a.fecha>rptHasta) return false;
+    return true;
+  });
   var hAus=['Fecha','Motivo','Detalle','Estado','Revisado por'];
   var rAus=aus.map(function(a){return [a.fecha||'',motivoLabel[a.motivo]||a.motivo||'',a.detalle||'',a.revisado?'Revisada':'Sin revisar',a.revisadoPor||''];});
   var ws4=XLSX.utils.aoa_to_sheet([hAus].concat(rAus));
@@ -2500,7 +2512,19 @@ function _generarPPTXVisitador(uid){
   pptx.writeFile({fileName:'Reporte_'+u.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+today()+'.pptx'});
 }
 
-// ── MODAL GENERAR INFORME ───────────────────────────────────────
+function editarValorMarketing(fbKey,valorActual){
+  if(currentUser.role!=='super'){toast('Solo el superadmin puede editar valores','err');return;}
+  if(!fbKey){toast('No se puede identificar el registro','err');return;}
+  var nuevo=prompt('Nuevo valor ($):',valorActual);
+  if(nuevo===null) return;
+  var val=parseFloat(nuevo);
+  if(isNaN(val)||val<0){toast('Valor inválido','err');return;}
+  db.ref('medvisit/marketing/'+fbKey+'/valor').set(val)
+    .then(function(){toast('Valor actualizado');renderCurrentTab();})
+    .catch(function(e){toast('Error: '+e.message,'err');});
+}
+
+
 var _infTipo='general';
 var _infPeriodo='semanal';
 
