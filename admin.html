@@ -1355,8 +1355,13 @@ function generarExcel(labId){
 }
 
 function _generarExcel(labId){
-  var desde=rptDesde||(function(){var d=new Date();d.setDate(d.getDate()-29);return d.toISOString().slice(0,10);})();
+  var desde=rptDesde;
   var hasta=rptHasta||today();
+  // Si solo es hoy o no hay rango definido, usar últimos 30 días para el informe
+  if(!desde||desde===hasta){
+    var d30=new Date();d30.setDate(d30.getDate()-29);
+    desde=d30.toISOString().slice(0,10);
+  }
   var visits=D.visits.filter(function(v){
     if(labId&&v.labId!==labId) return false;
     if(!labId&&currentLabId&&v.labId!==currentLabId) return false;
@@ -2388,8 +2393,12 @@ function generarExcelVisitador(uid){
 function _generarExcelVisitador(uid){
   var u=D.users.find(function(x){return x.id===uid;});
   if(!u){toast('Visitador no encontrado','err');return;}
-  var desde=rptDesde||(function(){var d=new Date();d.setDate(d.getDate()-29);return d.toISOString().slice(0,10);})();
+  var desde=rptDesde;
   var hasta=rptHasta||today();
+  if(!desde||desde===hasta){
+    var d30=new Date();d30.setDate(d30.getDate()-29);
+    desde=d30.toISOString().slice(0,10);
+  }
   var visits=D.visits.filter(function(v){
     if((v.visitorId||v.userId)!==uid) return false;
     if(v.date<desde) return false;
