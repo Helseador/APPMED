@@ -1656,6 +1656,52 @@ function abrirCargaExcel(){
   openModal('modalCargaExcel');
 }
 
+function previewExcelRuta(input){
+  if(!input.files||!input.files[0]) return;
+  window._excelPendingFile=input.files[0];
+  if(typeof XLSX==='undefined'){
+    var s=document.createElement('script');
+    s.src='https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js';
+    s.onload=function(){_previewExcelRuta();};
+    document.head.appendChild(s);
+  } else { _previewExcelRuta(); }
+}
+
+function _previewExcelRuta(){
+  var file=window._excelPendingFile;
+  if(!file){toast('Selecciona un archivo','err');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=new Uint8Array(e.target.result);
+      var wb=XLSX.read(data,{type:'array'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      // Saltar fila de encabezado si la primera celda no es un nombre de punto
+      var startRow=0;
+      if(raw.length>0){
+        var first=String(raw[0][0]||'').toLowerCase();
+        if(first==='nombre'||first==='punto'||first==='name') startRow=1;
+      }
+      var rows=raw.slice(startRow).filter(function(r){return String(r[0]||'').trim();});
+      if(!rows.length){toast('No se encontraron puntos en el archivo','err');return;}
+      window._excelData=rows;
+      var prev=document.getElementById('ar-preview');
+      if(prev){
+        var rutas={};
+        rows.forEach(function(r){var ruta=String(r[5]||'Sin ruta').trim();if(!rutas[ruta])rutas[ruta]=0;rutas[ruta]++;});
+        var resumen=Object.keys(rutas).map(function(r){return r+' ('+rutas[r]+' puntos)';}).join(', ');
+        prev.innerHTML='<div style="background:#DCFCE7;border-radius:8px;padding:10px;margin-top:8px;color:#166534;">'
+          +'<i class="fa-solid fa-check"></i> <b>'+rows.length+' puntos cargados</b><br>'
+          +'<span style="font-size:11px;">'+resumen+'</span></div>';
+      }
+    }catch(err){
+      toast('Error leyendo Excel: '+err.message,'err');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 function previewExcel(input){
   if(!input.files||!input.files[0]) return;
   // Guardar el archivo ANTES de cargar XLSX (el evento change se pierde si se espera)
@@ -2062,7 +2108,7 @@ function renderGestionDetalle(uid){
   html+="<div class=\"card\" style=\"margin-bottom:14px;\">"
     +"<div class=\"card-header\"><div class=\"card-title\"><i class=\"fa-solid fa-map-pin\" style=\"color:var(--primary);margin-right:6px;\"></i>Puntos ("+pts.length+")</div>"
     +"<div style=\"display:flex;gap:6px;\">"
-    +(currentUser.role==='super'?"<button class=\"btn btn-sm\" style=\"background:#F59E0B;color:#fff;\" data-id=\""+uid+"\" onclick=\"abrirActualizarRuta(this.dataset.id)\"><i class=\"fa-solid fa-arrows-rotate\"></i> Actualizar ruta</button>":"")
+    +(currentUser.role==='super'?"<button class=\"btn btn-sm\" style=\"background:#F59E0B;color:#fff;flex-shrink:0;\" data-id=\""+uid+"\" onclick=\"abrirActualizarRuta(this.dataset.id)\"><i class=\"fa-solid fa-arrows-rotate\"></i> Actualizar ruta</button>":"")
     +"<button class=\"btn btn-success btn-sm\" data-id=\""+uid+"\" onclick=\"abrirCargaExcelPara(this.dataset.id)\"><i class=\"fa-solid fa-file-excel\"></i> Excel</button>"
     +"<button class=\"btn btn-primary btn-sm\" data-id=\""+uid+"\" onclick=\"abrirModalPuntoPara(this.dataset.id)\"><i class=\"fa-solid fa-plus\"></i> Nuevo</button>"
     +"</div></div>";
@@ -2125,8 +2171,8 @@ function abrirActualizarRuta(uid){
       +'</div>'
       +'<div class="form-group">'
       +'<label class="form-label">Excel con nuevos puntos *</label>'
-      +'<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Mismas columnas: Nombre, Dirección, Lat, Lng, Orden, Ruta</div>'
-      +'<input type="file" id="ar-excel-input" accept=".xlsx,.xls" style="display:none;" onchange="previewExcel(this)">'
+      +'<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Columnas: Nombre, Dirección, Lat, Lng, Orden, Ruta</div>'
+      +'<input type="file" id="ar-excel-input" accept=".xlsx,.xls" style="display:none;" onchange="previewExcelRuta(this)">'
       +'<button class="btn btn-outline btn-sm" onclick="document.getElementById(\'ar-excel-input\').click()"><i class="fa-solid fa-file-excel"></i> Seleccionar archivo</button>'
       +'<div id="ar-preview" style="margin-top:8px;font-size:12px;color:var(--muted);"></div>'
       +'</div>'
