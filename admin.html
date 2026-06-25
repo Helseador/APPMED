@@ -2062,6 +2062,7 @@ function renderGestionDetalle(uid){
   html+="<div class=\"card\" style=\"margin-bottom:14px;\">"
     +"<div class=\"card-header\"><div class=\"card-title\"><i class=\"fa-solid fa-map-pin\" style=\"color:var(--primary);margin-right:6px;\"></i>Puntos ("+pts.length+")</div>"
     +"<div style=\"display:flex;gap:6px;\">"
+    +(currentUser.role==='super'?"<button class=\"btn btn-sm\" style=\"background:#F59E0B;color:#fff;\" data-id=\""+uid+"\" onclick=\"abrirActualizarRuta(this.dataset.id)\"><i class=\"fa-solid fa-arrows-rotate\"></i> Actualizar ruta</button>":"")
     +"<button class=\"btn btn-success btn-sm\" data-id=\""+uid+"\" onclick=\"abrirCargaExcelPara(this.dataset.id)\"><i class=\"fa-solid fa-file-excel\"></i> Excel</button>"
     +"<button class=\"btn btn-primary btn-sm\" data-id=\""+uid+"\" onclick=\"abrirModalPuntoPara(this.dataset.id)\"><i class=\"fa-solid fa-plus\"></i> Nuevo</button>"
     +"</div></div>";
@@ -2093,6 +2094,130 @@ function renderGestionDetalle(uid){
   }
   html+="</div>";
   return html;
+}
+
+function abrirActualizarRuta(uid){
+  if(currentUser.role!=='super'){toast('Solo el superadmin puede actualizar rutas','err');return;}
+  var u=D.users.find(function(x){return x.id===uid;});
+  if(!u) return;
+  var pts=D.points.filter(function(p){return p.assignedTo===uid;});
+  var rutas=[];
+  pts.forEach(function(p){var r=p.routeName||'Sin ruta';if(rutas.indexOf(r)<0)rutas.push(r);});
+
+  var modal=document.getElementById('modalActualizarRuta');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='modalActualizarRuta';
+    modal.className='modal-overlay';
+    modal.innerHTML='<div class="modal-box" style="max-width:500px;">'
+      +'<div class="modal-title"><i class="fa-solid fa-arrows-rotate" style="color:#F59E0B;margin-right:8px;"></i>Actualizar ruta</div>'
+      +'<div class="form-group"><label class="form-label">Visitador</label><div id="ar-visitador" style="font-weight:700;font-size:14px;padding:8px 0;"></div></div>'
+      +'<div class="form-group">'
+      +'<label class="form-label">Tipo de actualización</label>'
+      +'<div style="display:flex;gap:8px;">'
+      +'<button class="btn btn-sm" id="ar-btn-parcial" style="flex:1;background:var(--primary);color:#fff;" onclick="setArTipo(\'parcial\')"><i class="fa-solid fa-route"></i> Ruta específica</button>'
+      +'<button class="btn btn-sm btn-outline" id="ar-btn-total" style="flex:1;" onclick="setArTipo(\'total\')"><i class="fa-solid fa-layer-group"></i> Todas las rutas</button>'
+      +'</div></div>'
+      +'<div class="form-group" id="ar-ruta-group">'
+      +'<label class="form-label">Ruta a reemplazar</label>'
+      +'<select class="form-input" id="ar-ruta-select"></select>'
+      +'</div>'
+      +'<div class="form-group">'
+      +'<label class="form-label">Excel con nuevos puntos *</label>'
+      +'<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Mismas columnas: Nombre, Dirección, Lat, Lng, Orden, Ruta</div>'
+      +'<input type="file" id="ar-excel-input" accept=".xlsx,.xls" style="display:none;" onchange="previewExcel(this)">'
+      +'<button class="btn btn-outline btn-sm" onclick="document.getElementById(\'ar-excel-input\').click()"><i class="fa-solid fa-file-excel"></i> Seleccionar archivo</button>'
+      +'<div id="ar-preview" style="margin-top:8px;font-size:12px;color:var(--muted);"></div>'
+      +'</div>'
+      +'<div style="background:#FEF3C7;border-radius:10px;padding:10px 12px;font-size:12px;color:#92400E;margin-bottom:14px;">'
+      +'<i class="fa-solid fa-triangle-exclamation"></i> Los puntos de la ruta seleccionada serán reemplazados. Esta acción no se puede deshacer.'
+      +'</div>'
+      +'<div class="modal-actions">'
+      +'<button class="btn btn-outline" onclick="closeModal(\'modalActualizarRuta\')">Cancelar</button>'
+      +'<button class="btn btn-primary" onclick="ejecutarActualizarRuta()"><i class="fa-solid fa-check"></i> Actualizar</button>'
+      +'</div></div>';
+    document.body.appendChild(modal);
+  }
+
+  window._arUid=uid;
+  window._arTipo='parcial';
+  document.getElementById('ar-visitador').textContent=u.name+' — '+getLabName(u.labId);
+  var sel=document.getElementById('ar-ruta-select');
+  sel.innerHTML=rutas.map(function(r){return '<option value="'+esc(r)+'">'+esc(r)+'</option>';}).join('');
+  document.getElementById('ar-ruta-group').style.display='block';
+  document.getElementById('ar-preview').textContent='';
+  document.getElementById('ar-excel-input').value='';
+  setArTipo('parcial');
+  openModal('modalActualizarRuta');
+}
+
+function setArTipo(tipo){
+  window._arTipo=tipo;
+  var bP=document.getElementById('ar-btn-parcial');
+  var bT=document.getElementById('ar-btn-total');
+  var rg=document.getElementById('ar-ruta-group');
+  if(tipo==='parcial'){
+    bP.style.background='var(--primary)';bP.style.color='#fff';bP.classList.remove('btn-outline');
+    bT.style.background='transparent';bT.style.color='var(--fg)';bT.classList.add('btn-outline');
+    rg.style.display='block';
+  } else {
+    bT.style.background='var(--primary)';bT.style.color='#fff';bT.classList.remove('btn-outline');
+    bP.style.background='transparent';bP.style.color='var(--fg)';bP.classList.add('btn-outline');
+    rg.style.display='none';
+  }
+}
+
+function ejecutarActualizarRuta(){
+  var uid=window._arUid;
+  var tipo=window._arTipo;
+  if(!uid){toast('Error interno','err');return;}
+  if(!window._excelData||!window._excelData.length){toast('Carga el archivo Excel primero','err');return;}
+  var rutaReemplazar=tipo==='parcial'?document.getElementById('ar-ruta-select').value:null;
+
+  // Filtrar los puntos que NO son de la ruta a reemplazar (para mantener las otras)
+  var ptsRestantes=D.points.filter(function(p){
+    if(p.assignedTo!==uid) return true; // otros visitadores
+    if(tipo==='total') return false; // reemplazar todo
+    return (p.routeName||'Sin ruta')!==rutaReemplazar; // mantener otras rutas
+  });
+
+  // Construir nuevos puntos desde el Excel
+  var nuevos=window._excelData.map(function(row,i){
+    var nombre=String(row[0]||'').trim();
+    var direccion=String(row[1]||'').trim();
+    var lat=parseFloat(row[2])||null;
+    var lng=parseFloat(row[3])||null;
+    var orden=parseInt(row[4])||i+1;
+    var ruta=String(row[5]||rutaReemplazar||'Sin ruta').trim();
+    if(!nombre) return null;
+    return {
+      id:'pt_'+Date.now()+'_'+Math.random().toString(36).substr(2,4)+'_'+i,
+      name:nombre,address:direccion,lat:lat,lng:lng,
+      order:orden,routeName:ruta,
+      assignedTo:uid,labId:(D.users.find(function(u){return u.id===uid;})||{}).labId||'',
+      inactive:false
+    };
+  }).filter(Boolean);
+
+  if(!nuevos.length){toast('El Excel no tiene puntos válidos','err');return;}
+
+  var todosLosPuntos=ptsRestantes.concat(nuevos);
+
+  showConfirm(
+    tipo==='total'?'Reemplazar todas las rutas':'Reemplazar ruta "'+rutaReemplazar+'"',
+    'Se reemplazarán '+nuevos.length+' puntos. ¿Continuar?',
+    'fa-arrows-rotate','warn',
+    function(){
+      db.ref('medvisit/points').set(todosLosPuntos)
+        .then(function(){
+          toast('Ruta actualizada con '+nuevos.length+' puntos');
+          closeModal('modalActualizarRuta');
+          window._excelData=null;
+          document.getElementById('tabContent').innerHTML=renderGestionDetalle(uid);
+        })
+        .catch(function(e){toast('Error: '+e.message,'err');});
+    }
+  );
 }
 
 function toggleFreeVisitDetalle(uid){
