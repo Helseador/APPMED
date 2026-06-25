@@ -2089,6 +2089,7 @@ function renderGestionDetalle(uid){
           +"<button class=\"action-btn action-btn-danger\" data-pid=\""+p.id+"\" data-uid=\""+uid+"\" onclick=\"eliminarPuntoDetalle(this.dataset.pid,this.dataset.uid)\"><i class=\"fa-solid fa-trash\"></i></button>"
           +"</div>";
       });
+      html+="<button class=\"btn btn-sm btn-outline\" style=\"width:100%;margin-top:6px;border-style:dashed;\" data-uid=\""+uid+"\" data-ruta=\""+encodeURIComponent(ruta)+"\" onclick=\"abrirModalPuntoEnRuta(this.dataset.uid,this.dataset.ruta)\"><i class=\"fa-solid fa-plus\"></i> Añadir punto a "+esc(ruta)+"</button>";
       html+="</div></div>";
     });
   }
@@ -2219,6 +2220,21 @@ function ejecutarActualizarRuta(){
     }
   );
 }
+
+function abrirModalPuntoEnRuta(uid, rutaEncoded){
+  var ruta=decodeURIComponent(rutaEncoded);
+  abrirModalPuntoPara(uid);
+  setTimeout(function(){
+    var routeEl=document.getElementById('mp-route');
+    if(routeEl) routeEl.value=ruta;
+    var orderEl=document.getElementById('mp-order');
+    if(orderEl){
+      var pts=D.points.filter(function(p){return p.assignedTo===uid&&(p.routeName||'Sin ruta')===ruta;});
+      orderEl.value=pts.length+1;
+    }
+  },100);
+}
+
 
 function toggleFreeVisitDetalle(uid){
   var u=D.users.find(function(x){return x.id===uid;});
