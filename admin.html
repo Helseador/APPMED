@@ -573,24 +573,30 @@ function renderVisitas(){
     +'<div class="stat-card"><div class="stat-num">'+visits.length+'</div><div class="stat-label">Total registros</div></div>'
     +'</div>';
 
-  // Filtros
+  // Filtros (preservar selección previa del usuario en vez de resetear a hoy)
+  if(typeof window._visFiltros==='undefined') window._visFiltros={desde:hoy,hasta:hoy,lab:'',vis:''};
   html+='<div class="filters">'
-    +'<input type="date" id="fDesde" value="'+hoy+'" onchange="renderCurrentTab()">'
-    +'<input type="date" id="fHasta" value="'+hoy+'" onchange="renderCurrentTab()">';
+    +'<input type="date" id="fDesde" value="'+window._visFiltros.desde+'" onchange="window._visFiltros.desde=this.value;renderCurrentTab()">'
+    +'<input type="date" id="fHasta" value="'+window._visFiltros.hasta+'" onchange="window._visFiltros.hasta=this.value;renderCurrentTab()">';
   if(!currentLabId){
-    html+='<select id="fLab" onchange="renderCurrentTab()"><option value="">Todos los labs</option>'
-      +LABS.map(function(l){return '<option value="'+l.id+'">'+esc(l.name)+'</option>';}).join('')+'</select>';
+    html+='<select id="fLab" onchange="window._visFiltros.lab=this.value;renderCurrentTab()"><option value="">Todos los labs</option>'
+      +LABS.map(function(l){return '<option value="'+l.id+'"'+(l.id===window._visFiltros.lab?' selected':'')+'>'+esc(l.name)+'</option>';}).join('')+'</select>';
   }
-  html+='<select id="fVisitador" onchange="renderCurrentTab()"><option value="">Todos los visitadores</option>'
+  html+='<select id="fVisitador" onchange="window._visFiltros.vis=this.value;renderCurrentTab()"><option value="">Todos los visitadores</option>'
     +D.users.filter(function(u){return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId);})
-    .map(function(u){return '<option value="'+u.id+'">'+esc(u.name)+'</option>';}).join('')
-    +'</select></div>';
+    .map(function(u){return '<option value="'+u.id+'"'+(u.id===window._visFiltros.vis?' selected':'')+'>'+esc(u.name)+'</option>';}).join('')
+    +'</select>'
+    +'<div style="display:flex;gap:6px;">'
+    +'<button class="btn btn-sm btn-outline" onclick="window._visFiltros={desde:\''+hoy+'\',hasta:\''+hoy+'\',lab:\'\',vis:\'\'};renderCurrentTab()">Hoy</button>'
+    +'<button class="btn btn-sm btn-outline" onclick="(function(){var d=new Date();d.setDate(d.getDate()-6);window._visFiltros.desde=d.toISOString().slice(0,10);window._visFiltros.hasta=\''+hoy+'\';renderCurrentTab();})()">7 días</button>'
+    +'<button class="btn btn-sm btn-outline" onclick="(function(){var d=new Date();d.setDate(d.getDate()-29);window._visFiltros.desde=d.toISOString().slice(0,10);window._visFiltros.hasta=\''+hoy+'\';renderCurrentTab();})()">30 días</button>'
+    +'</div></div>';
 
   // Filtrar
-  var desde=document.getElementById('fDesde')?document.getElementById('fDesde').value:'';
-  var hasta=document.getElementById('fHasta')?document.getElementById('fHasta').value:'';
-  var lab=document.getElementById('fLab')?document.getElementById('fLab').value:'';
-  var vis=document.getElementById('fVisitador')?document.getElementById('fVisitador').value:'';
+  var desde=window._visFiltros.desde;
+  var hasta=window._visFiltros.hasta;
+  var lab=window._visFiltros.lab;
+  var vis=window._visFiltros.vis;
   var filtradas=visits.filter(function(v){
     if(desde&&v.date<desde) return false;
     if(hasta&&v.date>hasta) return false;
@@ -1677,22 +1683,57 @@ function _previewExcelRuta(){
       var wb=XLSX.read(data,{type:'array'});
       var ws=wb.Sheets[wb.SheetNames[0]];
       var raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      // Saltar fila de encabezado si la primera celda no es un nombre de punto
-      var startRow=0;
-      if(raw.length>0){
-        var first=String(raw[0][0]||'').toLowerCase();
-        if(first==='nombre'||first==='punto'||first==='name') startRow=1;
+      // Reusar la misma lógica de detección de días que _previewExcel
+      var headerRow=-1,dayCols={};
+      for(var r=0;r<Math.min(10,raw.length);r++){
+        var row=raw[r];
+        var hasDays=row.some(function(c){
+          var s=String(c||'').toUpperCase();
+          return s.indexOf('LUNES')>=0||s.indexOf('MARTES')>=0||s.indexOf('MIERCOLES')>=0||s.indexOf('MIÉRCOLES')>=0||s.indexOf('JUEVES')>=0||s.indexOf('VIERNES')>=0||s.indexOf('SABADO')>=0||s.indexOf('SÁBADO')>=0||s.indexOf('DIA')>=0||s.indexOf('DÍA')>=0;
+        });
+        if(hasDays){
+          headerRow=r;
+          row.forEach(function(c,i){
+            if(c&&String(c).trim()){
+              var s=String(c).toUpperCase();
+              if(s.indexOf('LUNES')>=0||s.indexOf('MARTES')>=0||s.indexOf('MIERCOLES')>=0||s.indexOf('MIÉRCOLES')>=0||s.indexOf('JUEVES')>=0||s.indexOf('VIERNES')>=0||s.indexOf('SABADO')>=0||s.indexOf('SÁBADO')>=0||s.indexOf('DIA')>=0||s.indexOf('DÍA')>=0){
+                dayCols[i]=String(c).trim();
+              }
+            }
+          });
+          break;
+        }
       }
-      var rows=raw.slice(startRow).filter(function(r){return String(r[0]||'').trim();});
-      if(!rows.length){toast('No se encontraron puntos en el archivo','err');return;}
-      window._excelData=rows;
+      if(headerRow<0){toast('Formato no reconocido. Usa días en columnas (Lunes, Martes...).','err');return;}
+      // Contar puntos por ruta
+      var rutaCount={};
+      var totalPuntos=0;
+      var r2=headerRow+1;
+      while(r2<raw.length){
+        var numVal=raw[r2][0];
+        if(numVal!==''&&!isNaN(parseInt(numVal))){
+          Object.keys(dayCols).forEach(function(col){
+            var nombre=String(raw[r2][parseInt(col)]||'').trim();
+            if(nombre){
+              var ruta=dayCols[col];
+              if(!rutaCount[ruta]) rutaCount[ruta]=0;
+              rutaCount[ruta]++;
+              totalPuntos++;
+            }
+          });
+        }
+        r2++;
+      }
+      if(!totalPuntos){toast('No se encontraron puntos en el archivo','err');return;}
+      // Guardar para uso posterior
+      window._excelData=raw;
+      window._excelDayCols=dayCols;
+      window._excelHeaderRow=headerRow;
       var prev=document.getElementById('ar-preview');
       if(prev){
-        var rutas={};
-        rows.forEach(function(r){var ruta=String(r[5]||'Sin ruta').trim();if(!rutas[ruta])rutas[ruta]=0;rutas[ruta]++;});
-        var resumen=Object.keys(rutas).map(function(r){return r+' ('+rutas[r]+' puntos)';}).join(', ');
+        var resumen=Object.keys(rutaCount).map(function(r){return '<b>'+esc(r)+'</b>: '+rutaCount[r]+' puntos';}).join(' · ');
         prev.innerHTML='<div style="background:#DCFCE7;border-radius:8px;padding:10px;margin-top:8px;color:#166534;">'
-          +'<i class="fa-solid fa-check"></i> <b>'+rows.length+' puntos cargados</b><br>'
+          +'<i class="fa-solid fa-check"></i> <b>'+totalPuntos+' puntos detectados</b><br>'
           +'<span style="font-size:11px;">'+resumen+'</span></div>';
       }
     }catch(err){
@@ -2218,33 +2259,51 @@ function ejecutarActualizarRuta(){
   var uid=window._arUid;
   var tipo=window._arTipo;
   if(!uid){toast('Error interno','err');return;}
-  if(!window._excelData||!window._excelData.length){toast('Carga el archivo Excel primero','err');return;}
+  if(!window._excelData||!window._excelDayCols){toast('Carga el archivo Excel primero','err');return;}
   var rutaReemplazar=tipo==='parcial'?document.getElementById('ar-ruta-select').value:null;
 
-  // Filtrar los puntos que NO son de la ruta a reemplazar (para mantener las otras)
+  // Filtrar puntos que NO son de la ruta a reemplazar
   var ptsRestantes=D.points.filter(function(p){
-    if(p.assignedTo!==uid) return true; // otros visitadores
-    if(tipo==='total') return false; // reemplazar todo
-    return (p.routeName||'Sin ruta')!==rutaReemplazar; // mantener otras rutas
+    if(p.assignedTo!==uid) return true;
+    if(tipo==='total') return false;
+    return (p.routeName||'Sin ruta')!==rutaReemplazar;
   });
 
-  // Construir nuevos puntos desde el Excel
-  var nuevos=window._excelData.map(function(row,i){
-    var nombre=String(row[0]||'').trim();
-    var direccion=String(row[1]||'').trim();
-    var lat=parseFloat(row[2])||null;
-    var lng=parseFloat(row[3])||null;
-    var orden=parseInt(row[4])||i+1;
-    var ruta=String(row[5]||rutaReemplazar||'Sin ruta').trim();
-    if(!nombre) return null;
-    return {
-      id:'pt_'+Date.now()+'_'+Math.random().toString(36).substr(2,4)+'_'+i,
-      name:nombre,address:direccion,lat:lat,lng:lng,
-      order:orden,routeName:ruta,
-      assignedTo:uid,labId:(D.users.find(function(u){return u.id===uid;})||{}).labId||'',
-      inactive:false
-    };
-  }).filter(Boolean);
+  // Construir nuevos puntos usando el formato de días (igual que la carga masiva)
+  var raw=window._excelData;
+  var dayCols=window._excelDayCols;
+  var headerRow=window._excelHeaderRow||0;
+  var userLab=(D.users.find(function(u){return u.id===uid;})||{}).labId||'';
+  var nuevos=[];
+  var r=headerRow+1;
+  while(r<raw.length){
+    var numVal=raw[r][0];
+    if(numVal!==''&&!isNaN(parseInt(numVal))){
+      var order=parseInt(numVal);
+      var nameRow=raw[r];
+      var nextRow=raw[r+1]||[];
+      var hasAddr=Object.keys(dayCols).some(function(col){
+        var v=String(nextRow[parseInt(col)]||'');
+        return v.match(/#|Calle|Cra|Carrera|Av|Km/i);
+      });
+      var addrRow=hasAddr?nextRow:(raw[r+2]||[]);
+      var skip=hasAddr?2:3;
+      Object.keys(dayCols).forEach(function(col){
+        var nombre=String(nameRow[parseInt(col)]||'').trim();
+        if(!nombre) return;
+        var direccion=String(addrRow[parseInt(col)]||'').trim();
+        // Si es parcial, solo incluir la ruta seleccionada
+        if(tipo==='parcial'&&dayCols[col]!==rutaReemplazar) return;
+        nuevos.push({
+          id:'pt_'+Date.now()+'_'+Math.random().toString(36).substr(2,4)+'_'+nuevos.length,
+          name:nombre,address:direccion,lat:null,lng:null,
+          order:order,routeName:dayCols[col],
+          assignedTo:uid,labId:userLab,inactive:false
+        });
+      });
+      r+=skip;
+    } else { r++; }
+  }
 
   if(!nuevos.length){toast('El Excel no tiene puntos válidos','err');return;}
 
@@ -2252,7 +2311,7 @@ function ejecutarActualizarRuta(){
 
   showConfirm(
     tipo==='total'?'Reemplazar todas las rutas':'Reemplazar ruta "'+rutaReemplazar+'"',
-    'Se reemplazarán '+nuevos.length+' puntos. ¿Continuar?',
+    'Se cargarán '+nuevos.length+' puntos nuevos. ¿Continuar?',
     'fa-arrows-rotate','warn',
     function(){
       db.ref('medvisit/points').set(todosLosPuntos)
@@ -2260,6 +2319,7 @@ function ejecutarActualizarRuta(){
           toast('Ruta actualizada con '+nuevos.length+' puntos');
           closeModal('modalActualizarRuta');
           window._excelData=null;
+          window._excelDayCols=null;
           document.getElementById('tabContent').innerHTML=renderGestionDetalle(uid);
         })
         .catch(function(e){toast('Error: '+e.message,'err');});
