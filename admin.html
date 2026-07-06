@@ -976,7 +976,10 @@ function renderMarketing(){
     +(currentUser.role==='super'?'<th></th>':'')
     +'</tr></thead><tbody>'
     +filtered.map(function(r){
-      var foto=r.foto?'<button class="btn btn-sm btn-outline" onclick="openFoto(\''+r.foto+'\')"><i class="fa-solid fa-image"></i></button>':'-';
+      var foto=r.foto?(r.fotoTipo==='pdf'
+        ?'<button class="btn btn-sm btn-outline" onclick="abrirPdfMarketing(\''+r._fbKey+'\')"><i class="fa-solid fa-file-pdf" style="color:#DC2626;"></i> PDF</button>'
+        :'<button class="btn btn-sm btn-outline" onclick="openFoto(\''+r.foto+'\')"><i class="fa-solid fa-image"></i></button>')
+        :'-';
       var editBtn=currentUser.role==='super'
         ?'<td><button class="btn btn-sm btn-outline" data-key="'+(r._fbKey||'')+'" data-valor="'+((parseFloat(r.valor)||0))+'" onclick="editarValorMarketing(this.dataset.key,this.dataset.valor)"><i class="fa-solid fa-pen"></i></button></td>'
         :'';
@@ -2792,6 +2795,13 @@ function _generarPPTXVisitador(uid){
   }
 
   pptx.writeFile({fileName:'Reporte_'+u.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+today()+'.pptx'});
+}
+
+function abrirPdfMarketing(fbKey){
+  var r=D.marketing.find(function(x){return x._fbKey===fbKey;});
+  if(!r||!r.foto){toast('PDF no disponible','err');return;}
+  var win=window.open();
+  win.document.write('<iframe src="'+r.foto+'" style="width:100%;height:100%;border:none;" frameborder="0"></iframe>');
 }
 
 function editarValorMarketing(fbKey,valorActual){
