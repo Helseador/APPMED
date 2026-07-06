@@ -1278,12 +1278,12 @@ function renderInformes(){
   var html='<div class="card" style="margin-bottom:14px;">'
     +'<div class="section-title" style="margin-bottom:10px;">Rango de fechas</div>'
     +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">'
-    +'<button class="btn btn-sm" style="background:var(--primary-50);color:var(--primary);" onclick="setRptPreset(this.dataset.p)" data-p="hoy">Hoy</button>'
-    +'<button class="btn btn-sm" style="background:var(--primary-50);color:var(--primary);" onclick="setRptPreset(this.dataset.p)" data-p="semana">Esta semana</button>'
-    +'<button class="btn btn-sm" style="background:var(--primary-50);color:var(--primary);" onclick="setRptPreset(this.dataset.p)" data-p="mes">Este mes</button>'
-    +'<button class="btn btn-sm" style="background:var(--primary-50);color:var(--primary);" onclick="setRptPreset(this.dataset.p)" data-p="custom">Personalizado</button>'
+    +'<button class="btn btn-sm rpt-preset" style="background:var(--primary);color:#fff;" onclick="setRptPreset(\'hoy\')" data-p="hoy">Hoy</button>'
+    +'<button class="btn btn-sm rpt-preset btn-outline" onclick="setRptPreset(\'semana\')" data-p="semana">Esta semana</button>'
+    +'<button class="btn btn-sm rpt-preset btn-outline" onclick="setRptPreset(\'mes\')" data-p="mes">Este mes</button>'
+    +'<button class="btn btn-sm rpt-preset btn-outline" onclick="setRptPreset(\'custom\')" data-p="custom"><i class="fa-solid fa-sliders"></i> Personalizado</button>'
     +'</div>'
-    +'<div id="rptCustomDiv" style="display:none;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
+    +'<div id="rptCustomDiv" style="display:none;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
     +'<div><label class="form-label">Desde</label><input class="form-input" type="date" id="rptDesdeInput" onchange="rptDesde=this.value;renderInformesCards()"></div>'
     +'<div><label class="form-label">Hasta</label><input class="form-input" type="date" id="rptHastaInput" onchange="rptHasta=this.value;renderInformesCards()"></div>'
     +'</div>'
@@ -1326,10 +1326,25 @@ function setRptPreset(preset){
   var label='';
   var customDiv=document.getElementById('rptCustomDiv');
   if(customDiv) customDiv.style.display=preset==='custom'?'grid':'none';
+  // Resaltar botón activo
+  document.querySelectorAll('.rpt-preset').forEach(function(b){
+    if(b.dataset.p===preset){
+      b.style.background='var(--primary)';b.style.color='#fff';b.classList.remove('btn-outline');
+    } else {
+      b.style.background='transparent';b.style.color='var(--fg)';b.classList.add('btn-outline');
+    }
+  });
   if(preset==='hoy'){rptDesde=rptHasta=today();label='Hoy';}
   else if(preset==='semana'){var s=new Date(now);s.setDate(now.getDate()-now.getDay()+1);rptDesde=s.toISOString().slice(0,10);rptHasta=today();label='Esta semana';}
   else if(preset==='mes'){rptDesde=today().slice(0,7)+'-01';rptHasta=today();label='Este mes';}
-  else{label='Personalizado';}
+  else {
+    // Personalizado — prellenar si están vacíos
+    var desdeEl=document.getElementById('rptDesdeInput');
+    var hastaEl=document.getElementById('rptHastaInput');
+    if(desdeEl&&!desdeEl.value){var d30=new Date();d30.setDate(d30.getDate()-29);desdeEl.value=d30.toISOString().slice(0,10);rptDesde=desdeEl.value;}
+    if(hastaEl&&!hastaEl.value){hastaEl.value=today();rptHasta=hastaEl.value;}
+    label='Personalizado';
+  }
   var lbl=document.getElementById('rptRangeLabel');if(lbl)lbl.textContent=label;
   renderInformesCards();
 }
