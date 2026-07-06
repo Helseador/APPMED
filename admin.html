@@ -978,7 +978,7 @@ function renderMarketing(){
     +filtered.map(function(r){
       var foto=r.foto?(r.fotoTipo==='pdf'
         ?'<button class="btn btn-sm btn-outline" onclick="abrirPdfMarketing(\''+r._fbKey+'\')"><i class="fa-solid fa-file-pdf" style="color:#DC2626;"></i> PDF</button>'
-        :'<button class="btn btn-sm btn-outline" onclick="openFoto(\''+r.foto+'\')"><i class="fa-solid fa-image"></i></button>')
+        :'<div style="display:flex;gap:4px;"><button class="btn btn-sm btn-outline" onclick="openFoto(\''+r.foto+'\')"><i class="fa-solid fa-image"></i></button><button class="btn btn-sm btn-outline" onclick="descargarFotoMarketing(\''+r._fbKey+'\',\''+fmtDate(r.fecha)+'\')"><i class="fa-solid fa-download"></i></button></div>')
         :'-';
       var editBtn=currentUser.role==='super'
         ?'<td><button class="btn btn-sm btn-outline" data-key="'+(r._fbKey||'')+'" data-valor="'+((parseFloat(r.valor)||0))+'" onclick="editarValorMarketing(this.dataset.key,this.dataset.valor)"><i class="fa-solid fa-pen"></i></button></td>'
@@ -2839,6 +2839,15 @@ function _generarPPTXVisitador(uid){
   }
 
   pptx.writeFile({fileName:'Reporte_'+u.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+today()+'.pptx'});
+}
+
+function descargarFotoMarketing(fbKey,fecha){
+  var r=D.marketing.find(function(x){return x._fbKey===fbKey;});
+  if(!r||!r.foto){toast('Foto no disponible','err');return;}
+  var a=document.createElement('a');
+  a.href=r.foto;
+  a.download='Factura_'+esc(r.lugar||'marketing')+'_'+fecha+'.jpg';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
 
 function abrirPdfMarketing(fbKey){
