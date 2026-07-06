@@ -1318,6 +1318,10 @@ function renderInformes(){
   html+='<div class="card" style="margin-bottom:14px;">'
     +'<div class="section-title" style="margin-bottom:12px;">Cumplimiento por laboratorio</div>'
     +'<div style="position:relative;height:240px;"><canvas id="chartCumplimiento"></canvas></div>'
+    +'</div>'
+    +'<div class="card" style="margin-bottom:14px;">'
+    +'<div class="section-title" style="margin-bottom:12px;">Top 10 puntos más visitados (Colombia)</div>'
+    +'<div style="position:relative;height:320px;"><canvas id="chartTopPuntos"></canvas></div>'
     +'</div>';
   el.innerHTML=html;
   setRptPreset('hoy');
@@ -2647,9 +2651,49 @@ function renderInformesCharts(){
         scales:{y:{beginAtZero:true,max:100,ticks:{callback:function(v){return v+'%';}}}}}
     });
   }
-}
 
-// ── INFORME INDIVIDUAL POR VISITADOR ───────────────────────────
+  // 5. Top 10 puntos más visitados (agrupados por nombre base, Colombia completa)
+  var elTop=document.getElementById('chartTopPuntos');
+  if(elTop){
+    destroyChart('chartTopPuntos');
+    // Agrupar visitas por nombre base del punto (primeras 2 palabras en mayúsculas)
+    var puntoCounts={};
+    visitsInRange.filter(function(v){return v.status==='completed';}).forEach(function(v){
+      var nombre=(v.pointName||v.placeName||'').trim().toUpperCase();
+      if(!nombre) return;
+      // Extraer nombre base: hasta primer número, guion, slash o paréntesis
+      var base=nombre.split(/\s*[\d\-\/\(#@,]/)[0].trim();
+      // Quitar palabras cortas del final (de, del, la, cc, etc.)
+      base=base.replace(/\s+(DE|DEL|LA|LOS|LAS|CC|CAF|CAC|EL)$/,'').trim();
+      if(!base||base.length<3) return;
+      puntoCounts[base]=(puntoCounts[base]||0)+1;
+    });
+    var topPuntos=Object.keys(puntoCounts)
+      .map(function(k){return {name:k,count:puntoCounts[k]};})
+      .sort(function(a,b){return b.count-a.count;})
+      .slice(0,10);
+    if(topPuntos.length){
+      var topColors=['#0303B5','#E2001A','#009036','#F59E0B','#009CDE','#7C3AED','#DB2777','#EA580C','#0891B2','#4F46E5'];
+      _chartInstances['chartTopPuntos']=new Chart(elTop,{
+        type:'bar',
+        data:{
+          labels:topPuntos.map(function(p){return p.name;}),
+          datasets:[{
+            label:'Visitas completadas',
+            data:topPuntos.map(function(p){return p.count;}),
+            backgroundColor:topPuntos.map(function(_,i){return topColors[i%topColors.length];}),
+            borderRadius:6
+          }]
+        },
+        options:{
+          indexAxis:'y',responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{display:false}},
+          scales:{x:{beginAtZero:true,ticks:{precision:0}}}
+        }
+      });
+    }
+  }
+}
 function generarExcelVisitador(uid){
   if(uid&&typeof uid==='object') uid=uid.dataset?uid.dataset.id:uid;
   window._excelPendingUid=uid;
