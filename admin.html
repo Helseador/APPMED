@@ -330,11 +330,18 @@
 
     <div class="form-group">
       <label class="form-label">Periodo</label>
-      <div style="display:flex;gap:8px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-sm" id="infPerSemanal" style="flex:1;background:var(--primary);color:#fff;" onclick="setInfPeriodo('semanal')"><i class="fa-solid fa-calendar-week"></i> Semanal</button>
         <button class="btn btn-sm btn-outline" id="infPerMensual" style="flex:1;" onclick="setInfPeriodo('mensual')"><i class="fa-solid fa-calendar"></i> Mensual</button>
+        <button class="btn btn-sm btn-outline" id="infPerPersonalizado" style="flex:1;" onclick="setInfPeriodo('personalizado')"><i class="fa-solid fa-sliders"></i> Personalizado</button>
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:6px;" id="infPeriodoLabel">Últimos 7 días</div>
+      <div id="infFechasCustom" style="display:none;margin-top:10px;display:none;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div style="flex:1;"><label class="form-label">Desde</label><input class="form-input" type="date" id="infDesdeCustom"></div>
+          <div style="flex:1;"><label class="form-label">Hasta</label><input class="form-input" type="date" id="infHastaCustom"></div>
+        </div>
+      </div>
     </div>
 
     <div class="modal-actions">
@@ -2824,29 +2831,48 @@ function setInfPeriodo(periodo){
   _infPeriodo=periodo;
   var bSem=document.getElementById('infPerSemanal');
   var bMes=document.getElementById('infPerMensual');
+  var bPer=document.getElementById('infPerPersonalizado');
   var lbl=document.getElementById('infPeriodoLabel');
+  var custom=document.getElementById('infFechasCustom');
+  [bSem,bMes,bPer].forEach(function(b){if(b){b.style.background='transparent';b.style.color='var(--fg)';b.classList.add('btn-outline');}});
   if(periodo==='semanal'){
     bSem.style.background='var(--primary)';bSem.style.color='#fff';bSem.classList.remove('btn-outline');
-    bMes.style.background='transparent';bMes.style.color='var(--fg)';bMes.classList.add('btn-outline');
     lbl.textContent='Últimos 7 días';
-  } else {
+    if(custom) custom.style.display='none';
+  } else if(periodo==='mensual'){
     bMes.style.background='var(--primary)';bMes.style.color='#fff';bMes.classList.remove('btn-outline');
-    bSem.style.background='transparent';bSem.style.color='var(--fg)';bSem.classList.add('btn-outline');
     lbl.textContent='Últimos 30 días';
+    if(custom) custom.style.display='none';
+  } else {
+    bPer.style.background='var(--primary)';bPer.style.color='#fff';bPer.classList.remove('btn-outline');
+    lbl.textContent='Selecciona el rango';
+    if(custom) custom.style.display='block';
+    // Prellenar con mes actual
+    var hoy=today();
+    var d=new Date();d.setDate(1);
+    var desdeEl=document.getElementById('infDesdeCustom');
+    var hastaEl=document.getElementById('infHastaCustom');
+    if(desdeEl&&!desdeEl.value) desdeEl.value=d.toISOString().slice(0,10);
+    if(hastaEl&&!hastaEl.value) hastaEl.value=hoy;
   }
 }
 
 function ejecutarInforme(formato){
-  // Configurar rango de fechas según periodo
   var hoy=today();
-  var d=new Date();
   if(_infPeriodo==='semanal'){
-    d.setDate(d.getDate()-6);
+    var d=new Date();d.setDate(d.getDate()-6);
+    rptDesde=d.toISOString().slice(0,10);
+    rptHasta=hoy;
+  } else if(_infPeriodo==='mensual'){
+    var d=new Date();d.setDate(d.getDate()-29);
+    rptDesde=d.toISOString().slice(0,10);
+    rptHasta=hoy;
   } else {
-    d.setDate(d.getDate()-29);
+    rptDesde=document.getElementById('infDesdeCustom').value;
+    rptHasta=document.getElementById('infHastaCustom').value;
+    if(!rptDesde||!rptHasta){toast('Selecciona las fechas del rango','err');return;}
+    if(rptDesde>rptHasta){toast('La fecha inicial no puede ser mayor que la final','err');return;}
   }
-  rptDesde=d.toISOString().slice(0,10);
-  rptHasta=hoy;
 
   if(_infTipo==='general'){
     var labId=currentLabId||null;
