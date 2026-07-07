@@ -981,7 +981,8 @@ function renderMarketing(){
         :'<div style="display:flex;gap:4px;"><button class="btn btn-sm btn-outline" onclick="openFoto(\''+r.foto+'\')"><i class="fa-solid fa-image"></i></button><button class="btn btn-sm btn-outline" onclick="descargarFotoMarketing(\''+r._fbKey+'\',\''+fmtDate(r.fecha)+'\')"><i class="fa-solid fa-download"></i></button></div>')
         :'-';
       var editBtn=currentUser.role==='super'
-        ?'<td><button class="btn btn-sm btn-outline" data-key="'+(r._fbKey||'')+'" data-valor="'+((parseFloat(r.valor)||0))+'" onclick="editarValorMarketing(this.dataset.key,this.dataset.valor)"><i class="fa-solid fa-pen"></i></button></td>'
+        ?'<td><button class="btn btn-sm btn-outline" style="margin-right:4px;" data-key="'+(r._fbKey||'')+'" data-valor="'+((parseFloat(r.valor)||0))+'" onclick="editarValorMarketing(this.dataset.key,this.dataset.valor)"><i class="fa-solid fa-pen"></i></button>'
+        +'<button class="btn btn-sm btn-outline" data-key="'+(r._fbKey||'')+'" data-fecha="'+(r.fecha||'')+'" onclick="editarFechaMarketing(this.dataset.key,this.dataset.fecha)"><i class="fa-solid fa-calendar-pen"></i></button></td>'
         :'';
       return '<tr>'
         +'<td>'+fmtDate(r.fecha)+'</td>'
@@ -2841,6 +2842,16 @@ function _generarPPTXVisitador(uid){
   pptx.writeFile({fileName:'Reporte_'+u.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+today()+'.pptx'});
 }
 
+function editarFechaMarketing(fbKey,fechaActual){
+  if(currentUser.role!=='super'){toast('Solo el superadmin puede editar fechas','err');return;}
+  if(!fbKey){toast('No se puede identificar el registro','err');return;}
+  var nueva=prompt('Nueva fecha (YYYY-MM-DD):',fechaActual);
+  if(nueva===null) return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(nueva)){toast('Formato inválido. Usa YYYY-MM-DD','err');return;}
+  db.ref('medvisit/marketing/'+fbKey+'/fecha').set(nueva)
+    .then(function(){toast('Fecha actualizada');renderCurrentTab();})
+    .catch(function(e){toast('Error: '+e.message,'err');});
+}
 function descargarFotoMarketing(fbKey,fecha){
   var r=D.marketing.find(function(x){return x._fbKey===fbKey;});
   if(!r||!r.foto){toast('Foto no disponible','err');return;}
