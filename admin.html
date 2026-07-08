@@ -563,19 +563,33 @@ function renderCurrentTab(){
 
 // ── TAB VISITAS ───────────────────────────────────────────────
 function renderVisitas(){
+  if(typeof window._visSubTab==='undefined') window._visSubTab='general';
+
+  var html='<div style="display:flex;gap:8px;margin-bottom:16px;">'
+    +'<button class="btn btn-sm" style="flex:1;'+(window._visSubTab==='general'?'background:var(--primary);color:#fff;':'background:var(--bg);color:var(--fg);border:1.5px solid var(--border);')+'" onclick="window._visSubTab=\'general\';renderCurrentTab()"><i class="fa-solid fa-route"></i> Visitas generales</button>'
+    +'<button class="btn btn-sm" style="flex:1;'+(window._visSubTab==='profesional'?'background:#7C3AED;color:#fff;':'background:var(--bg);color:var(--fg);border:1.5px solid var(--border);')+'" onclick="window._visSubTab=\'profesional\';renderCurrentTab()"><i class="fa-solid fa-user-doctor"></i> Visitas a profesionales</button>'
+    +'</div>';
+
+  if(window._visSubTab==='profesional'){
+    html+=renderVisitasProfesionales();
+  } else {
+    html+=renderVisitasGenerales();
+  }
+  return html;
+}
+
+function renderVisitasGenerales(){
   var visits=D.visits.filter(function(v){
     if(currentLabId) return v.labId===currentLabId;
     return true;
   });
-  // Stats hoy
+  var visits=visits.filter(function(v){return v.type!=='profesional';});
   var hoy=today();
   var hoyVisitas=visits.filter(function(v){return v.date===hoy;});
   var completadas=hoyVisitas.filter(function(v){return v.status==='completed';}).length;
-  var enCurso=hoyVisitas.filter(function(v){return v.status==='in-progress';}).length;
 
   var html='<div class="stats-grid">'
     +'<div class="stat-card"><div class="stat-num">'+completadas+'</div><div class="stat-label">Completadas hoy</div></div>'
-    
     +'<div class="stat-card"><div class="stat-num">'+hoyVisitas.length+'</div><div class="stat-label">Iniciadas hoy</div></div>'
     +'<div class="stat-card"><div class="stat-num">'+visits.length+'</div><div class="stat-label">Total registros</div></div>'
     +'</div>';
@@ -625,7 +639,88 @@ function renderVisitas(){
       var estado=v.status==='completed'?'<span class="badge badge-ok">Completada</span>':v.status==='in-progress'?'<span class="badge badge-warn">En curso</span>':'<span class="badge badge-info">Pendiente</span>';
       var foto=v.photo?'<button class="btn btn-sm btn-outline" onclick="openFoto(\''+v.photo+'\')"><i class="fa-solid fa-image"></i></button>':'-';
       var ubicacion=(v.lat&&v.lng)?'<a href="https://www.google.com/maps?q='+v.lat+','+v.lng+'" target="_blank" class="btn btn-sm btn-outline"><i class="fa-solid fa-location-dot"></i></a>':'-';
-      return '<tr><td><b>'+esc(visName)+'</b></td><td>'+esc(labName)+'</td><td>'+esc(punto)+'</td><td>'+esc(v.jefe||'-')+'</td><td>'+(v.notes?'<span title="'+esc(v.notes)+'" style="cursor:help;">'+esc(v.notes.substring(0,30))+(v.notes.length>30?'...':'')+'</span>':'-')+'</td><td>'+fmtDate(v.date)+'</td><td>'+estado+'</td><td>'+ubicacion+'</td><td>'+foto+'</td></tr>';
+      return '<tr><td><b>'+esc(visName)+'</b></td><td>'+esc(labName)+'</td><td>'+esc(punto)+'</td><td>'+esc(v.jefe||'-')+'</td><td>'+(v.notes?'<span title="'+esc(v.notes)+'" style="cursor:help;">'+esc(v.notes.substring(0,30))+(v.notes.length>30?'...':'')+'</span>':'-')+'</td><td>'+fmtDate(v.date)+(v.completedAt?' <span style="font-size:11px;color:var(--muted);">'+v.completedAt.substr(11,5)+'</span>':'')+'</td><td>'+estado+'</td><td>'+ubicacion+'</td><td>'+foto+'</td></tr>';
+    }).join('')
+    +'</tbody></table></div>';
+
+  return html;
+}
+
+function renderVisitasProfesionales(){
+  // Carga historial completo desde Firebase para visitas a profesionales
+  if(typeof window._profVisits==='undefined') window._profVisits=null;
+  if(typeof window._profLoading==='undefined') window._profLoading=false;
+
+  // Primero usar lo que ya está en D.visits
+  var enMemoria=D.visits.filter(function(v){
+    return v.type==='profesional'&&(!currentLabId||v.labId===currentLabId);
+  });
+
+  // Si no hay en memoria, cargar desde Firebase
+  if(!enMemoria.length&&!window._profLoading){
+    window._profLoading=true;
+    db.ref('medvisit/visits').orderByChild('type').equalTo('profesional').once('value',function(snap){
+      var all=toArray(snap.val()).filter(function(v){
+        return !currentLabId||v.labId===currentLabId;
+      });
+      window._profVisits=all;
+      window._profLoading=false;
+      renderCurrentTab();
+    });
+    return '<div class="loading"><div class="spinner"></div><p>Cargando visitas a profesionales...</p></div>';
+  }
+
+  var prof=window._profVisits||enMemoria;
+  prof=prof.filter(function(v){return v.type==='profesional';});
+  prof.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+
+  // Filtros
+  if(typeof window._profFiltros==='undefined') window._profFiltros={vis:'',desde:'',hasta:''};
+  var html='<div class="stats-grid">'
+    +'<div class="stat-card"><div class="stat-num">'+prof.length+'</div><div class="stat-label">Total histórico</div></div>'
+    +'<div class="stat-card"><div class="stat-num">'+prof.filter(function(v){return v.date===today();}).length+'</div><div class="stat-label">Hoy</div></div>'
+    +'<div class="stat-card"><div class="stat-num">'+prof.filter(function(v){var d=new Date();d.setDate(d.getDate()-6);return v.date>=d.toISOString().slice(0,10);}).length+'</div><div class="stat-label">Esta semana</div></div>'
+    +'</div>';
+
+  html+='<div class="filters">'
+    +'<input type="date" id="pfDesde" value="'+window._profFiltros.desde+'" onchange="window._profFiltros.desde=this.value;renderCurrentTab()">'
+    +'<input type="date" id="pfHasta" value="'+window._profFiltros.hasta+'" onchange="window._profFiltros.hasta=this.value;renderCurrentTab()">'
+    +'<select id="pfVis" onchange="window._profFiltros.vis=this.value;renderCurrentTab()"><option value="">Todos los visitadores</option>'
+    +D.users.filter(function(u){return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId);})
+    .map(function(u){return '<option value="'+u.id+'"'+(u.id===window._profFiltros.vis?' selected':'')+'>'+esc(u.name)+'</option>';}).join('')
+    +'</select>'
+    +'<button class="btn btn-sm btn-outline" onclick="window._profFiltros={vis:\'\',desde:\'\',hasta:\'\'};renderCurrentTab()">Limpiar</button>'
+    +'<button class="btn btn-sm btn-outline" onclick="window._profVisits=null;window._profLoading=false;renderCurrentTab()"><i class="fa-solid fa-rotate"></i> Recargar</button>'
+    +'</div>';
+
+  var filtradas=prof.filter(function(v){
+    if(window._profFiltros.vis&&(v.visitorId||v.userId)!==window._profFiltros.vis) return false;
+    if(window._profFiltros.desde&&v.date<window._profFiltros.desde) return false;
+    if(window._profFiltros.hasta&&v.date>window._profFiltros.hasta) return false;
+    return true;
+  });
+
+  if(!filtradas.length) return html+'<div class="empty"><i class="fa-solid fa-user-doctor"></i><p>Sin visitas a profesionales</p></div>';
+
+  html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
+    +'<th>Visitador</th><th>Lab</th><th>Profesional</th><th>Especialidad</th><th>Teléfono</th><th>Dirección</th><th>Obsequio</th><th>Fecha</th><th>Firma</th><th>Foto</th>'
+    +'</tr></thead><tbody>'
+    +filtradas.map(function(v){
+      var visName=getUserName(v.visitorId||v.userId);
+      var firma=v.firma?'<span class="badge badge-ok"><i class="fa-solid fa-pen-nib"></i> Sí</span>':'<span class="badge badge-err">No</span>';
+      var foto=v.photo?'<button class="btn btn-sm btn-outline" onclick="openFoto(\''+v.photo+'\')"><i class="fa-solid fa-image"></i></button>':'-';
+      return '<tr>'
+        +'<td><b>'+esc(visName)+'</b></td>'
+        +'<td>'+esc(getLabName(v.labId))+'</td>'
+        +'<td>'+esc(v.placeName||'-')+'</td>'
+        +'<td>'+esc(v.speciality||'-')+'</td>'
+        +'<td>'+esc(v.phone||'-')+'</td>'
+        +'<td style="font-size:11px;">'+esc(v.address||'-')+'</td>'
+        +'<td>'+(v.gift?'<span class="badge badge-info" title="'+esc(v.gift)+'">Sí</span>':'-')+'</td>'
+        +'<td>'+fmtDate(v.date)+'</td>'
+        +'<td>'+firma+'</td>'
+        +'<td>'+foto+'</td>'
+        +'</tr>';
     }).join('')
     +'</tbody></table></div>';
 
@@ -2110,6 +2205,7 @@ function renderGestionLista(){
         +"<div style=\"flex:1;\"><div style=\"font-weight:700;font-size:13px;\">"+esc(u.name)+"</div>"
         +"<div style=\"font-size:11px;color:var(--muted);\">"+"@"+esc(u.username)+" · "+getRoleLabel(u.role)+"</div></div>"
         +(activo?"<span class=\"badge badge-ok\">Activo</span>":"<span class=\"badge badge-err\">Inactivo</span>")
+        +(isSuper?"<button class=\"action-btn action-btn-danger\" style=\"margin-left:6px;\" data-uid=\""+u.id+"\" onclick=\"event.stopPropagation();eliminarUsuario(this.dataset.uid)\"><i class=\"fa-solid fa-trash\"></i></button>":"")
         +"<i class=\"fa-solid fa-chevron-right\" style=\"color:var(--muted);font-size:11px;\"></i></div>";
     });
     html+="</div>";
@@ -2128,6 +2224,7 @@ function renderGestionLista(){
         +"<div style=\"font-size:11px;color:var(--muted);\">"+"@"+esc(u.username)+" · <span style=\"color:"+lab.color+";font-weight:600;\">"+esc(lab.name)+"</span> · "+pts+" pts</div></div>"
         +(activo?"<span class=\"badge badge-ok\">Activo</span>":"<span class=\"badge badge-err\">Inactivo</span>")
         +(u.freeVisit?"<span class=\"badge\" style=\"background:#EDE9FE;color:#7C3AED;margin-left:4px;\">Libre</span>":"")
+        +(isSuper?"<button class=\"action-btn action-btn-danger\" style=\"margin-left:6px;\" data-uid=\""+u.id+"\" onclick=\"event.stopPropagation();eliminarUsuario(this.dataset.uid)\"><i class=\"fa-solid fa-trash\"></i></button>":"")
         +"<i class=\"fa-solid fa-chevron-right\" style=\"color:var(--muted);font-size:11px;\"></i></div>";
     });
     html+="</div>";
@@ -2136,6 +2233,31 @@ function renderGestionLista(){
   return html;
 }
 
+function eliminarUsuario(uid){
+  if(currentUser.role!=='super'){toast('Solo el superadmin puede eliminar usuarios','err');return;}
+  var u=D.users.find(function(x){return x.id===uid;});
+  if(!u){toast('Usuario no encontrado','err');return;}
+  showConfirm(
+    'Eliminar usuario',
+    '¿Eliminar a '+u.name+'? Se borrarán también sus puntos asignados. Esta acción no se puede deshacer.',
+    'fa-trash','danger',
+    function(){
+      // Eliminar puntos del usuario
+      var ptsFiltrados=D.points.filter(function(p){return p.assignedTo!==uid;});
+      // Eliminar usuario
+      var usersFiltrados=D.users.filter(function(x){return x.id!==uid;});
+      db.ref('medvisit/users').set(usersFiltrados)
+        .then(function(){return db.ref('medvisit/points').set(ptsFiltrados);})
+        .then(function(){
+          D.users=usersFiltrados;
+          D.points=ptsFiltrados;
+          toast('Usuario eliminado');
+          renderCurrentTab();
+        })
+        .catch(function(e){toast('Error: '+e.message,'err');});
+    }
+  );
+}
 function abrirGestionDetalle(uid){
   _gestionView="detalle";_gestionUserId=uid;
   document.getElementById("tabContent").innerHTML=renderGestionDetalle(uid);
