@@ -2186,7 +2186,8 @@ function renderGestionLista(){
       +"<div class=\"table-wrap\"><table class=\"data-table\"><thead><tr><th>Lab</th><th>Color</th><th>Usuarios</th><th>Acciones</th></tr></thead><tbody>"
       +LABS.map(function(l){
         var m=D.users.filter(function(u){return u.labId===l.id;}).length;
-        return "<tr><td><div style=\"display:flex;align-items:center;gap:8px;\"><div style=\"width:14px;height:14px;border-radius:4px;background:"+l.color+";flex-shrink:0;\"></div><b>"+esc(l.name)+"</b></div></td><td><span style=\"font-size:11px;color:var(--muted);\">"+l.color+"</span></td><td>"+m+"</td><td><button class=\"action-btn action-btn-edit\" onclick=\"editarLab('"+l.id+"')\"><i class=\"fa-solid fa-pen\"></i> Editar</button></td></tr>";
+        var isBase=BASE_LABS.some(function(b){return b.id===l.id;});
+        return "<tr><td><div style=\"display:flex;align-items:center;gap:8px;\"><div style=\"width:14px;height:14px;border-radius:4px;background:"+l.color+";flex-shrink:0;\"></div><b>"+esc(l.name)+"</b></div></td><td><span style=\"font-size:11px;color:var(--muted);\">"+l.color+"</span></td><td>"+m+"</td><td style=\"display:flex;gap:6px;\"><button class=\"action-btn action-btn-edit\" onclick=\"editarLab('"+l.id+"')\"><i class=\"fa-solid fa-pen\"></i> Editar</button>"+(isBase||currentUser.role!=='super'?"":"<button class=\"action-btn action-btn-danger\" onclick=\"eliminarLab('"+l.id+"')\"><i class=\"fa-solid fa-trash\"></i></button>")+"</td></tr>";
       }).join("")+"</tbody></table></div></div>";
   }
   var users=isSuper?D.users:D.users.filter(function(u){return u.labId===currentLabId;});
@@ -2644,6 +2645,24 @@ function selectLabColor(color,el){
   document.querySelectorAll('.color-swatch').forEach(function(s){s.classList.remove('selected');});
   if(el) el.classList.add('selected');
 }
+function eliminarLab(labId){
+  if(currentUser.role!=='super'){toast('Solo el superadmin puede eliminar laboratorios','err');return;}
+  var l=LABS.find(function(x){return x.id===labId;});
+  if(!l){toast('Lab no encontrado','err');return;}
+  if(BASE_LABS.some(function(b){return b.id===labId;})){toast('No se pueden eliminar los laboratorios base','err');return;}
+  var usersConLab=D.users.filter(function(u){return u.labId===labId;}).length;
+  if(usersConLab>0){toast('No se puede eliminar: hay '+usersConLab+' usuario(s) asignado(s) a este lab','err');return;}
+  showConfirm('Eliminar laboratorio','¿Eliminar el laboratorio "'+l.name+'"? Esta acción no se puede deshacer.','fa-trash','danger',function(){
+    db.ref('medvisit/labs').once('value',function(snap){
+      var items=toArray(snap.val()||[]);
+      var nuevos=items.filter(function(x){return x.id!==labId;});
+      db.ref('medvisit/labs').set(nuevos.length?nuevos:null)
+        .then(function(){toast('Laboratorio eliminado');renderCurrentTab();})
+        .catch(function(e){toast('Error: '+e.message,'err');});
+    });
+  });
+}
+
 function saveLab(){
   var id=document.getElementById('ml-id').value;
   var name=document.getElementById('ml-name').value.trim();
