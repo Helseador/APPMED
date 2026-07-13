@@ -3064,10 +3064,10 @@ function generarLegalizacion(){
   if(!desde||!hasta){toast('Selecciona el rango de fechas','err');return;}
   var u=D.users.find(function(x){return x.id===uid;});
   if(!u){toast('Gestor no encontrado','err');return;}
-  if(!window._db){toast('Sin conexión a Firebase','err');return;}
+  if(!db){toast('Sin conexión a Firebase','err');return;}
   var btn=document.querySelector('#modalLegalizacion .btn-primary');
   if(btn){btn.disabled=true;btn.innerHTML='<i class="spin fa-solid fa-circle-notch"></i> Generando...';}
-  window._db.ref('medvisit/marketing').orderByChild('userId').equalTo(uid).once('value',function(snap){
+  db.ref('medvisit/marketing').orderByChild('userId').equalTo(uid).once('value',function(snap){
     var items=[];
     snap.forEach(function(c){var r=c.val();if(r&&r.fecha>=desde&&r.fecha<=hasta) items.push(r);});
     items.sort(function(a,b){return a.fecha.localeCompare(b.fecha);});
