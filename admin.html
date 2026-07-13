@@ -1062,6 +1062,7 @@ function renderMarketing(){
   // Botones de exportar Excel
   html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">'
     +'<button class="btn btn-success btn-sm" onclick="exportarExcelMarketing()"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>'
+    +'<button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="abrirModalLegalizacion()"><i class="fa-solid fa-file-invoice"></i> Formato legalización</button>'
     +'</div>';
 
   if(!filtered.length) return html+'<div class="empty"><i class="fa-solid fa-receipt"></i><p>Sin registros</p></div>';
@@ -3024,6 +3025,120 @@ function editarValorMarketing(fbKey,valorActual){
 
 var _infTipo='general';
 var _infPeriodo='semanal';
+
+// ── FORMATO LEGALIZACIÓN MARKETING ────────────────────────────
+function abrirModalLegalizacion(){
+  var modal=document.getElementById('modalLegalizacion');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='modalLegalizacion';
+    modal.className='modal-overlay';
+    modal.innerHTML='<div class="modal-box">'
+      +'<div class="modal-title"><i class="fa-solid fa-file-invoice" style="color:#7C3AED;margin-right:8px;"></i>Formato legalización marketing</div>'
+      +'<div class="form-group"><label class="form-label">Gestor</label><select class="form-input" id="leg-gestor"><option value="">-- Selecciona --</option>'
+      +D.users.filter(function(u){return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId);})
+        .map(function(u){return '<option value="'+u.id+'">'+esc(u.name)+'</option>';}).join('')
+      +'</select></div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" class="form-group">'
+      +'<div><label class="form-label">Desde</label><input class="form-input" type="date" id="leg-desde"></div>'
+      +'<div><label class="form-label">Hasta</label><input class="form-input" type="date" id="leg-hasta"></div>'
+      +'</div>'
+      +'<div class="modal-actions">'
+      +'<button class="btn btn-outline" onclick="closeModal(\'modalLegalizacion\')">Cancelar</button>'
+      +'<button class="btn btn-primary" style="background:#7C3AED;" onclick="generarLegalizacion()"><i class="fa-solid fa-download"></i> Generar</button>'
+      +'</div></div>';
+    document.body.appendChild(modal);
+  }
+  var hoy=today();
+  var d30=new Date();d30.setDate(d30.getDate()-29);
+  document.getElementById('leg-desde').value=rptDesde&&rptDesde!==hoy?rptDesde:d30.toISOString().slice(0,10);
+  document.getElementById('leg-hasta').value=rptHasta||hoy;
+  openModal('modalLegalizacion');
+}
+
+function generarLegalizacion(){
+  var uid=document.getElementById('leg-gestor').value;
+  var desde=document.getElementById('leg-desde').value;
+  var hasta=document.getElementById('leg-hasta').value;
+  if(!uid){toast('Selecciona un gestor','err');return;}
+  if(!desde||!hasta){toast('Selecciona el rango de fechas','err');return;}
+  var u=D.users.find(function(x){return x.id===uid;});
+  if(!u){toast('Gestor no encontrado','err');return;}
+  if(!window._db){toast('Sin conexión a Firebase','err');return;}
+  var btn=document.querySelector('#modalLegalizacion .btn-primary');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="spin fa-solid fa-circle-notch"></i> Generando...';}
+  window._db.ref('medvisit/marketing').orderByChild('userId').equalTo(uid).once('value',function(snap){
+    var items=[];
+    snap.forEach(function(c){var r=c.val();if(r&&r.fecha>=desde&&r.fecha<=hasta) items.push(r);});
+    items.sort(function(a,b){return a.fecha.localeCompare(b.fecha);});
+    if(!items.length){toast('No hay facturas en ese periodo','err');if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-download"></i> Generar';}return;}
+    _construirExcelLegalizacion(u,items,desde,hasta);
+    closeModal('modalLegalizacion');
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-download"></i> Generar';}
+  });
+}
+
+function _construirExcelLegalizacion(u,items,desde,hasta){
+  if(typeof XLSX==='undefined'){
+    var s=document.createElement('script');
+    s.src='https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js';
+    s.onload=function(){_construirExcelLegalizacion(u,items,desde,hasta);};
+    document.head.appendChild(s);
+    return;
+  }
+  var wb=XLSX.utils.book_new();
+  var ws={};
+  var M=XLSX.utils.encode_cell;
+  var total=items.reduce(function(s,r){return s+(parseFloat(r.valor)||0);},0);
+  var numFmt='$#,##0.00';
+  function sc(r,c,v){var ref=M({r:r,c:c});ws[ref]={v:v,t:typeof v==='number'?'n':'s'};}
+  function scn(r,c,v){sc(r,c,v);ws[M({r:r,c:c})].z=numFmt;}
+  // Encabezado
+  sc(0,0,'GRUPO HELSE S.A.S');sc(0,1,'');sc(0,2,'');sc(0,3,'');
+  sc(1,0,'901,401,880-4');sc(1,1,'');sc(1,2,'');sc(1,3,'');
+  sc(2,0,'FORMATO AUTORIZACIÓN PRESUPUESTO');sc(2,1,'');sc(2,2,'');sc(2,3,'');
+  sc(3,0,'');
+  // Datos colaborador
+  sc(4,0,'Nombre del colaborador');sc(4,1,u.name.toUpperCase());sc(4,2,'CONCEPTO LEGALIZACIÓN');sc(4,3,'');
+  sc(5,0,'Cargo');sc(5,1,'GESTOR FARMACEUTICO');sc(5,2,'MARKETING');sc(5,3,'');
+  sc(6,0,'Ciudad de origen');sc(6,1,'');sc(6,2,'VALOR DE REEMBOLSO');scn(6,3,total);
+  sc(7,0,'Fecha de salida');sc(7,1,'');sc(7,2,'');sc(7,3,'');
+  sc(8,0,'Fecha de regreso');sc(8,1,'');sc(8,2,'');sc(8,3,'');
+  sc(9,0,'');
+  // Detalle
+  sc(10,0,'DETALLE DE GASTOS');sc(10,1,'');sc(10,2,'');sc(10,3,'');
+  sc(11,0,'Fecha');sc(11,1,'Concepto del gasto');sc(11,2,'Valor ($)');sc(11,3,'Soporte adjunto (sí/no)');
+  var MAX=Math.max(items.length,12);
+  for(var i=0;i<MAX;i++){
+    var row=12+i;
+    if(i<items.length){
+      var g=items[i];
+      var fp=g.fecha.split('-');
+      sc(row,0,fp[2]+'/'+fp[1]+'/'+fp[0]);
+      sc(row,1,(g.lugar||g.concepto||'').toUpperCase());
+      scn(row,2,parseFloat(g.valor)||0);
+      sc(row,3,'SI');
+    } else {sc(row,0,'');sc(row,1,'');sc(row,2,'');sc(row,3,'');}
+  }
+  var rTot=12+MAX;
+  sc(rTot,0,'');sc(rTot,1,'TOTAL GASTOS');scn(rTot,2,total);sc(rTot,3,'');
+  sc(rTot+2,0,'Total solicitado para reembolso');scn(rTot+2,1,total);sc(rTot+2,2,'');sc(rTot+2,3,'');
+  sc(rTot+3,0,'Observaciones');
+  for(var oi=rTot+3;oi<=rTot+7;oi++) for(var oc=1;oc<=3;oc++) sc(oi,oc,'');
+  var rF=rTot+9;
+  sc(rF,0,'Firma del colaborador');sc(rF,1,'');sc(rF,2,'Aprobado por (jefe directo)');sc(rF,3,'');
+  sc(rF+1,0,'Fecha');sc(rF+1,1,'');sc(rF+1,2,'Fecha');sc(rF+1,3,'');
+  sc(rF+3,0,'Periodo: '+desde+' al '+hasta);
+  ws['!merges']=[
+    {s:{r:0,c:0},e:{r:0,c:3}},{s:{r:1,c:0},e:{r:1,c:3}},{s:{r:2,c:0},e:{r:2,c:3}},
+    {s:{r:10,c:0},e:{r:10,c:3}},{s:{r:rF+3,c:0},e:{r:rF+3,c:3}}
+  ];
+  ws['!cols']=[{wch:22},{wch:30},{wch:18},{wch:24}];
+  ws['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:rF+3,c:3}});
+  XLSX.utils.book_append_sheet(wb,ws,'Legalizacion');
+  XLSX.writeFile(wb,'Legalizacion_'+u.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+desde+'_'+hasta+'.xlsx');
+  toast('Formato generado');
+}
 
 function abrirModalInforme(){
   // Poblar visitadores
