@@ -308,7 +308,7 @@
         <img id="vp-preview" class="photo-preview" style="display:none;">
       </div>
       <div class="form-group">
-        <label class="form-label">Firma del profesional * <span style="font-size:10px;color:var(--muted);text-transform:none;font-weight:400;">(obligatoria)</span></label>
+        <label class="form-label">Firma del profesional <span style="font-size:10px;color:var(--muted);text-transform:none;font-weight:400;">(opcional)</span></label>
         <canvas id="vp-firmaCanvas" class="firma-canvas" width="600" height="140"></canvas>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
           <span style="font-size:11px;color:var(--muted);">El medico firma aqui con el dedo</span>
@@ -319,7 +319,7 @@
       <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="vp-notas" placeholder="Temas tratados..."></textarea></div>
       <div style="display:flex;gap:10px;margin-top:12px;">
         <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalNuevaVisita')">Cancelar</button>
-        <button class="btn btn-success" style="flex:1;" id="btnGuardarProf" onclick="guardarVisitaProfesional()" disabled><i class="fa-solid fa-check"></i> Guardar</button>
+        <button class="btn btn-success" style="flex:1;" id="btnGuardarProf" onclick="guardarVisitaProfesional()"><i class="fa-solid fa-check"></i> Guardar</button>
       </div>
     </div>
   </div>
@@ -1228,7 +1228,6 @@ function guardarVisitaProfesional(){
   var tel=document.getElementById('vp-telefono').value.trim();
   var dir=document.getElementById('vp-direccion').value.trim();
   if(!nombre||!tel||!dir){toast('Completa los campos obligatorios','err');return;}
-  if(!_profFirmaActiva){toast('La firma es obligatoria','err');return;}
   if(!_visitaFotoProf){toast('La foto es obligatoria','err');return;}
   var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentUser.labId,date:today(),status:'completed',completedAt:new Date().toISOString(),type:'profesional',pointName:document.getElementById('vp-punto').value.trim(),placeName:nombre,speciality:document.getElementById('vp-especialidad').value.trim(),phone:tel,address:dir,gift:document.getElementById('vp-toggleObsequio').checked?document.getElementById('vp-obsequio').value.trim():'',notes:document.getElementById('vp-notas').value.trim(),photo:_visitaFotoProf,firma:_profFirmaCanvas?_profFirmaCanvas.toDataURL('image/png'):null};
   if(_visitaGps){v.lat=_visitaGps.lat;v.lng=_visitaGps.lng;}
