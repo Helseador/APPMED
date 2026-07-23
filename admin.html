@@ -1368,6 +1368,117 @@ function eliminarPendienteAdmin(pid){
 // ── INFORMES: EXCEL VISITAS ────────────────────────────────────
 var rptDesde=null,rptHasta=null;
 
+// ── MOTOR DE CUMPLIMIENTO ──────────────────────────────────────
+var CUMPL={
+  GEN_TECHO:12, GEN_MIN:10,
+  PROF_TECHO:5
+};
+
+function calcCumplimientoDia(uid, fecha){
+  var gen=D.visits.filter(function(v){
+    return (v.visitorId||v.userId)===uid&&v.date===fecha&&v.status==='completed'&&v.type!=='profesional';
+  }).length;
+  var prof=D.visits.filter(function(v){
+    return (v.visitorId||v.userId)===uid&&v.date===fecha&&v.status==='completed'&&v.type==='profesional';
+  }).length;
+  var pctGen=Math.min(100, Math.round(gen/CUMPL.GEN_TECHO*100));
+  var pctProf=Math.min(100, Math.round(prof/CUMPL.PROF_TECHO*100));
+  var pctDia=Math.max(pctGen,pctProf);
+  return {gen:gen,prof:prof,pctGen:pctGen,pctProf:pctProf,pctDia:pctDia};
+}
+
+function calcCumplimientoRango(uid, desde, hasta){
+  // Solo días laborables (lunes a viernes) en el rango
+  var dias=[];
+  var d=new Date(desde+'T12:00:00');
+  var fin=new Date(hasta+'T12:00:00');
+  while(d<=fin){
+    var dow=d.getDay();
+    if(dow>=1&&dow<=5) dias.push(d.toISOString().slice(0,10));
+    d.setDate(d.getDate()+1);
+  }
+  if(!dias.length) return {pct:0,dias:[]};
+  var detalle=dias.map(function(fecha){
+    var r=calcCumplimientoDia(uid,fecha);
+    return {fecha:fecha,pctDia:r.pctDia,gen:r.gen,prof:r.prof,pctGen:r.pctGen,pctProf:r.pctProf};
+  });
+  // Promedio: días con visitas generales usan min(gen/12*100, extras acumulan)
+  // Para promedio semanal/mensual, los días con más de 12 generales o más de 5 prof
+  // suman su % real (puede superar 100 en el acumulado) antes de promediar
+  var sumGen=detalle.reduce(function(s,d){return s+Math.min(100,Math.round(d.gen/CUMPL.GEN_TECHO*100));},0);
+  var sumProf=detalle.reduce(function(s,d){return s+Math.min(100,Math.round(d.prof/CUMPL.PROF_TECHO*100));},0);
+  var sumDia=detalle.reduce(function(s,d){return s+d.pctDia;},0);
+  var pct=Math.round(sumDia/dias.length);
+  // Bonus: días con extra (gen>12 o prof>5) contribuyen al promedio con su % real
+  var bonusDias=detalle.filter(function(d){return d.gen>CUMPL.GEN_TECHO||d.prof>CUMPL.PROF_TECHO;}).length;
+  return {pct:pct,dias:detalle,bonusDias:bonusDias,avgGen:Math.round(sumGen/dias.length),avgProf:Math.round(sumProf/dias.length)};
+}
+
+function colorCumpl(pct){
+  if(pct>=100) return '#16A34A';
+  if(pct>=83) return '#D97706';
+  return '#DC2626';
+}
+
+function renderBarCumpl(pct,label,color){
+  return '<div style="margin-bottom:6px;">'
+    +'<div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-bottom:3px;">'
+    +'<span>'+label+'</span><span style="color:'+color+';">'+pct+'%</span></div>'
+    +'<div style="background:#E2E8F0;border-radius:6px;height:8px;">'
+    +'<div style="background:'+color+';width:'+Math.min(pct,100)+'%;height:8px;border-radius:6px;transition:width .4s;"></div>'
+    +'</div></div>';
+}
+
+function renderCumplimientoCard(uid, desde, hasta){
+  var r=calcCumplimientoRango(uid,desde,hasta);
+  var color=colorCumpl(r.pct);
+  var html='<div class="card" style="border-left:4px solid '+color+';margin-bottom:12px;">'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
+    +'<div style="width:52px;height:52px;border-radius:50%;border:3px solid '+color+';display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:'+color+';">'+r.pct+'%</div>'
+    +'<div><div style="font-size:14px;font-weight:800;">Cumplimiento del periodo</div>'
+    +'<div style="font-size:11px;color:var(--muted);">'+desde+' al '+hasta+(r.bonusDias?' · '+r.bonusDias+' día(s) con bonus':'')+'</div></div></div>'
+    +renderBarCumpl(r.avgGen,'Visitas generales (meta: '+CUMPL.GEN_TECHO+'/día)',colorCumpl(r.avgGen))
+    +renderBarCumpl(r.avgProf,'Visitas a profesionales (meta: '+CUMPL.PROF_TECHO+'/día)',colorCumpl(r.avgProf))
+    +'<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">'
+    +'<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;">DÍA A DÍA</div>'
+    +'<div style="display:flex;gap:3px;align-items:flex-end;height:40px;">';
+  r.dias.forEach(function(d){
+    var c=colorCumpl(d.pctDia);
+    var h=Math.max(4,Math.round(d.pctDia*40/100));
+    html+='<div title="'+d.fecha+': '+d.pctDia+'% ('+d.gen+'G+'+d.prof+'P)" style="flex:1;background:'+c+';height:'+h+'px;border-radius:2px;cursor:help;"></div>';
+  });
+  html+='</div><div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:2px;">'
+    +'<span>'+desde+'</span><span>'+hasta+'</span></div>'
+    +'</div></div>';
+  return html;
+}
+
+function renderCumplimientoTodos(desde, hasta){
+  var visitadores=D.users.filter(function(u){return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId)&&u.active!==false;});
+  if(!visitadores.length) return '<div class="empty"><p>Sin visitadores activos</p></div>';
+  var data=visitadores.map(function(u){
+    var r=calcCumplimientoRango(u.id,desde,hasta);
+    return {u:u,pct:r.pct,avgGen:r.avgGen,avgProf:r.avgProf};
+  }).sort(function(a,b){return b.pct-a.pct;});
+
+  var html='<div style="display:flex;flex-direction:column;gap:10px;">';
+  data.forEach(function(d){
+    var c=colorCumpl(d.pct);
+    var lab=LABS.find(function(l){return l.id===d.u.labId;})||{name:'-',color:'#64748B'};
+    html+='<div class="card" style="border-left:4px solid '+c+';">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
+      +'<div style="width:42px;height:42px;border-radius:50%;border:2px solid '+c+';display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:'+c+';">'+d.pct+'%</div>'
+      +'<div style="flex:1;"><div style="font-weight:700;font-size:13px;">'+esc(d.u.name)+'</div>'
+      +'<div style="font-size:11px;color:'+lab.color+';font-weight:600;">'+esc(lab.name)+'</div></div>'
+      +(d.pct>=100?'<span class="badge badge-ok">✓ Meta</span>':d.pct>=83?'<span class="badge badge-warn">Aceptable</span>':'<span class="badge badge-err">Bajo</span>')
+      +'</div>'
+      +renderBarCumpl(d.avgGen,'Generales',colorCumpl(d.avgGen))
+      +renderBarCumpl(d.avgProf,'Profesionales',colorCumpl(d.avgProf))
+      +'</div>';
+  });
+  return html+'</div>';
+}
+
 function renderInformes(){
   var el=document.getElementById('tabContent');
   if(!el) return;
@@ -1419,6 +1530,10 @@ function renderInformes(){
     +'<div class="card" style="margin-bottom:14px;">'
     +'<div class="section-title" style="margin-bottom:12px;">Top 10 puntos más visitados (Colombia)</div>'
     +'<div style="position:relative;height:320px;"><canvas id="chartTopPuntos"></canvas></div>'
+    +'</div>'
+    +'<div class="card" style="margin-bottom:14px;">'
+    +'<div class="section-title" style="margin-bottom:12px;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-chart-pie" style="color:#7C3AED;"></i> Rendimiento de gestores</div>'
+    +'<div id="cumplimientoSection"></div>'
     +'</div>';
   el.innerHTML=html;
   setRptPreset('hoy');
@@ -1455,6 +1570,10 @@ function setRptPreset(preset){
 
 function renderInformesCards(){
   renderInformesCharts();
+  var desde=rptDesde||today();
+  var hasta=rptHasta||today();
+  var secCumpl=document.getElementById('cumplimientoSection');
+  if(secCumpl) secCumpl.innerHTML=renderCumplimientoTodos(desde,hasta);
   var el=document.getElementById('rptLabCards');
   if(!el) return;
   var labsToShow=currentLabId?LABS.filter(function(l){return l.id===currentLabId;}):LABS;
@@ -2300,6 +2419,51 @@ function renderGestionDetalle(uid){
     +"<div style=\"font-size:11px;color:var(--muted);\">"+(u.freeVisit?"Puede registrar visitas sin rutas fijas":"Solo puede visitar sus puntos asignados")+"</div></div>"
     +"<button class=\"btn btn-sm\" style=\"background:"+(u.freeVisit?"#7C3AED":"var(--border)")+";color:"+(u.freeVisit?"#fff":"var(--muted)")+"\" data-id=\""+uid+"\" onclick=\"toggleFreeVisitDetalle(this.dataset.id)\">"+(u.freeVisit?"Desactivar":"Activar")+"</button>"
     +"</div></div>";
+
+  // Tarjeta de cumplimiento
+  var hoy7=new Date();hoy7.setDate(hoy7.getDate()-6);
+  var semDesde=hoy7.toISOString().slice(0,10);
+  var mes1=new Date();mes1.setDate(1);
+  var mesDesde=mes1.toISOString().slice(0,10);
+  html+='<div class="card" style="margin-bottom:14px;">'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">'
+    +'<i class="fa-solid fa-chart-pie" style="color:#7C3AED;font-size:16px;"></i>'
+    +'<div style="font-weight:800;font-size:14px;">Rendimiento</div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">';
+  // Hoy
+  var rHoy=calcCumplimientoDia(uid,today());
+  var cHoy=colorCumpl(rHoy.pctDia);
+  html+='<div style="background:var(--bg);border-radius:10px;padding:12px;border-left:3px solid '+cHoy+';">'
+    +'<div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px;">HOY</div>'
+    +'<div style="font-size:24px;font-weight:900;color:'+cHoy+';">'+rHoy.pctDia+'%</div>'
+    +'<div style="font-size:11px;color:var(--muted);">'+rHoy.gen+'G · '+rHoy.prof+'P</div>'
+    +'</div>';
+  // Esta semana
+  var rSem=calcCumplimientoRango(uid,semDesde,today());
+  var cSem=colorCumpl(rSem.pct);
+  html+='<div style="background:var(--bg);border-radius:10px;padding:12px;border-left:3px solid '+cSem+';">'
+    +'<div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px;">SEMANA</div>'
+    +'<div style="font-size:24px;font-weight:900;color:'+cSem+';">'+rSem.pct+'%</div>'
+    +'<div style="font-size:11px;color:var(--muted);">'+rSem.avgGen+'% G · '+rSem.avgProf+'% P</div>'
+    +'</div>';
+  html+='</div>';
+  // Este mes
+  var rMes=calcCumplimientoRango(uid,mesDesde,today());
+  html+=renderBarCumpl(rMes.avgGen,'Generales este mes (meta: '+CUMPL.GEN_TECHO+'/día)',colorCumpl(rMes.avgGen));
+  html+=renderBarCumpl(rMes.avgProf,'Profesionales este mes (meta: '+CUMPL.PROF_TECHO+'/día)',colorCumpl(rMes.avgProf));
+  // Mini gráfica semanal
+  html+='<div style="margin-top:10px;"><div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:6px;">ÚLTIMOS 7 DÍAS</div>'
+    +'<div style="display:flex;gap:3px;align-items:flex-end;height:36px;">';
+  rSem.dias.forEach(function(d){
+    var c=colorCumpl(d.pctDia);
+    var h=Math.max(4,Math.round(d.pctDia*36/100));
+    var dow=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][new Date(d.fecha+'T12:00:00').getDay()];
+    html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">'
+      +'<div title="'+d.fecha+': '+d.pctDia+'% ('+d.gen+'G+'+d.prof+'P)" style="width:100%;background:'+c+';height:'+h+'px;border-radius:3px;cursor:help;"></div>'
+      +'<div style="font-size:9px;color:var(--muted);">'+dow+'</div></div>';
+  });
+  html+='</div></div></div>';
+
   html+="<div class=\"card\" style=\"margin-bottom:14px;\">"
     +"<div class=\"card-header\"><div class=\"card-title\"><i class=\"fa-solid fa-map-pin\" style=\"color:var(--primary);margin-right:6px;\"></i>Puntos ("+pts.length+")</div>"
     +"<div style=\"display:flex;gap:6px;\">"
