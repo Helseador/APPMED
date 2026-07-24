@@ -304,7 +304,11 @@
       <div class="form-group">
         <label class="form-label">Foto de evidencia *</label>
         <input type="file" id="vp-foto" accept="image/*" style="display:none;" onchange="previewFoto(this,'vp-preview','prof')">
-        <div class="photo-capture-btn" onclick="document.getElementById('vp-foto').click()"><i class="fa-solid fa-camera"></i><span>Tomar foto con el profesional</span></div>
+        <input type="file" id="vp-foto-cam" accept="image/*" capture="environment" style="display:none;" onchange="previewFoto(this,'vp-preview','prof')">
+        <div style="display:flex;gap:8px;">
+          <div class="photo-capture-btn" style="flex:1;" onclick="document.getElementById('vp-foto-cam').click()"><i class="fa-solid fa-camera"></i><span>Cámara</span></div>
+          <div class="photo-capture-btn" style="flex:1;" onclick="document.getElementById('vp-foto').click()"><i class="fa-solid fa-images"></i><span>Galería</span></div>
+        </div>
         <img id="vp-preview" class="photo-preview" style="display:none;">
       </div>
       <div class="form-group">
