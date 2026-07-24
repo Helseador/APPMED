@@ -1155,7 +1155,7 @@ function abrirNuevaVisita(){
   document.getElementById('vp-toggleObsequio').checked=false;
   document.getElementById('vp-obsequioDetail').classList.remove('show');
   document.getElementById('vp-firmaBadge').style.display='none';
-  document.getElementById('btnGuardarProf').disabled=true;
+  document.getElementById('btnGuardarProf').disabled=false;
   if(_profFirmaCtx&&_profFirmaCanvas) _profFirmaCtx.clearRect(0,0,_profFirmaCanvas.width,_profFirmaCanvas.height);
   if(_profFirmaCanvas) _profFirmaCanvas.classList.remove('signed');
   openModal('modalNuevaVisita');
@@ -1210,7 +1210,7 @@ function clearFirma(){
   _profFirmaActiva=false;
   if(_profFirmaCanvas)_profFirmaCanvas.classList.remove('signed');
   document.getElementById('vp-firmaBadge').style.display='none';
-  document.getElementById('btnGuardarProf').disabled=true;
+  // Firma es opcional - el botón queda habilitado
 }
 function guardarVisitaGeneral(){
   var lugar=document.getElementById('vg-lugar').value.trim();
