@@ -192,6 +192,7 @@
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
       <button id="visitorMktBtn" onclick="abrirMarketing()" style="display:none;background:#7C3AED;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-receipt"></i> Factura</button>
+      <button id="visitorCapBtn" onclick="abrirCapacitacion()" style="display:none;background:#0891B2;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-graduation-cap"></i> Capacitación</button>
       <div class="sync-badge synced" id="syncBadge"><span class="sync-dot"></span><span id="syncLabel">Cloud</span></div>
       <button class="header-btn" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
     </div>
@@ -397,6 +398,43 @@
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalAusencia')">Cancelar</button>
       <button class="btn btn-primary" style="flex:1;" onclick="guardarAusencia()"><i class="fa-solid fa-paper-plane"></i> Enviar</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalCapacitacion">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Registrar capacitación</div>
+    <div style="background:#DBEAFE;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#1e40af;">
+      <i class="fa-solid fa-circle-info"></i> Registra las capacitaciones realizadas en puntos de dispensación. Mínimo 2 al mes.
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notas * <span style="font-size:10px;color:var(--muted);text-transform:none;font-weight:400;">(nombre del punto y detalles)</span></label>
+      <textarea class="form-input" id="cap-notas" placeholder="Ej: Capacitación en Audifarma Calle 100 sobre manejo de Ketolance..." style="min-height:80px;"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Fotos de evidencia <span style="font-size:10px;color:var(--muted);text-transform:none;font-weight:400;">(máx. 3)</span></label>
+      <input type="file" id="cap-foto-1" accept="image/*" style="display:none;" onchange="capPreviewFoto(this,1)">
+      <input type="file" id="cap-foto-2" accept="image/*" style="display:none;" onchange="capPreviewFoto(this,2)">
+      <input type="file" id="cap-foto-3" accept="image/*" style="display:none;" onchange="capPreviewFoto(this,3)">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div id="cap-slot-1" onclick="document.getElementById('cap-foto-1').click()" style="aspect-ratio:1;border:2px dashed var(--border);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:var(--bg);overflow:hidden;">
+          <i class="fa-solid fa-images" style="font-size:20px;color:var(--muted);"></i>
+          <span style="font-size:10px;color:var(--muted);">Foto 1</span>
+        </div>
+        <div id="cap-slot-2" onclick="document.getElementById('cap-foto-2').click()" style="aspect-ratio:1;border:2px dashed var(--border);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:var(--bg);overflow:hidden;">
+          <i class="fa-solid fa-images" style="font-size:20px;color:var(--muted);"></i>
+          <span style="font-size:10px;color:var(--muted);">Foto 2</span>
+        </div>
+        <div id="cap-slot-3" onclick="document.getElementById('cap-foto-3').click()" style="aspect-ratio:1;border:2px dashed var(--border);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:var(--bg);overflow:hidden;">
+          <i class="fa-solid fa-images" style="font-size:20px;color:var(--muted);"></i>
+          <span style="font-size:10px;color:var(--muted);">Foto 3</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalCapacitacion')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="guardarCapacitacion()"><i class="fa-solid fa-graduation-cap"></i> Guardar</button>
     </div>
   </div>
 </div>
@@ -792,6 +830,8 @@ function renderVisitor(){
   document.getElementById('visitorGreeting').textContent=sal+', '+currentUser.name.split(' ')[0]+'!';
   var mktBtn=document.getElementById('visitorMktBtn');
   if(mktBtn)mktBtn.style.display='inline-block';
+  var capBtn=document.getElementById('visitorCapBtn');
+  if(capBtn)capBtn.style.display='inline-block';
   var d=horaBogota();
   var dias=['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
   var meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -1335,6 +1375,64 @@ function guardarMarketing(){
     .catch(function(err){
       toast('Error al guardar: '+err.message,'err');
       if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-upload"></i> Cargar';}
+    });
+}
+var _capFotos={1:null,2:null,3:null};
+function abrirCapacitacion(){
+  _capFotos={1:null,2:null,3:null};
+  document.getElementById('cap-notas').value='';
+  [1,2,3].forEach(function(i){
+    document.getElementById('cap-foto-'+i).value='';
+    var slot=document.getElementById('cap-slot-'+i);
+    slot.innerHTML='<i class="fa-solid fa-images" style="font-size:20px;color:var(--muted);"></i><span style="font-size:10px;color:var(--muted);">Foto '+i+'</span>';
+  });
+  openModal('modalCapacitacion');
+}
+function capPreviewFoto(input,num){
+  if(!input.files||!input.files[0])return;
+  var file=input.files[0];
+  if(file.size>8*1024*1024){toast('Foto demasiado grande (máx. 8MB)','err');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      var MAX=600,w=img.width,h=img.height;
+      if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+      var c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      var data=c.toDataURL('image/jpeg',0.40);
+      _capFotos[num]=data;
+      var slot=document.getElementById('cap-slot-'+num);
+      slot.innerHTML='<img src="'+data+'" style="width:100%;height:100%;object-fit:cover;">';
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function guardarCapacitacion(){
+  var notas=document.getElementById('cap-notas').value.trim();
+  if(!notas){toast('Escribe las notas de la capacitación','err');return;}
+  var fotos=Object.values(_capFotos).filter(Boolean);
+  if(!fotos.length){toast('Adjunta al menos una foto de evidencia','err');return;}
+  if(!window._db){toast('Sin conexión, intenta en un momento','err');return;}
+  var reg={
+    id:'cap_'+Date.now()+'_'+Math.random().toString(36).substr(2,4),
+    userId:currentUser.id,userName:currentUser.name,labId:currentUser.labId||'',
+    notas:notas,fotos:fotos,
+    fecha:today(),mes:today().slice(0,7),
+    creadoAt:new Date().toISOString()
+  };
+  var btn=document.querySelector('#modalCapacitacion .btn-primary');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="spin fa-solid fa-circle-notch"></i> Guardando...';}
+  window._db.ref('medvisit/capacitaciones').push(reg)
+    .then(function(){
+      toast('Capacitación registrada');
+      closeModal('modalCapacitacion');
+      if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-graduation-cap"></i> Guardar';}
+    })
+    .catch(function(e){
+      toast('Error: '+e.message,'err');
+      if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-graduation-cap"></i> Guardar';}
     });
 }
 function abrirFotoOverlay(src){
