@@ -1571,6 +1571,13 @@ function renderCapacitaciones(){
 
 function renderInformes(){
   var el=document.getElementById('tabContent');
+  if(!el) return;
+  var isSuper=currentUser.role==='super';
+  var isGeneral=currentUser.role==='adminGeneral';
+  var hoy=today();
+  // Presets
+  var html='<div class="card" style="margin-bottom:14px;">'
+    +'<div class="section-title" style="margin-bottom:10px;">Rango de fechas</div>'
     +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">'
     +'<button class="btn btn-sm rpt-preset" style="background:var(--primary);color:#fff;" onclick="setRptPreset(\'hoy\')" data-p="hoy">Hoy</button>'
     +'<button class="btn btn-sm rpt-preset btn-outline" onclick="setRptPreset(\'semana\')" data-p="semana">Esta semana</button>'
