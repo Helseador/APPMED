@@ -403,7 +403,7 @@ var LABS=BASE_LABS.slice();
 var AV_COLORS=['#0303B5','#D97706','#DC2626','#7C3AED','#DB2777','#EA580C','#4F46E5','#0891B2'];
 
 var db=null, currentUser=null, currentLabId=null;
-var D={users:[],visits:[],points:[],pendientes:[],labs:[],marketing:[],ausencias:[]};
+var D={users:[],visits:[],points:[],pendientes:[],labs:[],marketing:[],ausencias:[],capacitaciones:[]};
 
 // ── UTILS ──────────────────────────────────────────────────────
 function esc(s){if(!s) return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -451,6 +451,7 @@ function initFirebase(){
     db.ref('medvisit/points').on('value',function(snap){D.points=toArray(snap.val());render();});
     db.ref('medvisit/pendientes').on('value',function(snap){D.pendientes=toArray(snap.val()||[]);render();});
     db.ref('medvisit/ausencias').on('value',function(snap){D.ausencias=toArray(snap.val()||[]);render();});
+    db.ref('medvisit/capacitaciones').on('value',function(snap){D.capacitaciones=toArray(snap.val()||[]);render();});
     db.ref('medvisit/labs').on('value',function(snap){
       var extra=toArray(snap.val());
       LABS=BASE_LABS.slice().concat(extra.filter(function(l){return !BASE_LABS.some(function(b){return b.id===l.id;});}));
@@ -567,11 +568,14 @@ function renderVisitas(){
 
   var html='<div style="display:flex;gap:8px;margin-bottom:16px;">'
     +'<button class="btn btn-sm" style="flex:1;'+(window._visSubTab==='general'?'background:var(--primary);color:#fff;':'background:var(--bg);color:var(--fg);border:1.5px solid var(--border);')+'" onclick="window._visSubTab=\'general\';renderCurrentTab()"><i class="fa-solid fa-route"></i> Visitas generales</button>'
-    +'<button class="btn btn-sm" style="flex:1;'+(window._visSubTab==='profesional'?'background:#7C3AED;color:#fff;':'background:var(--bg);color:var(--fg);border:1.5px solid var(--border);')+'" onclick="window._visSubTab=\'profesional\';renderCurrentTab()"><i class="fa-solid fa-user-doctor"></i> Visitas a profesionales</button>'
+    +'<button class="btn btn-sm" style="flex:1;'+(window._visSubTab==='profesional'?'background:#7C3AED;color:#fff;':'background:var(--bg);color:var(--fg);border:1.5px solid var(--border);')+'" onclick="window._visSubTab=\'profesional\';renderCurrentTab()"><i class="fa-solid fa-user-doctor"></i> A profesionales</button>'
+    +'<button class="btn btn-sm" style="flex:1;'+(window._visSubTab==='capacitaciones'?'background:#0891B2;color:#fff;':'background:var(--bg);color:var(--fg);border:1.5px solid var(--border);')+'" onclick="window._visSubTab=\'capacitaciones\';renderCurrentTab()"><i class="fa-solid fa-graduation-cap"></i> Capacitaciones</button>'
     +'</div>';
 
   if(window._visSubTab==='profesional'){
     html+=renderVisitasProfesionales();
+  } else if(window._visSubTab==='capacitaciones'){
+    html+=renderCapacitaciones();
   } else {
     html+=renderVisitasGenerales();
   }
@@ -1370,8 +1374,10 @@ var rptDesde=null,rptHasta=null;
 
 // ── MOTOR DE CUMPLIMIENTO ──────────────────────────────────────
 var CUMPL={
-  GEN_TECHO:12, GEN_MIN:10,
-  PROF_TECHO:5
+  GEN_TECHO:12, GEN_MIN:10,      // visitas generales por día
+  PROF_MES:10,                    // visitas a profesionales por mes
+  CAP_MES:2,                      // capacitaciones por mes
+  PESO_GEN:0.40, PESO_PROF:0.40, PESO_CAP:0.20  // pesos del KPI
 };
 
 function calcCumplimientoDia(uid, fecha){
@@ -1382,13 +1388,12 @@ function calcCumplimientoDia(uid, fecha){
     return (v.visitorId||v.userId)===uid&&v.date===fecha&&v.status==='completed'&&v.type==='profesional';
   }).length;
   var pctGen=Math.min(100, Math.round(gen/CUMPL.GEN_TECHO*100));
-  var pctProf=Math.min(100, Math.round(prof/CUMPL.PROF_TECHO*100));
-  var pctDia=Math.max(pctGen,pctProf);
+  var pctProf=Math.min(100, Math.round(gen/CUMPL.GEN_TECHO*100)); // diario usa generales
+  var pctDia=pctGen;
   return {gen:gen,prof:prof,pctGen:pctGen,pctProf:pctProf,pctDia:pctDia};
 }
 
 function calcCumplimientoRango(uid, desde, hasta){
-  // Solo días laborables (lunes a viernes) en el rango
   var dias=[];
   var d=new Date(desde+'T12:00:00');
   var fin=new Date(hasta+'T12:00:00');
@@ -1397,21 +1402,29 @@ function calcCumplimientoRango(uid, desde, hasta){
     if(dow>=1&&dow<=5) dias.push(d.toISOString().slice(0,10));
     d.setDate(d.getDate()+1);
   }
-  if(!dias.length) return {pct:0,dias:[]};
+  // KPI Generales (diario)
+  var sumGen=0;
   var detalle=dias.map(function(fecha){
-    var r=calcCumplimientoDia(uid,fecha);
-    return {fecha:fecha,pctDia:r.pctDia,gen:r.gen,prof:r.prof,pctGen:r.pctGen,pctProf:r.pctProf};
+    var gen=D.visits.filter(function(v){return (v.visitorId||v.userId)===uid&&v.date===fecha&&v.status==='completed'&&v.type!=='profesional';}).length;
+    var prof=D.visits.filter(function(v){return (v.visitorId||v.userId)===uid&&v.date===fecha&&v.status==='completed'&&v.type==='profesional';}).length;
+    var pctGen=Math.min(100,Math.round(gen/CUMPL.GEN_TECHO*100));
+    sumGen+=pctGen;
+    return {fecha:fecha,gen:gen,prof:prof,pctDia:pctGen};
   });
-  // Promedio: días con visitas generales usan min(gen/12*100, extras acumulan)
-  // Para promedio semanal/mensual, los días con más de 12 generales o más de 5 prof
-  // suman su % real (puede superar 100 en el acumulado) antes de promediar
-  var sumGen=detalle.reduce(function(s,d){return s+Math.min(100,Math.round(d.gen/CUMPL.GEN_TECHO*100));},0);
-  var sumProf=detalle.reduce(function(s,d){return s+Math.min(100,Math.round(d.prof/CUMPL.PROF_TECHO*100));},0);
-  var sumDia=detalle.reduce(function(s,d){return s+d.pctDia;},0);
-  var pct=Math.round(sumDia/dias.length);
-  // Bonus: días con extra (gen>12 o prof>5) contribuyen al promedio con su % real
-  var bonusDias=detalle.filter(function(d){return d.gen>CUMPL.GEN_TECHO||d.prof>CUMPL.PROF_TECHO;}).length;
-  return {pct:pct,dias:detalle,bonusDias:bonusDias,avgGen:Math.round(sumGen/dias.length),avgProf:Math.round(sumProf/dias.length)};
+  var avgGen=dias.length?Math.round(sumGen/dias.length):0;
+  // KPI Profesionales (mensual acumulado en el rango)
+  var totalProf=D.visits.filter(function(v){
+    return (v.visitorId||v.userId)===uid&&v.date>=desde&&v.date<=hasta&&v.status==='completed'&&v.type==='profesional';
+  }).length;
+  var pctProf=Math.min(100,Math.round(totalProf/CUMPL.PROF_MES*100));
+  // KPI Capacitaciones (mensual acumulado en el rango)
+  var totalCap=(D.capacitaciones||[]).filter(function(c){
+    return c.userId===uid&&c.fecha>=desde&&c.fecha<=hasta;
+  }).length;
+  var pctCap=Math.min(100,Math.round(totalCap/CUMPL.CAP_MES*100));
+  // KPI Global ponderado
+  var pct=Math.round(avgGen*CUMPL.PESO_GEN*100/100 + pctProf*CUMPL.PESO_PROF*100/100 + pctCap*CUMPL.PESO_CAP*100/100);
+  return {pct:pct,dias:detalle,avgGen:avgGen,pctProf:pctProf,pctCap:pctCap,totalProf:totalProf,totalCap:totalCap};
 }
 
 function colorCumpl(pct){
@@ -1436,16 +1449,17 @@ function renderCumplimientoCard(uid, desde, hasta){
     +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">'
     +'<div style="width:52px;height:52px;border-radius:50%;border:3px solid '+color+';display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:'+color+';">'+r.pct+'%</div>'
     +'<div><div style="font-size:14px;font-weight:800;">Cumplimiento del periodo</div>'
-    +'<div style="font-size:11px;color:var(--muted);">'+desde+' al '+hasta+(r.bonusDias?' · '+r.bonusDias+' día(s) con bonus':'')+'</div></div></div>'
-    +renderBarCumpl(r.avgGen,'Visitas generales (meta: '+CUMPL.GEN_TECHO+'/día)',colorCumpl(r.avgGen))
-    +renderBarCumpl(r.avgProf,'Visitas a profesionales (meta: '+CUMPL.PROF_TECHO+'/día)',colorCumpl(r.avgProf))
+    +'<div style="font-size:11px;color:var(--muted);">'+desde+' al '+hasta+'</div></div></div>'
+    +renderBarCumpl(r.avgGen,'Generales (40%) — meta: '+CUMPL.GEN_TECHO+'/día',colorCumpl(r.avgGen))
+    +renderBarCumpl(r.pctProf,'Profesionales (40%) — '+r.totalProf+'/'+CUMPL.PROF_MES+' en el periodo',colorCumpl(r.pctProf))
+    +renderBarCumpl(r.pctCap,'Capacitaciones (20%) — '+r.totalCap+'/'+CUMPL.CAP_MES+' en el periodo',colorCumpl(r.pctCap))
     +'<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">'
-    +'<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;">DÍA A DÍA</div>'
+    +'<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;">DÍA A DÍA (visitas generales)</div>'
     +'<div style="display:flex;gap:3px;align-items:flex-end;height:40px;">';
   r.dias.forEach(function(d){
     var c=colorCumpl(d.pctDia);
     var h=Math.max(4,Math.round(d.pctDia*40/100));
-    html+='<div title="'+d.fecha+': '+d.pctDia+'% ('+d.gen+'G+'+d.prof+'P)" style="flex:1;background:'+c+';height:'+h+'px;border-radius:2px;cursor:help;"></div>';
+    html+='<div title="'+d.fecha+': '+d.pctDia+'% ('+d.gen+'G)" style="flex:1;background:'+c+';height:'+h+'px;border-radius:2px;cursor:help;"></div>';
   });
   html+='</div><div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:2px;">'
     +'<span>'+desde+'</span><span>'+hasta+'</span></div>'
@@ -1479,15 +1493,84 @@ function renderCumplimientoTodos(desde, hasta){
   return html+'</div>';
 }
 
+function renderCumplimientoTodos(desde, hasta){
+  var visitadores=D.users.filter(function(u){return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId)&&u.active!==false;});
+  if(!visitadores.length) return '<div class="empty"><p>Sin visitadores activos</p></div>';
+  var data=visitadores.map(function(u){
+    var r=calcCumplimientoRango(u.id,desde,hasta);
+    return {u:u,pct:r.pct,avgGen:r.avgGen,pctProf:r.pctProf,pctCap:r.pctCap,totalProf:r.totalProf,totalCap:r.totalCap};
+  }).sort(function(a,b){return b.pct-a.pct;});
+  var html='<div style="display:flex;flex-direction:column;gap:10px;">';
+  data.forEach(function(d){
+    var c=colorCumpl(d.pct);
+    var lab=LABS.find(function(l){return l.id===d.u.labId;})||{name:'-',color:'#64748B'};
+    html+='<div class="card" style="border-left:4px solid '+c+';">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
+      +'<div style="width:42px;height:42px;border-radius:50%;border:2px solid '+c+';display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:'+c+';">'+d.pct+'%</div>'
+      +'<div style="flex:1;"><div style="font-weight:700;font-size:13px;">'+esc(d.u.name)+'</div>'
+      +'<div style="font-size:11px;color:'+lab.color+';font-weight:600;">'+esc(lab.name)+'</div></div>'
+      +(d.pct>=100?'<span class="badge badge-ok">✓ Meta</span>':d.pct>=70?'<span class="badge badge-warn">Aceptable</span>':'<span class="badge badge-err">Bajo</span>')
+      +'</div>'
+      +renderBarCumpl(d.avgGen,'Generales (40%)',colorCumpl(d.avgGen))
+      +renderBarCumpl(d.pctProf,'Profesionales (40%) — '+d.totalProf+'/'+CUMPL.PROF_MES,colorCumpl(d.pctProf))
+      +renderBarCumpl(d.pctCap,'Capacitaciones (20%) — '+d.totalCap+'/'+CUMPL.CAP_MES,colorCumpl(d.pctCap))
+      +'</div>';
+  });
+  return html+'</div>';
+}
+
+function renderCapacitaciones(){
+  var caps=(D.capacitaciones||[]).filter(function(c){
+    if(!currentLabId) return true;
+    var u=D.users.find(function(x){return x.id===c.userId;});
+    return u&&u.labId===currentLabId;
+  });
+  caps.sort(function(a,b){return (b.fecha||'').localeCompare(a.fecha||'');});
+  var html='<div class="stats-grid">'
+    +'<div class="stat-card"><div class="stat-num">'+caps.length+'</div><div class="stat-label">Total histórico</div></div>'
+    +'<div class="stat-card"><div class="stat-num">'+caps.filter(function(c){return c.fecha===today();}).length+'</div><div class="stat-label">Hoy</div></div>'
+    +'<div class="stat-card"><div class="stat-num">'+caps.filter(function(c){var m=today().slice(0,7);return (c.fecha||'').startsWith(m);}).length+'</div><div class="stat-label">Este mes</div></div>'
+    +'</div>';
+  if(typeof window._capFiltros==='undefined') window._capFiltros={vis:'',desde:'',hasta:''};
+  html+='<div class="filters">'
+    +'<input type="date" id="cfDesde" value="'+window._capFiltros.desde+'" onchange="window._capFiltros.desde=this.value;renderCurrentTab()">'
+    +'<input type="date" id="cfHasta" value="'+window._capFiltros.hasta+'" onchange="window._capFiltros.hasta=this.value;renderCurrentTab()">'
+    +'<select id="cfVis" onchange="window._capFiltros.vis=this.value;renderCurrentTab()"><option value="">Todos los gestores</option>'
+    +D.users.filter(function(u){return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId);})
+    .map(function(u){return '<option value="'+u.id+'"'+(u.id===window._capFiltros.vis?' selected':'')+'>'+esc(u.name)+'</option>';}).join('')
+    +'</select>'
+    +'<button class="btn btn-sm btn-outline" onclick="window._capFiltros={vis:\'\',desde:\'\',hasta:\'\'};renderCurrentTab()">Limpiar</button>'
+    +'</div>';
+  var filtradas=caps.filter(function(c){
+    if(window._capFiltros.vis&&c.userId!==window._capFiltros.vis) return false;
+    if(window._capFiltros.desde&&c.fecha<window._capFiltros.desde) return false;
+    if(window._capFiltros.hasta&&c.fecha>window._capFiltros.hasta) return false;
+    return true;
+  });
+  if(!filtradas.length) return html+'<div class="empty"><i class="fa-solid fa-graduation-cap"></i><p>Sin capacitaciones registradas</p></div>';
+  html+='<div style="display:flex;flex-direction:column;gap:10px;">';
+  filtradas.forEach(function(c){
+    var lab=LABS.find(function(l){return l.id===c.labId;})||{name:'-',color:'#64748B'};
+    var fotos=c.fotos||[];
+    html+='<div class="card">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
+      +'<div class="avatar" style="background:'+avatarColor(c.userName||'')+';width:34px;height:34px;font-size:12px;">'+initials(c.userName||'')+'</div>'
+      +'<div style="flex:1;"><div style="font-weight:700;font-size:13px;">'+esc(c.userName||'')+'</div>'
+      +'<div style="font-size:11px;"><span style="color:'+lab.color+';font-weight:600;">'+esc(lab.name)+'</span> · '+fmtDate(c.fecha)+'</div></div>'
+      +'<span class="badge badge-info"><i class="fa-solid fa-graduation-cap"></i> Capacitación</span>'
+      +'</div>'
+      +'<div style="background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13px;">'+esc(c.notas||'')+'</div>'
+      +(fotos.length?'<div style="display:grid;grid-template-columns:repeat('+Math.min(fotos.length,3)+',1fr);gap:6px;">'
+        +fotos.map(function(f){return '<img src="'+f+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="openFoto(this.src)">';}).join('')
+        +'</div>':'')
+      +'</div>';
+  });
+  return html+'</div>';
+}
+
+
 function renderInformes(){
   var el=document.getElementById('tabContent');
-  if(!el) return;
-  var isSuper=currentUser.role==='super';
-  var isGeneral=currentUser.role==='adminGeneral';
-  var hoy=today();
-  // Presets
-  var html='<div class="card" style="margin-bottom:14px;">'
-    +'<div class="section-title" style="margin-bottom:10px;">Rango de fechas</div>'
     +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">'
     +'<button class="btn btn-sm rpt-preset" style="background:var(--primary);color:#fff;" onclick="setRptPreset(\'hoy\')" data-p="hoy">Hoy</button>'
     +'<button class="btn btn-sm rpt-preset btn-outline" onclick="setRptPreset(\'semana\')" data-p="semana">Esta semana</button>'
@@ -1530,8 +1613,8 @@ function renderInformes(){
     +'<div class="card" style="margin-bottom:14px;">'
     +'<div class="section-title" style="margin-bottom:12px;">Top 10 puntos más visitados (Colombia)</div>'
     +'<div style="position:relative;height:320px;"><canvas id="chartTopPuntos"></canvas></div>'
-    +'</div>'
-    +'<div class="card" style="margin-bottom:14px;">'
+    +'</div>';
+  html+='<div class="card" style="margin-bottom:14px;">'
     +'<div class="section-title" style="margin-bottom:12px;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-chart-pie" style="color:#7C3AED;"></i> Rendimiento de gestores</div>'
     +'<div id="cumplimientoSection"></div>'
     +'</div>';
@@ -2444,13 +2527,14 @@ function renderGestionDetalle(uid){
   html+='<div style="background:var(--bg);border-radius:10px;padding:12px;border-left:3px solid '+cSem+';">'
     +'<div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px;">SEMANA</div>'
     +'<div style="font-size:24px;font-weight:900;color:'+cSem+';">'+rSem.pct+'%</div>'
-    +'<div style="font-size:11px;color:var(--muted);">'+rSem.avgGen+'% G · '+rSem.avgProf+'% P</div>'
+    +'<div style="font-size:11px;color:var(--muted);">G:'+rSem.avgGen+'% · P:'+rSem.pctProf+'% · C:'+rSem.pctCap+'%</div>'
     +'</div>';
   html+='</div>';
   // Este mes
   var rMes=calcCumplimientoRango(uid,mesDesde,today());
-  html+=renderBarCumpl(rMes.avgGen,'Generales este mes (meta: '+CUMPL.GEN_TECHO+'/día)',colorCumpl(rMes.avgGen));
-  html+=renderBarCumpl(rMes.avgProf,'Profesionales este mes (meta: '+CUMPL.PROF_TECHO+'/día)',colorCumpl(rMes.avgProf));
+  html+=renderBarCumpl(rMes.avgGen,'Generales este mes (40% — meta: '+CUMPL.GEN_TECHO+'/día)',colorCumpl(rMes.avgGen));
+  html+=renderBarCumpl(rMes.pctProf,'Profesionales este mes (40% — '+rMes.totalProf+'/'+CUMPL.PROF_MES+')',colorCumpl(rMes.pctProf));
+  html+=renderBarCumpl(rMes.pctCap,'Capacitaciones este mes (20% — '+rMes.totalCap+'/'+CUMPL.CAP_MES+')',colorCumpl(rMes.pctCap));
   // Mini gráfica semanal
   html+='<div style="margin-top:10px;"><div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:6px;">ÚLTIMOS 7 DÍAS</div>'
     +'<div style="display:flex;gap:3px;align-items:flex-end;height:36px;">';
