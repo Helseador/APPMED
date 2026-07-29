@@ -1082,7 +1082,8 @@ function renderMarketing(){
         :'-';
       var editBtn=currentUser.role==='super'
         ?'<td><button class="btn btn-sm btn-outline" style="margin-right:4px;" data-key="'+(r._fbKey||'')+'" data-valor="'+((parseFloat(r.valor)||0))+'" onclick="editarValorMarketing(this.dataset.key,this.dataset.valor)"><i class="fa-solid fa-pen"></i></button>'
-        +'<button class="btn btn-sm btn-outline" data-key="'+(r._fbKey||'')+'" data-fecha="'+(r.fecha||'')+'" onclick="editarFechaMarketing(this.dataset.key,this.dataset.fecha)"><i class="fa-solid fa-calendar-pen"></i></button></td>'
+        +'<button class="btn btn-sm btn-outline" style="margin-right:4px;" data-key="'+(r._fbKey||'')+'" data-fecha="'+(r.fecha||'')+'" onclick="editarFechaMarketing(this.dataset.key,this.dataset.fecha)"><i class="fa-solid fa-calendar-pen"></i></button>'
+        +'<button class="btn btn-sm btn-outline" data-key="'+(r._fbKey||'')+'" data-nit="'+(r.nit||'')+'" onclick="editarNitMarketing(this.dataset.key,this.dataset.nit)"><i class="fa-solid fa-hashtag"></i></button></td>'
         :'';
       return '<tr>'
         +'<td>'+fmtDate(r.fecha)+'</td>'
@@ -3237,6 +3238,16 @@ function _generarPPTXVisitador(uid){
   }
 
   pptx.writeFile({fileName:'Reporte_'+u.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+today()+'.pptx'});
+}
+
+function editarNitMarketing(fbKey,nitActual){
+  if(currentUser.role!=='super'){toast('Solo el superadmin puede editar el NIT','err');return;}
+  if(!fbKey){toast('No se puede identificar el registro','err');return;}
+  var nuevo=prompt('NIT del establecimiento:',nitActual||'');
+  if(nuevo===null) return;
+  db.ref('medvisit/marketing/'+fbKey+'/nit').set(nuevo.trim())
+    .then(function(){toast('NIT actualizado');renderCurrentTab();})
+    .catch(function(e){toast('Error: '+e.message,'err');});
 }
 
 function editarFechaMarketing(fbKey,fechaActual){
