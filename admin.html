@@ -403,7 +403,7 @@ var LABS=BASE_LABS.slice();
 var AV_COLORS=['#0303B5','#D97706','#DC2626','#7C3AED','#DB2777','#EA580C','#4F46E5','#0891B2'];
 
 var db=null, currentUser=null, currentLabId=null;
-var D={users:[],visits:[],points:[],pendientes:[],labs:[],marketing:[],ausencias:[],capacitaciones:[]};
+var D={users:[],visits:[],points:[],pendientes:[],labs:[],marketing:[],ausencias:[],capacitaciones:[],correrias:[]};
 
 // ── UTILS ──────────────────────────────────────────────────────
 function esc(s){if(!s) return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -452,6 +452,7 @@ function initFirebase(){
     db.ref('medvisit/pendientes').on('value',function(snap){D.pendientes=toArray(snap.val()||[]);render();});
     db.ref('medvisit/ausencias').on('value',function(snap){D.ausencias=toArray(snap.val()||[]);render();});
     db.ref('medvisit/capacitaciones').on('value',function(snap){D.capacitaciones=toArray(snap.val()||[]);render();});
+    db.ref('medvisit/correrias').on('value',function(snap){D.correrias=toArray(snap.val()||[]);render();});
     db.ref('medvisit/labs').on('value',function(snap){
       var extra=toArray(snap.val());
       LABS=BASE_LABS.slice().concat(extra.filter(function(l){return !BASE_LABS.some(function(b){return b.id===l.id;});}));
@@ -519,10 +520,10 @@ function doLogout(){
 // ── TABS ──────────────────────────────────────────────────────
 var _currentTab='panel';
 var _tabs={
-  super:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'usuarios',icon:'fa-screwdriver-wrench',label:'Gestión'}],
-  adminGeneral:[{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'}],
-  admin:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'informes',icon:'fa-chart-bar',label:'Informes'}],
-  contador:    [{id:'marketing',icon:'fa-receipt',label:'Marketing'}]
+  super:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'correrias',icon:'fa-car',label:'Correría'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'usuarios',icon:'fa-screwdriver-wrench',label:'Gestión'}],
+  adminGeneral:[{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'correrias',icon:'fa-car',label:'Correría'},{id:'informes',icon:'fa-chart-bar',label:'Informes'}],
+  admin:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'correrias',icon:'fa-car',label:'Correría'},{id:'informes',icon:'fa-chart-bar',label:'Informes'}],
+  contador:    [{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'correrias',icon:'fa-car',label:'Correría'}]
 };
 
 function buildTabs(){
@@ -558,6 +559,7 @@ function renderCurrentTab(){
   else if(_currentTab==='pendientes') el.innerHTML=renderPendientes();
   else if(_currentTab==='ausencias') el.innerHTML=renderAusencias();
   else if(_currentTab==='marketing') el.innerHTML=renderMarketing();
+  else if(_currentTab==='correrias') el.innerHTML=renderCorrerias();
   else if(_currentTab==='informes') renderInformes();
   else if(_currentTab==='usuarios') el.innerHTML=renderUsuarios();
 }
@@ -1126,6 +1128,169 @@ function renderUsuarios(){
 }
 
 // ── EXPORTAR EXCEL MARKETING ──────────────────────────────────
+// ── CORRERÍA ───────────────────────────────────────────────────
+function renderCorrerias(){
+  var filtered=(D.correrias||[]).filter(function(r){
+    if(!r||!r.id) return false;
+    if(currentLabId) return r.labId===currentLabId;
+    return true;
+  });
+  filtered.sort(function(a,b){return (b.fecha||'').localeCompare(a.fecha||'');});
+  var total=filtered.reduce(function(s,r){return s+(parseFloat(r.valor)||0);},0);
+
+  var html='<div class="stats-grid">'
+    +'<div class="stat-card"><div class="stat-num">'+filtered.length+'</div><div class="stat-label">Registros</div></div>'
+    +'<div class="stat-card"><div class="stat-num">$'+total.toLocaleString('es-CO')+'</div><div class="stat-label">Total</div></div>'
+    +'</div>';
+
+  html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">'
+    +'<button class="btn btn-success btn-sm" onclick="exportarExcelCorrerias()"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>'
+    +'<button class="btn btn-sm" style="background:#0891B2;color:#fff;" onclick="abrirModalLegalizacionCorr()"><i class="fa-solid fa-file-invoice"></i> Formato legalización</button>'
+    +'</div>';
+
+  // Filtros
+  if(typeof window._corrFiltros==='undefined') window._corrFiltros={vis:'',desde:'',hasta:''};
+  html+='<div class="filters">'
+    +'<input type="date" id="crDesde" value="'+window._corrFiltros.desde+'" onchange="window._corrFiltros.desde=this.value;renderCurrentTab()">'
+    +'<input type="date" id="crHasta" value="'+window._corrFiltros.hasta+'" onchange="window._corrFiltros.hasta=this.value;renderCurrentTab()">';
+  if(!currentLabId){
+    html+='<select id="crLab" onchange="window._corrFiltros.lab=this.value||\'\'||currentLabId;renderCurrentTab()"><option value="">Todos los labs</option>'
+      +LABS.map(function(l){return '<option value="'+l.id+'"'+(window._corrFiltros.lab===l.id?' selected':'')+'>'+esc(l.name)+'</option>';}).join('')+'</select>';
+  }
+  html+='<select id="crVis" onchange="window._corrFiltros.vis=this.value;renderCurrentTab()"><option value="">Todos los gestores</option>'
+    +D.users.filter(function(u){return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId);})
+    .map(function(u){return '<option value="'+u.id+'"'+(u.id===window._corrFiltros.vis?' selected':'')+'>'+esc(u.name)+'</option>';}).join('')
+    +'</select>'
+    +'<button class="btn btn-sm btn-outline" onclick="window._corrFiltros={vis:\'\',desde:\'\',hasta:\'\'};renderCurrentTab()">Limpiar</button>'
+    +'</div>';
+
+  var filtradas=filtered.filter(function(r){
+    if(window._corrFiltros.vis&&r.userId!==window._corrFiltros.vis) return false;
+    if(window._corrFiltros.desde&&r.fecha<window._corrFiltros.desde) return false;
+    if(window._corrFiltros.hasta&&r.fecha>window._corrFiltros.hasta) return false;
+    return true;
+  });
+
+  if(!filtradas.length) return html+'<div class="empty"><i class="fa-solid fa-car"></i><p>Sin correría registrada</p></div>';
+
+  html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
+    +'<th>Fecha</th><th>Gestor</th><th>Lab</th><th>Establecimiento</th><th>NIT</th><th>Valor</th><th>Archivo</th>'
+    +(currentUser.role==='super'?'<th></th>':'')
+    +'</tr></thead><tbody>'
+    +filtradas.map(function(r){
+      var archivo=r.foto?(r.fotoTipo==='pdf'
+        ?'<button class="btn btn-sm btn-outline" onclick="abrirPdfCorreria(\''+r._fbKey+'\')"><i class="fa-solid fa-file-pdf" style="color:#DC2626;"></i> PDF</button>'
+        :'<div style="display:flex;gap:4px;"><button class="btn btn-sm btn-outline" onclick="openFoto(\''+r.foto+'\')"><i class="fa-solid fa-image"></i></button><button class="btn btn-sm btn-outline" onclick="descargarFotoCorreria(\''+r._fbKey+'\',\''+fmtDate(r.fecha)+'\')"><i class="fa-solid fa-download"></i></button></div>')
+        :'-';
+      var editBtn=currentUser.role==='super'
+        ?'<td>'
+        +'<button class="btn btn-sm btn-outline" style="margin-right:4px;" data-key="'+(r._fbKey||'')+'" data-valor="'+((parseFloat(r.valor)||0))+'" onclick="editarValorCorreria(this.dataset.key,this.dataset.valor)"><i class="fa-solid fa-pen"></i></button>'
+        +'<button class="btn btn-sm btn-outline" style="margin-right:4px;" data-key="'+(r._fbKey||'')+'" data-fecha="'+(r.fecha||'')+'" onclick="editarFechaCorreria(this.dataset.key,this.dataset.fecha)"><i class="fa-solid fa-calendar-pen"></i></button>'
+        +'<button class="btn btn-sm btn-outline" data-key="'+(r._fbKey||'')+'" data-nit="'+(r.nit||'')+'" onclick="editarNitCorreria(this.dataset.key,this.dataset.nit)"><i class="fa-solid fa-hashtag"></i></button>'
+        +'</td>':'';
+      return '<tr>'
+        +'<td>'+fmtDate(r.fecha)+'</td>'
+        +'<td>'+esc(r.userName||getUserName(r.userId))+'</td>'
+        +'<td>'+esc(getLabName(r.labId))+'</td>'
+        +'<td><b>'+esc(r.lugar||'-')+'</b>'+(r.razonSocial?'<div style="font-size:10px;color:var(--muted);">'+esc(r.razonSocial)+'</div>':'')+'</td>'
+        +'<td>'+esc(r.nit||'-')+'</td>'
+        +'<td style="font-weight:700;color:#0891B2;">$'+(parseFloat(r.valor)||0).toLocaleString('es-CO')+'</td>'
+        +'<td>'+archivo+'</td>'
+        +editBtn
+        +'</tr>';
+    }).join('')
+    +'</tbody></table></div>';
+  return html;
+}
+
+function abrirPdfCorreria(fbKey){
+  var r=(D.correrias||[]).find(function(x){return x._fbKey===fbKey;});
+  if(!r||!r.foto){toast('PDF no disponible','err');return;}
+  var win=window.open();
+  win.document.write('<iframe src="'+r.foto+'" style="width:100%;height:100%;border:none;" frameborder="0"></iframe>');
+}
+function descargarFotoCorreria(fbKey,fecha){
+  var r=(D.correrias||[]).find(function(x){return x._fbKey===fbKey;});
+  if(!r||!r.foto){toast('Foto no disponible','err');return;}
+  var a=document.createElement('a');a.href=r.foto;a.download='Correria_'+esc(r.lugar||'correria')+'_'+fecha+'.jpg';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+function editarValorCorreria(fbKey,val){
+  if(currentUser.role!=='super'){toast('Solo el superadmin puede editar','err');return;}
+  var nuevo=prompt('Nuevo valor ($):',val);if(nuevo===null)return;
+  var v=parseFloat(nuevo);if(isNaN(v)||v<0){toast('Valor inválido','err');return;}
+  db.ref('medvisit/correrias/'+fbKey+'/valor').set(v).then(function(){toast('Valor actualizado');renderCurrentTab();}).catch(function(e){toast('Error: '+e.message,'err');});
+}
+function editarFechaCorreria(fbKey,fecha){
+  if(currentUser.role!=='super'){toast('Solo el superadmin puede editar','err');return;}
+  var nueva=prompt('Nueva fecha (YYYY-MM-DD):',fecha);if(nueva===null)return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(nueva)){toast('Formato inválido. Usa YYYY-MM-DD','err');return;}
+  db.ref('medvisit/correrias/'+fbKey+'/fecha').set(nueva).then(function(){toast('Fecha actualizada');renderCurrentTab();}).catch(function(e){toast('Error: '+e.message,'err');});
+}
+function editarNitCorreria(fbKey,nitActual){
+  if(currentUser.role!=='super'){toast('Solo el superadmin puede editar','err');return;}
+  var nuevo=prompt('NIT del establecimiento:',nitActual||'');if(nuevo===null)return;
+  db.ref('medvisit/correrias/'+fbKey+'/nit').set(nuevo.trim()).then(function(){toast('NIT actualizado');renderCurrentTab();}).catch(function(e){toast('Error: '+e.message,'err');});
+}
+function exportarExcelCorrerias(){
+  if(typeof XLSX==='undefined'){var s=document.createElement('script');s.src='https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js';s.onload=exportarExcelCorrerias;document.head.appendChild(s);return;}
+  var desde=rptDesde;var hasta=rptHasta||today();
+  if(!desde||desde===hasta){var d30=new Date();d30.setDate(d30.getDate()-29);desde=d30.toISOString().slice(0,10);}
+  var rows=(D.correrias||[]).filter(function(r){return (!currentLabId||r.labId===currentLabId)&&(!desde||r.fecha>=desde)&&(!hasta||r.fecha<=hasta);});
+  var wb=XLSX.utils.book_new();
+  var header=['Fecha','Gestor','Laboratorio','Establecimiento','NIT','Razón Social','Valor'];
+  var data=rows.map(function(r){return [r.fecha||'',r.userName||getUserName(r.userId),getLabName(r.labId),r.lugar||'',r.nit||'',r.razonSocial||'',parseFloat(r.valor)||0];});
+  var total=rows.reduce(function(s,r){return s+(parseFloat(r.valor)||0);},0);
+  data.push(['','','','','','TOTAL','$'+total.toLocaleString('es-CO')]);
+  var ws=XLSX.utils.aoa_to_sheet([header].concat(data));
+  ws['!cols']=[{wch:12},{wch:22},{wch:14},{wch:28},{wch:16},{wch:30},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws,'Correrias');
+  XLSX.writeFile(wb,'Correrias_'+(currentLabId?getLabName(currentLabId):'General')+'_'+today()+'.xlsx');
+}
+function abrirModalLegalizacionCorr(){
+  var modal=document.getElementById('modalLegalizacionCorr');
+  if(!modal){
+    modal=document.createElement('div');modal.id='modalLegalizacionCorr';modal.className='modal-overlay';
+    modal.innerHTML='<div class="modal-box">'
+      +'<div class="modal-title"><i class="fa-solid fa-car" style="color:#0891B2;margin-right:8px;"></i>Formato legalización correría</div>'
+      +'<div class="form-group"><label class="form-label">Gestor</label><select class="form-input" id="legc-gestor"><option value="">-- Selecciona --</option>'
+      +D.users.filter(function(u){return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId);}).map(function(u){return '<option value="'+u.id+'">'+esc(u.name)+'</option>';}).join('')
+      +'</select></div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" class="form-group">'
+      +'<div><label class="form-label">Desde</label><input class="form-input" type="date" id="legc-desde"></div>'
+      +'<div><label class="form-label">Hasta</label><input class="form-input" type="date" id="legc-hasta"></div>'
+      +'</div>'
+      +'<div class="modal-actions">'
+      +'<button class="btn btn-outline" onclick="closeModal(\'modalLegalizacionCorr\')">Cancelar</button>'
+      +'<button class="btn btn-primary" style="background:#0891B2;" onclick="generarLegalizacionCorr()"><i class="fa-solid fa-download"></i> Generar</button>'
+      +'</div></div>';
+    document.body.appendChild(modal);
+  }
+  var hoy=today();var d30=new Date();d30.setDate(d30.getDate()-29);
+  document.getElementById('legc-desde').value=rptDesde&&rptDesde!==hoy?rptDesde:d30.toISOString().slice(0,10);
+  document.getElementById('legc-hasta').value=rptHasta||hoy;
+  openModal('modalLegalizacionCorr');
+}
+function generarLegalizacionCorr(){
+  var uid=document.getElementById('legc-gestor').value;
+  var desde=document.getElementById('legc-desde').value;
+  var hasta=document.getElementById('legc-hasta').value;
+  if(!uid){toast('Selecciona un gestor','err');return;}
+  if(!desde||!hasta){toast('Selecciona el rango de fechas','err');return;}
+  var u=D.users.find(function(x){return x.id===uid;});
+  if(!u){toast('Gestor no encontrado','err');return;}
+  var btn=document.querySelector('#modalLegalizacionCorr .btn-primary');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="spin fa-solid fa-circle-notch"></i> Generando...';}
+  db.ref('medvisit/correrias').orderByChild('userId').equalTo(uid).once('value',function(snap){
+    var items=[];snap.forEach(function(c){var r=c.val();if(r&&r.fecha>=desde&&r.fecha<=hasta)items.push(r);});
+    items.sort(function(a,b){return a.fecha.localeCompare(b.fecha);});
+    if(!items.length){toast('No hay correría en ese periodo','err');if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-download"></i> Generar';}return;}
+    _construirExcelLegalizacion(u,items,desde,hasta,'correria');
+    closeModal('modalLegalizacionCorr');
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-download"></i> Generar';}
+  });
+}
+
 function exportarExcelMarketing(){
   var filtered=D.marketing.filter(function(r){
     if(!r||!r.fecha) return false;
@@ -3344,7 +3509,9 @@ function generarLegalizacion(){
   });
 }
 
-function _construirExcelLegalizacion(u,items,desde,hasta){
+function _construirExcelLegalizacion(u,items,desde,hasta,tipo){
+  tipo=tipo||'marketing';
+  var conceptoLabel=tipo==='correria'?'CORRERÍA':'MARKETING';
   if(typeof XLSX==='undefined'){
     var s=document.createElement('script');
     s.src='https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js';
@@ -3366,7 +3533,7 @@ function _construirExcelLegalizacion(u,items,desde,hasta){
   sc(3,0,'');
   // Datos colaborador
   sc(4,0,'Nombre del colaborador');sc(4,1,u.name.toUpperCase());sc(4,2,'CONCEPTO LEGALIZACIÓN');sc(4,3,'');
-  sc(5,0,'Cargo');sc(5,1,'GESTOR FARMACEUTICO');sc(5,2,'MARKETING');sc(5,3,'');
+  sc(5,0,'Cargo');sc(5,1,'GESTOR FARMACEUTICO');sc(5,2,conceptoLabel);sc(5,3,'');
   sc(6,0,'Ciudad de origen');sc(6,1,'');sc(6,2,'VALOR DE REEMBOLSO');scn(6,3,total);
   sc(7,0,'Fecha de salida');sc(7,1,'');sc(7,2,'');sc(7,3,'');
   sc(8,0,'Fecha de regreso');sc(8,1,'');sc(8,2,'');sc(8,3,'');
@@ -3403,7 +3570,7 @@ function _construirExcelLegalizacion(u,items,desde,hasta){
   ws['!cols']=[{wch:14},{wch:30},{wch:18},{wch:16},{wch:24}];
   ws['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:rF+3,c:4}});
   XLSX.utils.book_append_sheet(wb,ws,'Legalizacion');
-  XLSX.writeFile(wb,'Legalizacion_'+u.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+desde+'_'+hasta+'.xlsx');
+  XLSX.writeFile(wb,(tipo==='correria'?'Correria':'Legalizacion')+'_'+u.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+desde+'_'+hasta+'.xlsx');
   toast('Formato generado');
 }
 
