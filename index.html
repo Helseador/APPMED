@@ -192,7 +192,8 @@
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
       <button id="visitorMktBtn" onclick="abrirMarketing()" style="display:none;background:#7C3AED;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-receipt"></i> Factura</button>
-      <button id="visitorCapBtn" onclick="abrirCapacitacion()" style="display:none;background:#0891B2;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-graduation-cap"></i> Capacitación</button>
+      <button id="visitorCorrBtn" onclick="abrirCorreria()" style="display:none;background:#0891B2;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-car"></i> Correría</button>
+      <button id="visitorCapBtn" onclick="abrirCapacitacion()" style="display:none;background:#16A34A;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-graduation-cap"></i> Capacitación</button>
       <div class="sync-badge synced" id="syncBadge"><span class="sync-dot"></span><span id="syncLabel">Cloud</span></div>
       <button class="header-btn" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
     </div>
@@ -398,6 +399,35 @@
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalAusencia')">Cancelar</button>
       <button class="btn btn-primary" style="flex:1;" onclick="guardarAusencia()"><i class="fa-solid fa-paper-plane"></i> Enviar</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalCorreria">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Cargar correría</div>
+    <div class="form-group">
+      <label class="form-label">Establecimiento *</label>
+      <input class="form-input" id="corr-lugar" placeholder="Ej: Exito, Jumbo..." oninput="autocompletarNitCorr(this.value)">
+    </div>
+    <div class="form-group">
+      <label class="form-label">NIT</label>
+      <input class="form-input" id="corr-nit" readonly style="background:var(--bg);">
+      <div id="corr-razon" style="font-size:11px;color:var(--muted);margin-top:3px;"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Valor *</label><input class="form-input" type="number" id="corr-valor" placeholder="Ej: 85000"></div>
+    <div class="form-group">
+      <label class="form-label">Foto o PDF de soporte *</label>
+      <input type="file" id="corr-foto-input" accept="image/*,application/pdf" style="display:none;" onchange="corrPreviewFoto(this)">
+      <div onclick="document.getElementById('corr-foto-input').click()" style="border:2px dashed var(--border);border-radius:12px;padding:18px;text-align:center;cursor:pointer;background:var(--bg);">
+        <div id="corr-foto-preview-wrap" style="display:none;margin-bottom:8px;"><img id="corr-foto-preview" style="max-height:150px;border-radius:8px;width:100%;object-fit:cover;"></div>
+        <i class="fa-solid fa-camera" style="font-size:22px;color:var(--muted);"></i>
+        <div style="font-size:12px;color:var(--muted);margin-top:5px;">Toca para capturar foto o subir PDF</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalCorreria')">Cancelar</button>
+      <button class="btn" style="flex:1;background:#0891B2;color:#fff;" onclick="guardarCorreria()"><i class="fa-solid fa-upload"></i> Cargar</button>
     </div>
   </div>
 </div>
@@ -830,6 +860,8 @@ function renderVisitor(){
   document.getElementById('visitorGreeting').textContent=sal+', '+currentUser.name.split(' ')[0]+'!';
   var mktBtn=document.getElementById('visitorMktBtn');
   if(mktBtn)mktBtn.style.display='inline-block';
+  var corrBtn=document.getElementById('visitorCorrBtn');
+  if(corrBtn)corrBtn.style.display='inline-block';
   var capBtn=document.getElementById('visitorCapBtn');
   if(capBtn)capBtn.style.display='inline-block';
   var d=horaBogota();
@@ -1435,6 +1467,84 @@ function guardarCapacitacion(){
       if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-graduation-cap"></i> Guardar';}
     });
 }
+// ── CORRERÍA ───────────────────────────────────────────────────
+var _corrFoto=null;
+var _corrFotoTipo='image';
+function autocompletarNitCorr(v){
+  var nitEl=document.getElementById('corr-nit'),razonEl=document.getElementById('corr-razon');
+  if(!nitEl||!razonEl)return;
+  var n=v.toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
+  var found=null;
+  for(var i=0;i<NIT_DB.length;i++){for(var j=0;j<NIT_DB[i].n.length;j++){var ref=NIT_DB[i].n[j];if(n===ref||n.indexOf(ref)>=0||ref.indexOf(n)>=0){found=NIT_DB[i];break;}}if(found)break;}
+  if(found){nitEl.value=found.nit;nitEl.readOnly=true;nitEl.style.background='var(--primary-50)';razonEl.textContent=found.r;razonEl.style.color='var(--primary)';}
+  else{nitEl.value='';nitEl.readOnly=false;nitEl.style.background='var(--bg)';razonEl.textContent=n.length>2?'No reconocido - escribe el NIT manualmente':'';razonEl.style.color='var(--muted)';}
+}
+function abrirCorreria(){
+  _corrFoto=null;
+  _corrFotoTipo='image';
+  ['corr-lugar','corr-valor'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var n=document.getElementById('corr-nit');if(n){n.value='';n.readOnly=false;n.style.background='var(--bg)';}
+  var r=document.getElementById('corr-razon');if(r)r.textContent='';
+  var wrap=document.getElementById('corr-foto-preview-wrap');
+  wrap.innerHTML='<img id="corr-foto-preview" style="max-height:150px;border-radius:8px;width:100%;object-fit:cover;">';
+  wrap.style.display='none';
+  document.getElementById('corr-foto-input').value='';
+  openModal('modalCorreria');
+}
+function corrPreviewFoto(input){
+  if(!input.files||!input.files[0])return;
+  var file=input.files[0];
+  var MAX_SIZE=8*1024*1024;
+  if(file.size>MAX_SIZE){toast('El archivo pesa demasiado (máx. 8MB)','err');input.value='';return;}
+  var wrap=document.getElementById('corr-foto-preview-wrap');
+  if(file.type==='application/pdf'){
+    var readerPdf=new FileReader();
+    readerPdf.onload=function(ev){
+      _corrFoto=ev.target.result;_corrFotoTipo='pdf';
+      wrap.innerHTML='<div style="display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:8px;padding:12px;"><i class="fa-solid fa-file-pdf" style="font-size:28px;color:#DC2626;"></i><div style="font-size:12px;font-weight:600;">'+esc(file.name)+'</div></div>';
+      wrap.style.display='block';
+    };
+    readerPdf.readAsDataURL(file);return;
+  }
+  _corrFotoTipo='image';
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var img=new Image();
+    img.onload=function(){
+      var MAX=1200,w=img.width,h=img.height;
+      if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+      var c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      _corrFoto=c.toDataURL('image/jpeg',0.65);
+      wrap.innerHTML='<img id="corr-foto-preview" style="max-height:150px;border-radius:8px;width:100%;object-fit:cover;">';
+      document.getElementById('corr-foto-preview').src=_corrFoto;
+      wrap.style.display='block';
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function guardarCorreria(){
+  var lugar=document.getElementById('corr-lugar').value.trim();
+  var valor=document.getElementById('corr-valor').value.trim();
+  if(!lugar){toast('Escribe el establecimiento','err');return;}
+  if(!valor){toast('Escribe el valor','err');return;}
+  if(!_corrFoto){toast('Adjunta la foto o PDF del soporte','err');return;}
+  if(!window._db){toast('Sin conexión, intenta en un momento','err');return;}
+  var reg={id:'corr_'+Date.now(),userId:currentUser.id,userName:currentUser.name,labId:currentUser.labId||'',lugar:lugar,nit:document.getElementById('corr-nit').value.trim(),razonSocial:document.getElementById('corr-razon').textContent.trim(),valor:parseFloat(valor),foto:_corrFoto,fotoTipo:_corrFotoTipo,fecha:today(),creadoAt:new Date().toISOString()};
+  var btn=document.querySelector('#modalCorreria .btn');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="spin fa-solid fa-circle-notch"></i> Subiendo...';}
+  window._db.ref('medvisit/correrias').push(reg)
+    .then(function(){
+      toast('Correría cargada');closeModal('modalCorreria');
+      if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-upload"></i> Cargar';}
+    })
+    .catch(function(e){
+      toast('Error: '+e.message,'err');
+      if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-upload"></i> Cargar';}
+    });
+}
+
 function abrirFotoOverlay(src){
   var o=document.createElement('div');
   o.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;';
