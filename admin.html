@@ -1538,6 +1538,20 @@ function eliminarPendienteAdmin(pid){
 // ── INFORMES: EXCEL VISITAS ────────────────────────────────────
 var rptDesde=null,rptHasta=null;
 
+// ── FESTIVOS COLOMBIA 2026 ─────────────────────────────────────
+var FESTIVOS_CO={
+  '2026-01-01':1,'2026-01-12':1,'2026-03-23':1,'2026-04-02':1,'2026-04-03':1,
+  '2026-05-01':1,'2026-05-18':1,'2026-06-08':1,'2026-06-15':1,'2026-06-29':1,
+  '2026-07-20':1,'2026-08-07':1,'2026-08-17':1,'2026-10-12':1,'2026-11-02':1,
+  '2026-11-16':1,'2026-12-08':1,'2026-12-25':1
+};
+
+function esDiaHabil(fechaStr){
+  var d=new Date(fechaStr+'T12:00:00');
+  var dow=d.getDay();
+  return dow>=1&&dow<=5&&!FESTIVOS_CO[fechaStr];
+}
+
 // ── MOTOR DE CUMPLIMIENTO ──────────────────────────────────────
 var CUMPL={
   GEN_TECHO:12, GEN_MIN:10,      // visitas generales por día
@@ -1564,8 +1578,8 @@ function calcCumplimientoRango(uid, desde, hasta){
   var d=new Date(desde+'T12:00:00');
   var fin=new Date(hasta+'T12:00:00');
   while(d<=fin){
-    var dow=d.getDay();
-    if(dow>=1&&dow<=5) dias.push(d.toISOString().slice(0,10));
+    var fechaStr=d.toISOString().slice(0,10);
+    if(esDiaHabil(fechaStr)) dias.push(fechaStr);
     d.setDate(d.getDate()+1);
   }
   // KPI Generales (diario)
