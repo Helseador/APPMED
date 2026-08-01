@@ -1546,10 +1546,15 @@ var FESTIVOS_CO={
   '2026-11-16':1,'2026-12-08':1,'2026-12-25':1
 };
 
-function esDiaHabil(fechaStr){
+function esDiaHabil(fechaStr, uid){
   var d=new Date(fechaStr+'T12:00:00');
   var dow=d.getDay();
-  return dow>=1&&dow<=5&&!FESTIVOS_CO[fechaStr];
+  if(dow<1||dow>5||FESTIVOS_CO[fechaStr]) return false;
+  if(uid){
+    var tieneAusencia=(D.ausencias||[]).some(function(a){return a.userId===uid&&a.fecha===fechaStr;});
+    if(tieneAusencia) return false;
+  }
+  return true;
 }
 
 // ── MOTOR DE CUMPLIMIENTO ──────────────────────────────────────
@@ -1579,7 +1584,7 @@ function calcCumplimientoRango(uid, desde, hasta){
   var fin=new Date(hasta+'T12:00:00');
   while(d<=fin){
     var fechaStr=d.toISOString().slice(0,10);
-    if(esDiaHabil(fechaStr)) dias.push(fechaStr);
+    if(esDiaHabil(fechaStr,uid)) dias.push(fechaStr);
     d.setDate(d.getDate()+1);
   }
   // KPI Generales (diario)
