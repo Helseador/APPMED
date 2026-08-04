@@ -403,7 +403,7 @@ var LABS=BASE_LABS.slice();
 var AV_COLORS=['#0303B5','#D97706','#DC2626','#7C3AED','#DB2777','#EA580C','#4F46E5','#0891B2'];
 
 var db=null, currentUser=null, currentLabId=null;
-var D={users:[],visits:[],points:[],pendientes:[],labs:[],marketing:[],ausencias:[],capacitaciones:[],correrias:[]};
+var D={users:[],visits:[],points:[],pendientes:[],labs:[],marketing:[],ausencias:[],capacitaciones:[],correrias:[],profKetolance:[]};
 
 // ── UTILS ──────────────────────────────────────────────────────
 function esc(s){if(!s) return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -453,6 +453,7 @@ function initFirebase(){
     db.ref('medvisit/ausencias').on('value',function(snap){D.ausencias=toArray(snap.val()||[]);render();});
     db.ref('medvisit/capacitaciones').on('value',function(snap){D.capacitaciones=toArray(snap.val()||[]);render();});
     db.ref('medvisit/correrias').on('value',function(snap){D.correrias=toArray(snap.val()||[]);render();});
+    db.ref('medvisit/profKetolance').on('value',function(snap){D.profKetolance=toArray(snap.val()||[]);});
     db.ref('medvisit/labs').on('value',function(snap){
       var extra=toArray(snap.val());
       LABS=BASE_LABS.slice().concat(extra.filter(function(l){return !BASE_LABS.some(function(b){return b.id===l.id;});}));
@@ -520,7 +521,7 @@ function doLogout(){
 // ── TABS ──────────────────────────────────────────────────────
 var _currentTab='panel';
 var _tabs={
-  super:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'correrias',icon:'fa-car',label:'Correría'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'usuarios',icon:'fa-screwdriver-wrench',label:'Gestión'}],
+  super:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'correrias',icon:'fa-car',label:'Correría'},{id:'profketolance',icon:'fa-user-doctor',label:'Prof. Ketolance'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'usuarios',icon:'fa-screwdriver-wrench',label:'Gestión'}],
   adminGeneral:[{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'correrias',icon:'fa-car',label:'Correría'},{id:'informes',icon:'fa-chart-bar',label:'Informes'}],
   admin:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'correrias',icon:'fa-car',label:'Correría'},{id:'informes',icon:'fa-chart-bar',label:'Informes'}],
   contador:    [{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'correrias',icon:'fa-car',label:'Correría'}]
@@ -560,6 +561,7 @@ function renderCurrentTab(){
   else if(_currentTab==='ausencias') el.innerHTML=renderAusencias();
   else if(_currentTab==='marketing') el.innerHTML=renderMarketing();
   else if(_currentTab==='correrias') el.innerHTML=renderCorrerias();
+  else if(_currentTab==='profketolance') el.innerHTML=renderProfKetolance();
   else if(_currentTab==='informes') renderInformes();
   else if(_currentTab==='usuarios') el.innerHTML=renderUsuarios();
 }
@@ -1047,6 +1049,14 @@ function renderMarketing(){
     return true;
   });
   filtered.sort(function(a,b){return (b.fecha||'').localeCompare(a.fecha||'');});
+  var isKetolanceAdmin=(currentUser.role==='super')||(currentLabId==='ketolance'&&(currentUser.role==='admin'||currentUser.role==='adminGeneral'));
+  var esContador=currentUser.role==='contador';
+  filtered=filtered.filter(function(r){
+    if(r.labId!=='ketolance') return true;
+    if(isKetolanceAdmin) return true;
+    if(esContador) return r.aprobado===true;
+    return true;
+  });
   var total=filtered.reduce(function(s,r){return s+(parseFloat(r.valor)||0);},0);
 
   var html='<div class="filters">';
@@ -1085,8 +1095,23 @@ function renderMarketing(){
       var editBtn=currentUser.role==='super'
         ?'<td><button class="btn btn-sm btn-outline" style="margin-right:4px;" data-key="'+(r._fbKey||'')+'" data-valor="'+((parseFloat(r.valor)||0))+'" onclick="editarValorMarketing(this.dataset.key,this.dataset.valor)"><i class="fa-solid fa-pen"></i></button>'
         +'<button class="btn btn-sm btn-outline" style="margin-right:4px;" data-key="'+(r._fbKey||'')+'" data-fecha="'+(r.fecha||'')+'" onclick="editarFechaMarketing(this.dataset.key,this.dataset.fecha)"><i class="fa-solid fa-calendar-pen"></i></button>'
-        +'<button class="btn btn-sm btn-outline" data-key="'+(r._fbKey||'')+'" data-nit="'+(r.nit||'')+'" onclick="editarNitMarketing(this.dataset.key,this.dataset.nit)"><i class="fa-solid fa-hashtag"></i></button></td>'
+        +'<button class="btn btn-sm btn-outline" style="margin-right:4px;" data-key="'+(r._fbKey||'')+'" data-nit="'+(r.nit||'')+'" onclick="editarNitMarketing(this.dataset.key,this.dataset.nit)"><i class="fa-solid fa-hashtag"></i></button>'
+        +'<button class="btn btn-sm" style="background:var(--danger);color:#fff;" data-key="'+(r._fbKey||'')+'" onclick="eliminarRegistroMarketing(this.dataset.key)"><i class="fa-solid fa-trash"></i></button></td>'
         :'';
+      var aprobacionCol='';
+      var aprobacionHdr='';
+      if(r.labId==='ketolance'){
+        aprobacionHdr='<th>Estado</th>';
+        var aprobado=r.aprobado===true;
+        if(isKetolanceAdmin){
+          aprobacionCol='<td>'+(aprobado
+            ?'<span class="badge badge-ok">Aprobado</span> <button class="btn btn-sm btn-outline" style="font-size:10px;" data-key="'+(r._fbKey||'')+'" onclick="rechazarMkt(this.dataset.key)">Rechazar</button>'
+            :'<span class="badge badge-warn">Pendiente</span> <button class="btn btn-sm btn-success" style="font-size:10px;" data-key="'+(r._fbKey||'')+'" onclick="aprobarMkt(this.dataset.key)">Aprobar</button>')
+            +'</td>';
+        } else {
+          aprobacionCol='<td>'+(aprobado?'<span class="badge badge-ok">Aprobado</span>':'<span class="badge badge-warn">Pendiente</span>')+'</td>';
+        }
+      }
       return '<tr>'
         +'<td>'+fmtDate(r.fecha)+'</td>'
         +'<td>'+esc(r.userName||getUserName(r.userId))+'</td>'
@@ -1095,6 +1120,7 @@ function renderMarketing(){
         +'<td>'+esc(r.nit||'-')+'</td>'
         +'<td style="font-weight:700;color:var(--primary);">$'+(parseFloat(r.valor)||0).toLocaleString('es-CO')+'</td>'
         +'<td>'+foto+'</td>'
+        +aprobacionCol
         +editBtn
         +'</tr>';
     }).join('')
@@ -1136,6 +1162,14 @@ function renderCorrerias(){
     return true;
   });
   filtered.sort(function(a,b){return (b.fecha||'').localeCompare(a.fecha||'');});
+  var isKetolanceAdminC=(currentUser.role==='super')||(currentLabId==='ketolance'&&(currentUser.role==='admin'||currentUser.role==='adminGeneral'));
+  var esContadorC=currentUser.role==='contador';
+  filtered=filtered.filter(function(r){
+    if(r.labId!=='ketolance') return true;
+    if(isKetolanceAdminC) return true;
+    if(esContadorC) return r.aprobado===true;
+    return true;
+  });
   var total=filtered.reduce(function(s,r){return s+(parseFloat(r.valor)||0);},0);
 
   var html='<div class="stats-grid">'
@@ -1186,8 +1220,21 @@ function renderCorrerias(){
         ?'<td>'
         +'<button class="btn btn-sm btn-outline" style="margin-right:4px;" data-key="'+(r._fbKey||'')+'" data-valor="'+((parseFloat(r.valor)||0))+'" onclick="editarValorCorreria(this.dataset.key,this.dataset.valor)"><i class="fa-solid fa-pen"></i></button>'
         +'<button class="btn btn-sm btn-outline" style="margin-right:4px;" data-key="'+(r._fbKey||'')+'" data-fecha="'+(r.fecha||'')+'" onclick="editarFechaCorreria(this.dataset.key,this.dataset.fecha)"><i class="fa-solid fa-calendar-pen"></i></button>'
-        +'<button class="btn btn-sm btn-outline" data-key="'+(r._fbKey||'')+'" data-nit="'+(r.nit||'')+'" onclick="editarNitCorreria(this.dataset.key,this.dataset.nit)"><i class="fa-solid fa-hashtag"></i></button>'
+        +'<button class="btn btn-sm btn-outline" style="margin-right:4px;" data-key="'+(r._fbKey||'')+'" data-nit="'+(r.nit||'')+'" onclick="editarNitCorreria(this.dataset.key,this.dataset.nit)"><i class="fa-solid fa-hashtag"></i></button>'
+        +'<button class="btn btn-sm" style="background:var(--danger);color:#fff;" data-key="'+(r._fbKey||'')+'" onclick="eliminarRegistroCorreria(this.dataset.key)"><i class="fa-solid fa-trash"></i></button>'
         +'</td>':'';
+      var aprobacionCorrCol='';
+      if(r.labId==='ketolance'){
+        var aprobadoC=r.aprobado===true;
+        if(isKetolanceAdminC){
+          aprobacionCorrCol='<td>'+(aprobadoC
+            ?'<span class="badge badge-ok">Aprobado</span> <button class="btn btn-sm btn-outline" style="font-size:10px;" data-key="'+(r._fbKey||'')+'" onclick="rechazarCorr(this.dataset.key)">Rechazar</button>'
+            :'<span class="badge badge-warn">Pendiente</span> <button class="btn btn-sm btn-success" style="font-size:10px;" data-key="'+(r._fbKey||'')+'" onclick="aprobarCorr(this.dataset.key)">Aprobar</button>')
+            +'</td>';
+        } else {
+          aprobacionCorrCol='<td>'+(aprobadoC?'<span class="badge badge-ok">Aprobado</span>':'<span class="badge badge-warn">Pendiente</span>')+'</td>';
+        }
+      }
       return '<tr>'
         +'<td>'+fmtDate(r.fecha)+'</td>'
         +'<td>'+esc(r.userName||getUserName(r.userId))+'</td>'
@@ -1196,6 +1243,7 @@ function renderCorrerias(){
         +'<td>'+esc(r.nit||'-')+'</td>'
         +'<td style="font-weight:700;color:#0891B2;">$'+(parseFloat(r.valor)||0).toLocaleString('es-CO')+'</td>'
         +'<td>'+archivo+'</td>'
+        +aprobacionCorrCol
         +editBtn
         +'</tr>';
     }).join('')
@@ -1753,6 +1801,124 @@ function renderCapacitaciones(){
   return html+'</div>';
 }
 
+
+// ── PROFESIONALES KETOLANCE ────────────────────────────────────
+function renderProfKetolance(){
+  var canView=currentUser.role==='super'||(currentLabId==='ketolance'&&(currentUser.role==='admin'||currentUser.role==='adminGeneral'));
+  if(!canView) return '<div class="empty"><i class="fa-solid fa-lock"></i><p>Sin acceso</p></div>';
+
+  var profs=D.profKetolance||[];
+  var html='<div class="stats-grid">'
+    +'<div class="stat-card"><div class="stat-num">'+profs.length+'</div><div class="stat-label">Profesionales</div></div>'
+    +'<div class="stat-card"><div class="stat-num">'+D.visits.filter(function(v){return v.type==="profesional"&&v.labId==="ketolance";}).length+'</div><div class="stat-label">Visitas realizadas</div></div>'
+    +'</div>';
+
+  // Botones de acción
+  html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">'
+    +'<input type="file" id="pkExcelInput" accept=".xlsx,.xls" style="display:none;" onchange="cargarProfKetolanceExcel(this)">'
+    +'<button class="btn btn-primary btn-sm" onclick="document.getElementById(\'pkExcelInput\').click()"><i class="fa-solid fa-file-excel"></i> Cargar lista Excel</button>'
+    +'<button class="btn btn-success btn-sm" onclick="exportarInformeProfKetolance()"><i class="fa-solid fa-file-excel"></i> Exportar informe</button>'
+    +(currentUser.role==='super'?'<button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="limpiarProfKetolance()"><i class="fa-solid fa-trash"></i> Limpiar lista</button>':'')
+    +'</div>';
+
+  if(!profs.length){
+    html+='<div class="card" style="text-align:center;padding:24px;">'
+      +'<i class="fa-solid fa-file-excel" style="font-size:32px;color:var(--muted);display:block;margin-bottom:10px;"></i>'
+      +'<div style="font-weight:700;margin-bottom:6px;">Sin profesionales cargados</div>'
+      +'<div style="font-size:12px;color:var(--muted);">Carga un Excel con columnas: Nombre, Especialidad, Teléfono</div>'
+      +'</div>';
+    return html;
+  }
+
+  // Filtro de búsqueda
+  if(typeof window._pkFiltro==='undefined') window._pkFiltro='';
+  html+='<div class="filters"><input type="text" class="form-input" placeholder="Buscar profesional..." value="'+esc(window._pkFiltro)+'" oninput="window._pkFiltro=this.value;renderCurrentTab()"></div>';
+
+  var filtrados=profs.filter(function(p){
+    if(!window._pkFiltro) return true;
+    var q=window._pkFiltro.toLowerCase();
+    return (p.nombre||'').toLowerCase().includes(q)||(p.especialidad||'').toLowerCase().includes(q);
+  });
+
+  html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
+    +'<th>Nombre</th><th>Especialidad</th><th>Teléfono</th><th>Visitas</th>'
+    +'</tr></thead><tbody>'
+    +filtrados.map(function(p){
+      var visitasProf=D.visits.filter(function(v){
+        return v.type==='profesional'&&v.labId==='ketolance'&&
+          (v.placeName||'').toLowerCase()===( p.nombre||'').toLowerCase();
+      }).length;
+      return '<tr>'
+        +'<td><b>'+esc(p.nombre||'')+'</b></td>'
+        +'<td>'+esc(p.especialidad||'-')+'</td>'
+        +'<td>'+esc(p.telefono||'-')+'</td>'
+        +'<td><span class="badge '+(visitasProf>0?'badge-ok':'badge-warn')+'">'+visitasProf+'</span></td>'
+        +'</tr>';
+    }).join('')
+    +'</tbody></table></div>';
+  return html;
+}
+
+function cargarProfKetolanceExcel(input){
+  if(!input.files||!input.files[0]) return;
+  if(typeof XLSX==='undefined'){
+    var s=document.createElement('script');
+    s.src='https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js';
+    s.onload=function(){cargarProfKetolanceExcel(input);};
+    document.head.appendChild(s);
+    return;
+  }
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      var startRow=0;
+      if(raw.length>0){
+        var first=String(raw[0][0]||'').toLowerCase();
+        if(first==='nombre'||first==='name'||first==='profesional') startRow=1;
+      }
+      var profs=raw.slice(startRow).filter(function(r){return String(r[0]||'').trim();}).map(function(r){
+        return {nombre:String(r[0]||'').trim(),especialidad:String(r[1]||'').trim(),telefono:String(r[2]||'').trim()};
+      });
+      if(!profs.length){toast('No se encontraron profesionales en el archivo','err');return;}
+      showConfirm('Cargar profesionales','Se cargarán '+profs.length+' profesionales. ¿Reemplazar lista actual?','fa-user-doctor','warn',function(){
+        db.ref('medvisit/profKetolance').set(profs)
+          .then(function(){toast(profs.length+' profesionales cargados');D.profKetolance=profs;renderCurrentTab();})
+          .catch(function(e){toast('Error: '+e.message,'err');});
+      });
+    }catch(err){toast('Error leyendo Excel: '+err.message,'err');}
+  };
+  reader.readAsArrayBuffer(input.files[0]);
+}
+
+function limpiarProfKetolance(){
+  if(currentUser.role!=='super'){toast('Solo el superadmin puede limpiar la lista','err');return;}
+  showConfirm('Limpiar lista','¿Eliminar todos los profesionales de Ketolance?','fa-trash','danger',function(){
+    db.ref('medvisit/profKetolance').remove()
+      .then(function(){toast('Lista limpiada');D.profKetolance=[];renderCurrentTab();})
+      .catch(function(e){toast('Error: '+e.message,'err');});
+  });
+}
+
+function exportarInformeProfKetolance(){
+  if(typeof XLSX==='undefined'){var s=document.createElement('script');s.src='https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js';s.onload=exportarInformeProfKetolance;document.head.appendChild(s);return;}
+  var profs=D.profKetolance||[];
+  var visitasProf=D.visits.filter(function(v){return v.type==='profesional'&&v.labId==='ketolance';});
+  var header=['Nombre','Especialidad','Teléfono','Total visitas','Última visita','Visitadores'];
+  var rows=profs.map(function(p){
+    var vis=visitasProf.filter(function(v){return (v.placeName||'').toLowerCase()===(p.nombre||'').toLowerCase();});
+    var ultima=vis.length?vis.map(function(v){return v.date;}).sort().reverse()[0]:'';
+    var visitadores=[...new Set(vis.map(function(v){return getUserName(v.visitorId||v.userId);}))].join(', ');
+    return [p.nombre,p.especialidad,p.telefono,vis.length,ultima,visitadores];
+  });
+  var wb=XLSX.utils.book_new();
+  var ws=XLSX.utils.aoa_to_sheet([header].concat(rows));
+  ws['!cols']=[{wch:28},{wch:22},{wch:16},{wch:14},{wch:14},{wch:40}];
+  XLSX.utils.book_append_sheet(wb,ws,'Profesionales Ketolance');
+  XLSX.writeFile(wb,'Informe_Profesionales_Ketolance_'+today()+'.xlsx');
+}
 
 function renderInformes(){
   var el=document.getElementById('tabContent');
@@ -2388,6 +2554,7 @@ renderCurrentTab=function(){
   else if(_currentTab==='ausencias') el.innerHTML=renderAusencias();
   else if(_currentTab==='marketing') el.innerHTML=renderMarketing();
   else if(_currentTab==='correrias') el.innerHTML=renderCorrerias();
+  else if(_currentTab==='profketolance') el.innerHTML=renderProfKetolance();
   else if(_currentTab==='usuarios') el.innerHTML=renderUsuarios();
   else if(_currentTab==='panel') renderCanvasDashboard();
   else if(_currentTab==='informes') renderInformes();
@@ -3423,6 +3590,53 @@ function _generarPPTXVisitador(uid){
   }
 
   pptx.writeFile({fileName:'Reporte_'+u.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+today()+'.pptx'});
+}
+
+function aprobarMkt(fbKey){
+  var canApprove=(currentUser.role==='super')||(currentLabId==='ketolance'&&(currentUser.role==='admin'||currentUser.role==='adminGeneral'));
+  if(!canApprove){toast('Sin permiso para aprobar','err');return;}
+  db.ref('medvisit/marketing/'+fbKey).update({aprobado:true,aprobadoPor:currentUser.name,aprobadoAt:new Date().toISOString()})
+    .then(function(){toast('Registro aprobado');renderCurrentTab();})
+    .catch(function(e){toast('Error: '+e.message,'err');});
+}
+function rechazarMkt(fbKey){
+  var canApprove=(currentUser.role==='super')||(currentLabId==='ketolance'&&(currentUser.role==='admin'||currentUser.role==='adminGeneral'));
+  if(!canApprove){toast('Sin permiso','err');return;}
+  db.ref('medvisit/marketing/'+fbKey).update({aprobado:false,aprobadoPor:null,aprobadoAt:null})
+    .then(function(){toast('Aprobación retirada');renderCurrentTab();})
+    .catch(function(e){toast('Error: '+e.message,'err');});
+}
+function aprobarCorr(fbKey){
+  var canApprove=(currentUser.role==='super')||(currentLabId==='ketolance'&&(currentUser.role==='admin'||currentUser.role==='adminGeneral'));
+  if(!canApprove){toast('Sin permiso para aprobar','err');return;}
+  db.ref('medvisit/correrias/'+fbKey).update({aprobado:true,aprobadoPor:currentUser.name,aprobadoAt:new Date().toISOString()})
+    .then(function(){toast('Registro aprobado');renderCurrentTab();})
+    .catch(function(e){toast('Error: '+e.message,'err');});
+}
+function rechazarCorr(fbKey){
+  var canApprove=(currentUser.role==='super')||(currentLabId==='ketolance'&&(currentUser.role==='admin'||currentUser.role==='adminGeneral'));
+  if(!canApprove){toast('Sin permiso','err');return;}
+  db.ref('medvisit/correrias/'+fbKey).update({aprobado:false,aprobadoPor:null,aprobadoAt:null})
+    .then(function(){toast('Aprobación retirada');renderCurrentTab();})
+    .catch(function(e){toast('Error: '+e.message,'err');});
+}
+
+function eliminarRegistroMarketing(fbKey){
+  if(currentUser.role!=='super'){toast('Solo el superadmin puede eliminar','err');return;}
+  showConfirm('Eliminar registro','¿Eliminar este registro de marketing? No se puede deshacer.','fa-trash','danger',function(){
+    db.ref('medvisit/marketing/'+fbKey).remove()
+      .then(function(){toast('Registro eliminado');D.marketing=D.marketing.filter(function(r){return r._fbKey!==fbKey;});renderCurrentTab();})
+      .catch(function(e){toast('Error: '+e.message,'err');});
+  });
+}
+
+function eliminarRegistroCorreria(fbKey){
+  if(currentUser.role!=='super'){toast('Solo el superadmin puede eliminar','err');return;}
+  showConfirm('Eliminar registro','¿Eliminar este registro de correría? No se puede deshacer.','fa-trash','danger',function(){
+    db.ref('medvisit/correrias/'+fbKey).remove()
+      .then(function(){toast('Registro eliminado');D.correrias=D.correrias.filter(function(r){return r._fbKey!==fbKey;});renderCurrentTab();})
+      .catch(function(e){toast('Error: '+e.message,'err');});
+  });
 }
 
 function editarNitMarketing(fbKey,nitActual){
