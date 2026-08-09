@@ -292,7 +292,10 @@
       <button onclick="selectVisitType(null)" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:13px;font-weight:600;padding:0;margin-bottom:14px;"><i class="fa-solid fa-arrow-left"></i> Cambiar tipo</button>
       <div class="gps-chip" id="gpsChipProf"><i class="fa-solid fa-satellite-dish" style="font-size:10px;"></i> <span id="gpsTextProf">Obteniendo ubicacion...</span></div>
       <div class="form-group"><label class="form-label">Nombre del punto</label><input class="form-input" id="vp-punto" placeholder="Ej: Clinica del Norte..."></div>
-      <div class="form-group"><label class="form-label">Nombre del profesional *</label><input class="form-input" id="vp-nombre" placeholder="Dr. / Dra. Nombre Apellido"></div>
+      <div class="form-group"><label class="form-label">Nombre del profesional *</label>
+        <input class="form-input" id="vp-nombre" placeholder="Dr. / Dra. Nombre Apellido" autocomplete="off" oninput="autocompletarProfesional(this.value)">
+        <div id="vp-nombre-sugerencias" style="display:none;background:#fff;border:1.5px solid var(--primary);border-radius:10px;margin-top:4px;max-height:180px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:50;position:relative;"></div>
+      </div>
       <div class="form-group"><label class="form-label">Especialidad</label><input class="form-input" id="vp-especialidad" placeholder="Ej. Cardiologia..."></div>
       <div class="form-group"><label class="form-label">Numero de contacto *</label><input class="form-input" type="tel" id="vp-telefono" placeholder="3XX XXX XXXX"></div>
       <div class="form-group"><label class="form-label">Direccion del consultorio *</label><input class="form-input" id="vp-direccion" placeholder="Calle, carrera, piso..."></div>
@@ -785,6 +788,7 @@ function entrarComoVisitador(){
   loadQueue();
   updateQueueBar();
   setupVisitorListeners();
+  loadProfKetolance();
   gpsPermission='unknown';
   if(localStorage.getItem('appmed_gps')==='granted'){
     gpsPermission='granted';
@@ -1545,6 +1549,44 @@ function guardarCorreria(){
     });
 }
 
+var _profKetolanceList=[];
+
+function loadProfKetolance(){
+  if(!window._db||currentUser.labId!=='ketolance') return;
+  window._db.ref('medvisit/profKetolance').once('value',function(snap){
+    _profKetolanceList=toArray(snap.val()||[]);
+  });
+}
+
+function autocompletarProfesional(val){
+  var sug=document.getElementById('vp-nombre-sugerencias');
+  if(!sug) return;
+  if(currentUser.labId!=='ketolance'||!val||val.length<2||!_profKetolanceList.length){
+    sug.style.display='none';return;
+  }
+  var q=val.toLowerCase();
+  var matches=_profKetolanceList.filter(function(p){
+    return (p.nombre||'').toLowerCase().includes(q)||(p.especialidad||'').toLowerCase().includes(q);
+  }).slice(0,6);
+  if(!matches.length){sug.style.display='none';return;}
+  sug.innerHTML=matches.map(function(p){
+    return '<div onclick="seleccionarProfesional(\''+esc(p.nombre)+'\',\''+esc(p.especialidad)+'\',\''+esc(p.telefono)+'\')" '
+      +'style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:2px;" '
+      +'onmouseenter="this.style.background=\'var(--primary-50)\'" onmouseleave="this.style.background=\'#fff\'">'
+      +'<div style="font-weight:700;font-size:13px;">'+esc(p.nombre)+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);">'+esc(p.especialidad||'')+(p.telefono?' · '+esc(p.telefono):'')+'</div>'
+      +'</div>';
+  }).join('');
+  sug.style.display='block';
+}
+
+function seleccionarProfesional(nombre,especialidad,telefono){
+  var n=document.getElementById('vp-nombre');if(n)n.value=nombre;
+  var e=document.getElementById('vp-especialidad');if(e)e.value=especialidad;
+  var t=document.getElementById('vp-telefono');if(t)t.value=telefono;
+  var sug=document.getElementById('vp-nombre-sugerencias');if(sug)sug.style.display='none';
+}
+
 function abrirFotoOverlay(src){
   var o=document.createElement('div');
   o.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;';
@@ -1589,6 +1631,10 @@ function cancelConfirm(){document.getElementById('confirmOverlay').classList.rem
 window.addEventListener('DOMContentLoaded',function(){
   loadQueue();
   updateQueueBar();
+  document.addEventListener('click',function(e){
+    var sug=document.getElementById('vp-nombre-sugerencias');
+    if(sug&&!sug.contains(e.target)&&e.target.id!=='vp-nombre') sug.style.display='none';
+  });
 });
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
