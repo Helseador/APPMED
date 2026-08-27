@@ -437,7 +437,8 @@ function initFirebase(){
     });
     // Cargar datos
     db.ref('medvisit/users').on('value',function(snap){D.users=toArray(snap.val());render();});
-    var _fechaLimiteAdmin=new Date();_fechaLimiteAdmin.setDate(_fechaLimiteAdmin.getDate()-30);
+    var _fechaLimiteAdmin=new Date();_fechaLimiteAdmin.setDate(1);_fechaLimiteAdmin.setMonth(_fechaLimiteAdmin.getMonth()-1);
+    var _fechaLimiteAdminStr=_fechaLimiteAdmin.toISOString().slice(0,10);
     var _fechaLimiteAdminStr=_fechaLimiteAdmin.toISOString().slice(0,10);
     var _fechaFoto=new Date();_fechaFoto.setDate(_fechaFoto.getDate()-7);
     var _fechaFotoStr=_fechaFoto.toISOString().slice(0,10);
@@ -1933,6 +1934,7 @@ function renderInformes(){
     +'<button class="btn btn-sm rpt-preset" style="background:var(--primary);color:#fff;" onclick="setRptPreset(\'hoy\')" data-p="hoy">Hoy</button>'
     +'<button class="btn btn-sm rpt-preset btn-outline" onclick="setRptPreset(\'semana\')" data-p="semana">Esta semana</button>'
     +'<button class="btn btn-sm rpt-preset btn-outline" onclick="setRptPreset(\'mes\')" data-p="mes">Este mes</button>'
+    +'<button class="btn btn-sm rpt-preset btn-outline" onclick="setRptPreset(\'mesant\')" data-p="mesant">Mes anterior</button>'
     +'<button class="btn btn-sm rpt-preset btn-outline" onclick="setRptPreset(\'custom\')" data-p="custom"><i class="fa-solid fa-sliders"></i> Personalizado</button>'
     +'</div>'
     +'<div id="rptCustomDiv" style="display:none;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
@@ -1996,7 +1998,20 @@ function setRptPreset(preset){
   });
   if(preset==='hoy'){rptDesde=rptHasta=today();label='Hoy';}
   else if(preset==='semana'){var s=new Date(now);s.setDate(now.getDate()-now.getDay()+1);rptDesde=s.toISOString().slice(0,10);rptHasta=today();label='Esta semana';}
-  else if(preset==='mes'){rptDesde=today().slice(0,7)+'-01';rptHasta=today();label='Este mes';}
+  else if(preset==='mes'){
+    var primeroDia=new Date(now.getFullYear(),now.getMonth(),1);
+    var ultimoDia=new Date(now.getFullYear(),now.getMonth()+1,0);
+    rptDesde=primeroDia.toISOString().slice(0,10);
+    rptHasta=ultimoDia.toISOString().slice(0,10);
+    label='Este mes ('+primeroDia.toLocaleString('es-CO',{month:'long'})+')';
+  }
+  else if(preset==='mesant'){
+    var primeroAnt=new Date(now.getFullYear(),now.getMonth()-1,1);
+    var ultimoAnt=new Date(now.getFullYear(),now.getMonth(),0);
+    rptDesde=primeroAnt.toISOString().slice(0,10);
+    rptHasta=ultimoAnt.toISOString().slice(0,10);
+    label='Mes anterior ('+primeroAnt.toLocaleString('es-CO',{month:'long'})+')';
+  }
   else {
     // Personalizado — prellenar si están vacíos
     var desdeEl=document.getElementById('rptDesdeInput');
@@ -3877,9 +3892,11 @@ function ejecutarInforme(formato){
     rptDesde=d.toISOString().slice(0,10);
     rptHasta=hoy;
   } else if(_infPeriodo==='mensual'){
-    var d=new Date();d.setDate(d.getDate()-29);
-    rptDesde=d.toISOString().slice(0,10);
-    rptHasta=hoy;
+    var dm=new Date();
+    var primeroDiaM=new Date(dm.getFullYear(),dm.getMonth(),1);
+    var ultimoDiaM=new Date(dm.getFullYear(),dm.getMonth()+1,0);
+    rptDesde=primeroDiaM.toISOString().slice(0,10);
+    rptHasta=ultimoDiaM.toISOString().slice(0,10);
   } else {
     rptDesde=document.getElementById('infDesdeCustom').value;
     rptHasta=document.getElementById('infHastaCustom').value;
