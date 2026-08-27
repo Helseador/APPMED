@@ -1735,7 +1735,7 @@ function renderCumplimientoTodos(desde, hasta){
   if(!visitadores.length) return '<div class="empty"><p>Sin visitadores activos</p></div>';
   var data=visitadores.map(function(u){
     var r=calcCumplimientoRango(u.id,desde,hasta);
-    return {u:u,pct:r.pct,avgGen:r.avgGen,pctProf:r.pctProf,pctCap:r.pctCap,totalProf:r.totalProf,totalCap:r.totalCap};
+    return {u:u,pct:r.pct,avgGen:r.avgGen,pctProf:r.pctProf,pctCap:r.pctCap,totalProf:r.totalProf,totalCap:r.totalCap,totalGen:r.totalGen};
   }).sort(function(a,b){return b.pct-a.pct;});
   var html='<div style="display:flex;flex-direction:column;gap:10px;">';
   data.forEach(function(d){
