@@ -462,6 +462,14 @@ function toArray(obj){
 function initials(n){if(!n) return '?';var p=n.trim().split(/\s+/);return p.length>=2?(p[0][0]+p[p.length-1][0]).toUpperCase():n.substring(0,2).toUpperCase();}
 function avatarColor(s){var h=0;for(var i=0;i<(s||'').length;i++) h=(h*31+s.charCodeAt(i))%AV_COLORS.length;return AV_COLORS[Math.abs(h)%AV_COLORS.length];}
 function fmtDate(d){if(!d) return '-';var p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
+function fmtHoraBogota(isoStr){
+  if(!isoStr) return '';
+  var d=new Date(isoStr);
+  var bog=new Date(d.getTime()-5*3600000);
+  var h=String(bog.getUTCHours()).padStart(2,'0');
+  var m=String(bog.getUTCMinutes()).padStart(2,'0');
+  return h+':'+m;
+}
 function getLabName(labId){var l=LABS.find(function(x){return x.id===labId;});return l?l.name:labId||'-';}
 function getUserName(uid){var u=D.users.find(function(x){return x.id===uid;});return u?u.name:uid||'-';}
 function openFoto(src){document.getElementById('fotoOverlayImg').src=src;document.getElementById('fotoOverlay').classList.add('open');}
@@ -694,7 +702,7 @@ function renderVisitasGenerales(){
       var estado=v.status==='completed'?'<span class="badge badge-ok">Completada</span>':v.status==='in-progress'?'<span class="badge badge-warn">En curso</span>':'<span class="badge badge-info">Pendiente</span>';
       var foto=v.photo?'<button class="btn btn-sm btn-outline" onclick="openFoto(\''+v.photo+'\')"><i class="fa-solid fa-image"></i></button>':'-';
       var ubicacion=(v.lat&&v.lng)?'<a href="https://www.google.com/maps?q='+v.lat+','+v.lng+'" target="_blank" class="btn btn-sm btn-outline"><i class="fa-solid fa-location-dot"></i></a>':'-';
-      return '<tr><td><b>'+esc(visName)+'</b></td><td>'+esc(labName)+'</td><td>'+esc(punto)+'</td><td>'+esc(v.jefe||'-')+'</td><td>'+(v.notes?'<span title="'+esc(v.notes)+'" style="cursor:help;">'+esc(v.notes.substring(0,30))+(v.notes.length>30?'...':'')+'</span>':'-')+'</td><td>'+fmtDate(v.date)+(v.completedAt?' <span style="font-size:11px;color:var(--muted);">'+v.completedAt.substr(11,5)+'</span>':'')+'</td><td>'+estado+'</td><td>'+ubicacion+'</td><td>'+foto+'</td></tr>';
+      return '<tr><td><b>'+esc(visName)+'</b></td><td>'+esc(labName)+'</td><td>'+esc(punto)+'</td><td>'+esc(v.jefe||'-')+'</td><td>'+(v.notes?'<span title="'+esc(v.notes)+'" style="cursor:help;">'+esc(v.notes.substring(0,30))+(v.notes.length>30?'...':'')+'</span>':'-')+'</td><td>'+fmtDate(v.date)+(v.completedAt?' <span style="font-size:11px;color:var(--muted);">'+fmtHoraBogota(v.completedAt)+'</span>':'')+'</td><td>'+estado+'</td><td>'+ubicacion+'</td><td>'+foto+'</td></tr>';
     }).join('')
     +'</tbody></table></div>';
 
