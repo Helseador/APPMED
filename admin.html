@@ -769,12 +769,13 @@ function renderVisitasProfesionales(){
   if(!filtradas.length) return html+'<div class="empty"><i class="fa-solid fa-user-doctor"></i><p>Sin visitas a profesionales</p></div>';
 
   html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
-    +'<th>Visitador</th><th>Lab</th><th>Profesional</th><th>Especialidad</th><th>Teléfono</th><th>Dirección</th><th>Obsequio</th><th>Fecha</th><th>Firma</th><th>Foto</th>'
+    +'<th>Visitador</th><th>Lab</th><th>Profesional</th><th>Especialidad</th><th>Teléfono</th><th>Dirección</th><th>Obsequio</th><th>Notas</th><th>Fecha</th><th>Firma</th><th>Foto</th>'
     +'</tr></thead><tbody>'
     +filtradas.map(function(v){
       var visName=getUserName(v.visitorId||v.userId);
       var firma=v.firma?'<span class="badge badge-ok"><i class="fa-solid fa-pen-nib"></i> Sí</span>':'<span class="badge badge-err">No</span>';
       var foto=v.photo?'<button class="btn btn-sm btn-outline" onclick="openFoto(\''+v.photo+'\')"><i class="fa-solid fa-image"></i></button>':'-';
+      var notasProf=v.notes?'<div style="max-width:180px;font-size:12px;line-height:1.4;white-space:pre-wrap;word-break:break-word;">'+esc(v.notes)+'</div>':'-';
       return '<tr>'
         +'<td><b>'+esc(visName)+'</b></td>'
         +'<td>'+esc(getLabName(v.labId))+'</td>'
@@ -783,6 +784,7 @@ function renderVisitasProfesionales(){
         +'<td>'+esc(v.phone||'-')+'</td>'
         +'<td style="font-size:11px;">'+esc(v.address||'-')+'</td>'
         +'<td>'+(v.gift?'<span class="badge badge-info" title="'+esc(v.gift)+'">Sí</span>':'-')+'</td>'
+        +'<td>'+notasProf+'</td>'
         +'<td>'+fmtDate(v.date)+'</td>'
         +'<td>'+firma+'</td>'
         +'<td>'+foto+'</td>'
