@@ -693,7 +693,7 @@ function renderVisitasGenerales(){
   if(!filtradas.length) return html+'<div class="empty"><i class="fa-solid fa-route"></i><p>Sin visitas en el periodo</p></div>';
 
   html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
-    +'<th>Visitador</th><th>Laboratorio</th><th>Punto</th><th>Jefe</th><th>Notas</th><th>Fecha</th><th>Estado</th><th>Ubicación</th><th>Foto</th>'
+    +'<th>Visitador</th><th>Laboratorio</th><th>Punto</th><th>Jefe</th><th>Notas</th><th>Fecha</th><th>Estado</th><th>Ubicación</th><th>Foto</th><th>Inventario</th>'
     +'</tr></thead><tbody>'
     +filtradas.map(function(v){
       var visName=getUserName(v.visitorId||v.userId);
@@ -705,7 +705,25 @@ function renderVisitasGenerales(){
       var notasCol=v.notes
         ?'<div style="max-width:200px;font-size:12px;line-height:1.4;white-space:pre-wrap;word-break:break-word;">'+esc(v.notes)+'</div>'
         :'-';
-      return '<tr><td><b>'+esc(visName)+'</b></td><td>'+esc(labName)+'</td><td>'+esc(punto)+'</td><td>'+esc(v.jefe||'-')+'</td><td>'+notasCol+'</td><td>'+fmtDate(v.date)+(v.completedAt?' <span style="font-size:11px;color:var(--muted);">'+fmtHoraBogota(v.completedAt)+'</span>':'')+'</td><td>'+estado+'</td><td>'+ubicacion+'</td><td>'+foto+'</td></tr>';
+      var invCol='-';
+      if(v.inventario&&v.inventario.length){
+        invCol='<div style="min-width:200px;max-width:260px;">'
+          +'<table style="width:100%;border-collapse:collapse;font-size:11px;">'
+          +'<thead><tr>'
+          +'<th style="text-align:left;padding:2px 5px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);">Producto</th>'
+          +'<th style="text-align:center;padding:2px 5px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);">Uds.</th>'
+          +'<th style="text-align:center;padding:2px 5px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);">Venc.</th>'
+          +'</tr></thead><tbody>'
+          +v.inventario.map(function(item){
+            return '<tr>'
+              +'<td style="padding:2px 5px;border-bottom:1px solid var(--border);">'+esc(item.producto||'-')+'</td>'
+              +'<td style="text-align:center;padding:2px 5px;border-bottom:1px solid var(--border);">'+esc(item.unidades||'-')+'</td>'
+              +'<td style="text-align:center;padding:2px 5px;border-bottom:1px solid var(--border);">'+esc(item.vencimiento||'-')+'</td>'
+              +'</tr>';
+          }).join('')
+          +'</tbody></table></div>';
+      }
+      return '<tr><td><b>'+esc(visName)+'</b></td><td>'+esc(labName)+'</td><td>'+esc(punto)+'</td><td>'+esc(v.jefe||'-')+'</td><td>'+notasCol+'</td><td>'+fmtDate(v.date)+(v.completedAt?' <span style="font-size:11px;color:var(--muted);">'+fmtHoraBogota(v.completedAt)+'</span>':'')+'</td><td>'+estado+'</td><td>'+ubicacion+'</td><td>'+foto+'</td><td>'+invCol+'</td></tr>';
     }).join('')
     +'</tbody></table></div>';
 
