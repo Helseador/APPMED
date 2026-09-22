@@ -809,7 +809,9 @@ function renderVisitadores(){
     var hoyV=visitas.filter(function(x){return x.date===hoy;});
     var completadasHoy=hoyV.filter(function(x){return x.status==='completed';}).length;
     var totalPuntos=D.points.filter(function(p){return p.assignedTo===v.id;}).length;
-    var pct=totalPuntos>0?Math.round(completadasHoy*100/totalPuntos):0;
+    var diaHabilHoy=esDiaHabil(hoy, v.id);
+    var tieneAusenciaHoy=(D.ausencias||[]).some(function(a){return a.userId===v.id&&a.fecha===hoy;});
+    var pct=(!diaHabilHoy||tieneAusenciaHoy)?null:(totalPuntos>0?Math.round(completadasHoy*100/totalPuntos):0);
     var labObj=LABS.find(function(l){return l.id===v.labId;})||{name:v.labId||'-',color:'#64748B'};
     var color=avatarColor(v.name||'');
 
@@ -822,7 +824,7 @@ function renderVisitadores(){
       +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;">'
       +'<div style="background:var(--primary-50);border-radius:10px;padding:8px;"><div style="font-size:20px;font-weight:900;color:var(--primary);">'+completadasHoy+'</div><div style="font-size:10px;color:var(--muted);">Hoy</div></div>'
       +'<div style="background:#F0FDF4;border-radius:10px;padding:8px;"><div style="font-size:20px;font-weight:900;color:#16A34A;">'+visitas.length+'</div><div style="font-size:10px;color:var(--muted);">Total</div></div>'
-      +'<div style="background:#FEF3C7;border-radius:10px;padding:8px;"><div style="font-size:20px;font-weight:900;color:#D97706;">'+pct+'%</div><div style="font-size:10px;color:var(--muted);">Cumpl.</div></div>'
+      +'<div style="background:#FEF3C7;border-radius:10px;padding:8px;"><div style="font-size:20px;font-weight:900;color:#D97706;">'+(pct===null?(tieneAusenciaHoy?'Aus.':'—'):pct+'%')+'</div><div style="font-size:10px;color:var(--muted);">Cumpl.</div></div>'
       +'</div></div>';
   });
   html+='</div>';
