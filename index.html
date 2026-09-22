@@ -312,6 +312,14 @@
     </div>
     <div class="form-group"><label class="form-label">Jefe del punto</label><input class="form-input" id="closeJefe" placeholder="Nombre del responsable"></div>
     <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="closeNotes" placeholder="Observaciones..."></textarea></div>
+    <div id="inventarioSection" style="display:none;">
+      <div style="border-top:1.5px solid var(--border);margin:16px 0 14px;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:13px;font-weight:700;color:var(--fg);">Inventario del punto</div>
+        <button type="button" onclick="addInventarioRow()" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;"><i class="fa-solid fa-plus"></i> Agregar producto</button>
+      </div>
+      <div id="inventarioRows"></div>
+    </div>
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalCloseVisit')">Cancelar</button>
       <button class="btn btn-success" style="flex:1;" onclick="completeVisit()"><i class="fa-solid fa-check"></i> Completar</button>
@@ -733,7 +741,7 @@ function pushVisit(visit){
 }
 function saveVisitUpdate(visit){
   if(!window._db)return;
-  var update={status:visit.status,completedAt:visit.completedAt||null,photo:visit.photo||null,jefe:visit.jefe||null,notes:visit.notes||null};
+  var update={status:visit.status,completedAt:visit.completedAt||null,photo:visit.photo||null,jefe:visit.jefe||null,notes:visit.notes||null,inventario:visit.inventario||null};
   setSyncState('syncing');
   if(visit._fbKey){
     window._db.ref('medvisit/visits/'+visit._fbKey).update(update)
@@ -1249,6 +1257,67 @@ function arriveToPoint(pid){
   renderHoy();
   toast('Llegada registrada');
 }
+var ABBOTT_PRODUCTOS=[
+  'ABOUND POLVO X 24',
+  'ENSURE ADVANCE LÍQUIDO X 220 ML',
+  'ENSURE ADVANCE POLVO X 400 G',
+  'ENSURE ADVANCE POLVO X 850 G',
+  'ENSURE CLINICAL 1.5 LPC X 500 ML',
+  'ENSURE CLINICAL LÍQUIDO X 220 ML',
+  'ENSURE PLUS HN LÍQUIDO X 220 ML',
+  'ENSURE PLUS HN LPC X 1000 ML',
+  'ENSURE TWOCAL LÍQUIDO X 200 ML',
+  'ENSURE TWOCAL LPC X 1000 ML',
+  'GLUCERNA 1.0 LPC X 1500 ML',
+  'GLUCERNA 1.5 LPC X 1000 ML',
+  'GLUCERNA 1.6 LÍQUIDO X 220 ML',
+  'GLUCERNA LÍQUIDO X 237 ML',
+  'GLUCERNA POLVO X 400 G',
+  'GLUCERNA POLVO X 850 G',
+  'JEVITY LÍQUIDO X 500 ML',
+  'NEPRO AP LÍQUIDO X 237 ML',
+  'NEPRO BP LÍQUIDO X 237 ML',
+  'OSMOLITE HN 1.2 LÍQUIDO X 237 ML',
+  'OSMOLITE LÍQUIDO X 1000 ML',
+  'PEDIASURE 10+ LÍQUIDO X 220 ML',
+  'PEDIASURE 10+ POLVO X 850 G',
+  'PEDIASURE CLINICAL LÍQUIDO X 220 ML',
+  'PEDIASURE LÍQUIDO X 220 ML',
+  'PEDIASURE POLVO X 400 G',
+  'PEDIASURE POLVO X 850 G',
+  'PIVOT 1.5 LÍQUIDO X 1000 ML',
+  'PROSURE LÍQUIDO X 220 ML',
+  'PULMOCARE LÍQUIDO X 237 ML',
+  'SIMILAC RICE POLVO X 400 G',
+  'VITAL 1.5 LÍQUIDO X 220 ML',
+  'VITAL X 1000 ML'
+];
+
+var _invRowCount=0;
+function addInventarioRow(){
+  _invRowCount++;
+  var id='invrow'+_invRowCount;
+  var opts=ABBOTT_PRODUCTOS.map(function(p){return '<option value="'+p+'">'+p+'</option>';}).join('');
+  var row=document.createElement('div');
+  row.className='inv-row';
+  row.id=id;
+  row.style.cssText='background:var(--surface-2);border:1.5px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;position:relative;';
+  row.innerHTML=
+    '<button type="button" onclick="removeInventarioRow(\''+id+'\')" style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;"><i class="fa-solid fa-xmark"></i></button>'
+    +'<div style="margin-bottom:7px;"><label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px;">Producto</label>'
+    +'<select class="form-input inv-prod" style="font-size:13px;"><option value="">-- Selecciona producto --</option>'+opts+'</select></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+    +'<div><label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px;">Unidades</label>'
+    +'<input class="form-input inv-uds" type="number" min="0" placeholder="0" style="font-size:13px;"></div>'
+    +'<div><label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px;">Fecha vencimiento</label>'
+    +'<input class="form-input inv-venc" type="month" style="font-size:13px;"></div>'
+    +'</div>';
+  document.getElementById('inventarioRows').appendChild(row);
+}
+function removeInventarioRow(id){
+  var el=document.getElementById(id);if(el)el.remove();
+}
+
 function openCloseVisit(vid,pid){
   var p=pointById(pid)||{};
   document.getElementById('closeVisitId').value=vid;
@@ -1260,6 +1329,12 @@ function openCloseVisit(vid,pid){
   document.getElementById('photoPreview').src='';
   document.getElementById('visitPhotoInput').value='';
   document.getElementById('photoCaptureArea').innerHTML='<div class="photo-capture-btn" onclick="document.getElementById(\'visitPhotoInput\').click()"><i class="fa-solid fa-camera"></i><span>Tomar foto</span></div>';
+  var invSection=document.getElementById('inventarioSection');
+  if(invSection){
+    var isAbbott=currentUser&&currentUser.labId==='abbott';
+    invSection.style.display=isAbbott?'':'none';
+    document.getElementById('inventarioRows').innerHTML='';
+  }
   openModal('modalCloseVisit');
 }
 function handlePhotoTaken(e){
@@ -1291,6 +1366,16 @@ function completeVisit(){
   if(photo&&photo.startsWith('data:')) D.visits[idx].photo=photo;
   D.visits[idx].jefe=document.getElementById('closeJefe').value.trim();
   D.visits[idx].notes=document.getElementById('closeNotes').value.trim();
+  if(currentUser&&currentUser.labId==='abbott'){
+    var invItems=[];
+    document.querySelectorAll('#inventarioRows .inv-row').forEach(function(row){
+      var prod=row.querySelector('.inv-prod').value;
+      var uds=row.querySelector('.inv-uds').value.trim();
+      var venc=row.querySelector('.inv-venc').value;
+      if(prod){invItems.push({producto:prod,unidades:uds||'',vencimiento:venc||''});}
+    });
+    D.visits[idx].inventario=invItems.length?invItems:null;
+  }
   saveVisitUpdate(D.visits[idx]);
   closeModal('modalCloseVisit');
   renderHoy();
