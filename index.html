@@ -357,6 +357,14 @@
         <div class="photo-capture-btn" onclick="document.getElementById('vg-foto').click()"><i class="fa-solid fa-camera"></i><span>Tomar foto</span></div>
         <img id="vg-preview" class="photo-preview" style="display:none;">
       </div>
+      <div id="vgInventarioSection" style="display:none;">
+        <div style="border-top:1.5px solid var(--border);margin:16px 0 14px;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:13px;font-weight:700;color:var(--fg);">Inventario del punto</div>
+          <button type="button" onclick="addInventarioRow('vgInventarioRows')" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;"><i class="fa-solid fa-plus"></i> Agregar producto</button>
+        </div>
+        <div id="vgInventarioRows"></div>
+      </div>
       <div style="display:flex;gap:10px;margin-top:12px;">
         <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalNuevaVisita')">Cancelar</button>
         <button class="btn btn-success" style="flex:1;" onclick="guardarVisitaGeneral()"><i class="fa-solid fa-check"></i> Guardar</button>
@@ -1294,7 +1302,7 @@ var ABBOTT_PRODUCTOS=[
 ];
 
 var _invRowCount=0;
-function addInventarioRow(){
+function addInventarioRow(containerId){
   _invRowCount++;
   var id='invrow'+_invRowCount;
   var opts=ABBOTT_PRODUCTOS.map(function(p){return '<option value="'+p+'">'+p+'</option>';}).join('');
@@ -1312,7 +1320,8 @@ function addInventarioRow(){
     +'<div><label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px;">Fecha vencimiento</label>'
     +'<input class="form-input inv-venc" type="month" style="font-size:13px;"></div>'
     +'</div>';
-  document.getElementById('inventarioRows').appendChild(row);
+  var container=document.getElementById(containerId||'inventarioRows');
+  if(container)container.appendChild(row);
 }
 function removeInventarioRow(id){
   var el=document.getElementById(id);if(el)el.remove();
@@ -1423,7 +1432,15 @@ function selectVisitType(tipo){
   document.getElementById('formVisitaProfesional').style.display=tipo==='profesional'?'block':'none';
   document.getElementById('btnTipoGeneral').classList.toggle('active',tipo==='general');
   document.getElementById('btnTipoProfesional').classList.toggle('active',tipo==='profesional');
-  if(tipo==='general') obtenerGPS('gpsTextGeneral');
+  if(tipo==='general'){
+    obtenerGPS('gpsTextGeneral');
+    var vgInv=document.getElementById('vgInventarioSection');
+    if(vgInv){
+      var isAbbott=currentUser&&currentUser.labId==='abbott';
+      vgInv.style.display=isAbbott?'':'none';
+      document.getElementById('vgInventarioRows').innerHTML='';
+    }
+  }
   if(tipo==='profesional'){obtenerGPS('gpsTextProf');if(!_profFirmaCanvas)initFirma();}
 }
 function previewFoto(input,previewId,target){
@@ -1475,6 +1492,16 @@ function guardarVisitaGeneral(){
   var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentUser.labId,date:today(),status:'completed',completedAt:new Date().toISOString(),type:'general',placeName:lugar,address:document.getElementById('vg-direccion').value.trim(),contact:document.getElementById('vg-contacto').value.trim(),notes:document.getElementById('vg-notas').value.trim()};
   if(_visitaFotoGeneral) v.photo=_visitaFotoGeneral;
   if(_visitaGps){v.lat=_visitaGps.lat;v.lng=_visitaGps.lng;}
+  if(currentUser&&currentUser.labId==='abbott'){
+    var invItems=[];
+    document.querySelectorAll('#vgInventarioRows .inv-row').forEach(function(row){
+      var prod=row.querySelector('.inv-prod').value;
+      var uds=row.querySelector('.inv-uds').value.trim();
+      var venc=row.querySelector('.inv-venc').value;
+      if(prod){invItems.push({producto:prod,unidades:uds||'',vencimiento:venc||''});}
+    });
+    if(invItems.length) v.inventario=invItems;
+  }
   pushVisit(v);
   closeModal('modalNuevaVisita');
   renderHoy();
