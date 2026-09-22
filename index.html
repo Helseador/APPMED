@@ -362,7 +362,28 @@
         <input class="form-input" id="vp-nombre" placeholder="Dr. / Dra. Nombre Apellido" autocomplete="off" oninput="autocompletarProfesional(this.value)">
         <div id="vp-nombre-sugerencias" style="display:none;background:#fff;border:1.5px solid var(--primary);border-radius:10px;margin-top:4px;max-height:180px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:50;position:relative;"></div>
       </div>
-      <div class="form-group"><label class="form-label">Especialidad</label><input class="form-input" id="vp-especialidad" placeholder="Ej. Cardiologia..."></div>
+      <div class="form-group" id="vp-especialidad-group-select" style="display:none;">
+        <label class="form-label">Especialidad</label>
+        <select class="form-input" id="vp-especialidad-select" onchange="onEspecialidadChange(this.value)">
+          <option value="">-- Selecciona especialidad --</option>
+          <option value="Nutricionista Dietista">Nutricionista Dietista</option>
+          <option value="Neuropediatra">Neuropediatra</option>
+          <option value="Neurólogo">Neurólogo</option>
+          <option value="Epileptologo / Neuroepileptologa">Epileptologo / Neuroepileptologa</option>
+          <option value="Jefe de enfermería">Jefe de enfermería</option>
+          <option value="Diabetólogo">Diabetólogo</option>
+          <option value="Medicina General">Medicina General</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="form-group" id="vp-especialidad-otro-group" style="display:none;">
+        <label class="form-label">Especifica la especialidad</label>
+        <input class="form-input" id="vp-especialidad-otro" placeholder="Escribe la especialidad...">
+      </div>
+      <div class="form-group" id="vp-especialidad-group-input" style="display:none;">
+        <label class="form-label">Especialidad</label>
+        <input class="form-input" id="vp-especialidad" placeholder="Ej. Cardiologia...">
+      </div>
       <div class="form-group"><label class="form-label">Numero de contacto *</label><input class="form-input" type="tel" id="vp-telefono" placeholder="3XX XXX XXXX"></div>
       <div class="form-group"><label class="form-label">Direccion del consultorio *</label><input class="form-input" id="vp-direccion" placeholder="Calle, carrera, piso..."></div>
       <div class="form-group">
@@ -1298,7 +1319,10 @@ function abrirVisitaLibre(){
 function abrirNuevaVisita(){
   _visitaGps=null;_visitaFotoGeneral=null;_visitaFotoProf=null;_profFirmaActiva=false;
   selectVisitType(null);
-  ['vg-lugar','vg-direccion','vg-contacto','vg-notas','vp-punto','vp-nombre','vp-especialidad','vp-telefono','vp-direccion','vp-obsequio','vp-notas'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['vg-lugar','vg-direccion','vg-contacto','vg-notas','vp-punto','vp-nombre','vp-especialidad','vp-telefono','vp-direccion','vp-obsequio','vp-notas','vp-especialidad-otro'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var _selReset=document.getElementById('vp-especialidad-select');if(_selReset)_selReset.value='';
+  var _otroReset=document.getElementById('vp-especialidad-otro-group');if(_otroReset)_otroReset.style.display='none';
+  initEspecialidadField();
   ['vg-preview','vp-preview'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('vp-toggleObsequio').checked=false;
   document.getElementById('vp-obsequioDetail').classList.remove('show');
@@ -1376,7 +1400,19 @@ function guardarVisitaProfesional(){
   var tel=document.getElementById('vp-telefono').value.trim();
   var dir=document.getElementById('vp-direccion').value.trim();
   if(!nombre||!tel||!dir){toast('Completa los campos obligatorios','err');return;}
-  var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentUser.labId,date:today(),status:'completed',completedAt:new Date().toISOString(),type:'profesional',pointName:document.getElementById('vp-punto').value.trim(),placeName:nombre,speciality:document.getElementById('vp-especialidad').value.trim(),phone:tel,address:dir,gift:document.getElementById('vp-toggleObsequio').checked?document.getElementById('vp-obsequio').value.trim():'',notes:document.getElementById('vp-notas').value.trim(),photo:_visitaFotoProf,firma:_profFirmaCanvas?_profFirmaCanvas.toDataURL('image/png'):null};
+  var _espec='';
+  if(currentUser&&currentUser.labId==='ketolance'){
+    var _sel=document.getElementById('vp-especialidad-select');
+    var _selVal=_sel?_sel.value:'';
+    if(_selVal==='Otro'){
+      _espec=document.getElementById('vp-especialidad-otro').value.trim();
+    } else {
+      _espec=_selVal;
+    }
+  } else {
+    _espec=document.getElementById('vp-especialidad').value.trim();
+  }
+  var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentUser.labId,date:today(),status:'completed',completedAt:new Date().toISOString(),type:'profesional',pointName:document.getElementById('vp-punto').value.trim(),placeName:nombre,speciality:_espec,phone:tel,address:dir,gift:document.getElementById('vp-toggleObsequio').checked?document.getElementById('vp-obsequio').value.trim():'',notes:document.getElementById('vp-notas').value.trim(),photo:_visitaFotoProf,firma:_profFirmaCanvas?_profFirmaCanvas.toDataURL('image/png'):null};
   if(_visitaGps){v.lat=_visitaGps.lat;v.lng=_visitaGps.lng;}
   pushVisit(v);
   closeModal('modalNuevaVisita');
@@ -1649,9 +1685,43 @@ function autocompletarProfesional(val){
 
 function seleccionarProfesional(nombre,especialidad,telefono){
   var n=document.getElementById('vp-nombre');if(n)n.value=nombre;
-  var e=document.getElementById('vp-especialidad');if(e)e.value=especialidad;
   var t=document.getElementById('vp-telefono');if(t)t.value=telefono;
   var sug=document.getElementById('vp-nombre-sugerencias');if(sug)sug.style.display='none';
+  if(currentUser&&currentUser.labId==='ketolance'){
+    var sel=document.getElementById('vp-especialidad-select');
+    if(sel){
+      var matched=false;
+      for(var i=0;i<sel.options.length;i++){
+        if(sel.options[i].value===especialidad){sel.value=especialidad;matched=true;break;}
+      }
+      if(!matched&&especialidad){
+        sel.value='Otro';
+        var otro=document.getElementById('vp-especialidad-otro');
+        if(otro)otro.value=especialidad;
+        document.getElementById('vp-especialidad-otro-group').style.display='';
+      } else {
+        document.getElementById('vp-especialidad-otro-group').style.display='none';
+      }
+    }
+  } else {
+    var e=document.getElementById('vp-especialidad');if(e)e.value=especialidad;
+  }
+}
+
+function onEspecialidadChange(val){
+  var otroGroup=document.getElementById('vp-especialidad-otro-group');
+  if(otroGroup) otroGroup.style.display=(val==='Otro')?'':'none';
+  if(val!=='Otro'){
+    var otro=document.getElementById('vp-especialidad-otro');
+    if(otro)otro.value='';
+  }
+}
+
+function initEspecialidadField(){
+  var isKeto=currentUser&&currentUser.labId==='ketolance';
+  document.getElementById('vp-especialidad-group-select').style.display=isKeto?'':'none';
+  document.getElementById('vp-especialidad-otro-group').style.display='none';
+  document.getElementById('vp-especialidad-group-input').style.display=isKeto?'none':'';
 }
 
 function renderProfVisitador(){
@@ -1725,7 +1795,7 @@ function switchTab(tab,btn){
   if(tab==='rutas')renderRutas();
   else if(tab==='perfil')renderPerfil();
   else if(tab==='mkt')renderMktVisitador();
-  else if(tab==='prof')renderProfVisitador();
+  else if(tab==='prof'){initEspecialidadField();renderProfVisitador();}
   else if(tab==='hoy')renderHoy();
 }
 function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});var el=document.getElementById(id);if(el)el.classList.add('active');}
