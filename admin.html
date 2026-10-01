@@ -826,10 +826,11 @@ function renderVisitadores(){
     var visitas=D.visits.filter(function(x){return (x.visitorId||x.userId)===v.id;});
     var hoyV=visitas.filter(function(x){return x.date===hoy;});
     var completadasHoy=hoyV.filter(function(x){return x.status==='completed';}).length;
-    var totalPuntos=D.points.filter(function(p){return p.assignedTo===v.id;}).length;
+    // Puntos iniciados hoy (en curso o completados) — denominador real de la ruta del día
+    var puntosIniciadosHoy=hoyV.filter(function(x){return x.status==='completed'||x.status==='in-progress';}).length;
     var diaHabilHoy=esDiaHabil(hoy, v.id);
     var tieneAusenciaHoy=(D.ausencias||[]).some(function(a){return a.userId===v.id&&a.fecha===hoy;});
-    var pct=(!diaHabilHoy||tieneAusenciaHoy)?null:(totalPuntos>0?Math.round(completadasHoy*100/totalPuntos):0);
+    var pct=(!diaHabilHoy||tieneAusenciaHoy)?null:(puntosIniciadosHoy>0?Math.round(completadasHoy*100/puntosIniciadosHoy):0);
     var labObj=LABS.find(function(l){return l.id===v.labId;})||{name:v.labId||'-',color:'#64748B'};
     var color=avatarColor(v.name||'');
 
