@@ -2965,6 +2965,9 @@ function renderGestionDetalle(uid){
   var semDesde=hoy7.toISOString().slice(0,10);
   var mes1=new Date();mes1.setDate(1);
   var mesDesde=mes1.toISOString().slice(0,10);
+  // Límite del mes: último día del mes en curso (no today, para no mezclar meses)
+  var _mesHasta=new Date();var _ultimoDiaMes=new Date(_mesHasta.getFullYear(),_mesHasta.getMonth()+1,0);
+  var mesHasta=_ultimoDiaMes.toISOString().slice(0,10);
   html+='<div class="card" style="margin-bottom:14px;">'
     +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">'
     +'<i class="fa-solid fa-chart-pie" style="color:#7C3AED;font-size:16px;"></i>'
@@ -2988,7 +2991,7 @@ function renderGestionDetalle(uid){
     +'</div>';
   html+='</div>';
   // Este mes
-  var rMes=calcCumplimientoRango(uid,mesDesde,today());
+  var rMes=calcCumplimientoRango(uid,mesDesde,mesHasta);
   html+=renderBarCumpl(rMes.avgGen,'Generales este mes (40%) — '+rMes.totalGen+' visitas | meta: '+CUMPL.GEN_TECHO+'/día',colorCumpl(rMes.avgGen));
   html+=renderBarCumpl(rMes.pctProf,'Profesionales este mes (40%) — '+rMes.totalProf+'/'+CUMPL.PROF_MES+')',colorCumpl(rMes.pctProf));
   html+=renderBarCumpl(rMes.pctCap,'Capacitaciones este mes (20%) — '+rMes.totalCap+'/'+CUMPL.CAP_MES+')',colorCumpl(rMes.pctCap));
