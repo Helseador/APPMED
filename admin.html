@@ -1735,9 +1735,10 @@ function calcCumplimientoRango(uid, desde, hasta){
     return c.userId===uid&&c.fecha>=desde&&c.fecha<=hasta;
   }).length;
   var pctCap=Math.min(100,Math.round(totalCap/CUMPL.CAP_MES*100));
-  // KPI Global ponderado
+  // KPI Global ponderado — totalGen solo sobre días hábiles sin ausencias (mismos días del bucle)
+  var _diasSet={};dias.forEach(function(f){_diasSet[f]=true;});
   var totalGen=D.visits.filter(function(v){
-    return (v.visitorId||v.userId)===uid&&v.date>=desde&&v.date<=hasta&&v.status==='completed'&&v.type!=='profesional';
+    return (v.visitorId||v.userId)===uid&&_diasSet[v.date]&&v.status==='completed'&&v.type!=='profesional';
   }).length;
   var pct=Math.round(avgGen*CUMPL.PESO_GEN*100/100 + pctProf*CUMPL.PESO_PROF*100/100 + pctCap*CUMPL.PESO_CAP*100/100);
   return {pct:pct,dias:detalle,avgGen:avgGen,pctProf:pctProf,pctCap:pctCap,totalProf:totalProf,totalCap:totalCap,totalGen:totalGen};
