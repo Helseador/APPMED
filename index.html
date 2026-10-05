@@ -631,7 +631,7 @@ var FIREBASE_CONFIG={
   messagingSenderId:"116820385584",
   appId:"1:116820385584:web:4857ff3653ac5bdfbf72f5"
 };
-var CAPTURE_HORA_INICIO=6, CAPTURE_HORA_FIN=20;
+var CAPTURE_HORA_INICIO=6, CAPTURE_HORA_FIN=20, CAPTURE_MIN_FIN=30;
 var MIN_PER_PUNTO=15;
 var MAX_ATTEMPTS=5, LOCKOUT_SEC=30;
 var AV_COLORS=['#0303B5','#D97706','#DC2626','#7C3AED','#DB2777','#EA580C','#4F46E5','#0891B2'];
@@ -842,7 +842,7 @@ function scheduleRender(){
   },500);
 }
 function horaBogota(){var d=new Date();return new Date(d.getTime()+d.getTimezoneOffset()*60000+(-5*3600000));}
-function dentroDeHorario(){var h=horaBogota().getHours();return h>=CAPTURE_HORA_INICIO&&h<CAPTURE_HORA_FIN;}
+function dentroDeHorario(){var b=horaBogota();var h=b.getHours();var m=b.getMinutes();return h>=CAPTURE_HORA_INICIO&&(h<CAPTURE_HORA_FIN||(h===CAPTURE_HORA_FIN&&m<=(CAPTURE_MIN_FIN||0)));}
 function verificarHorario(){
   if(dentroDeHorario())return false;
   actualizarRelojBloqueado();
@@ -852,7 +852,7 @@ function verificarHorario(){
       if(dentroDeHorario()){clearInterval(window._blockedInterval);window._blockedInterval=null;showScreen('visitorScreen');renderVisitor();}
     },1000);
   }
-  var inicio=fmt(CAPTURE_HORA_INICIO,0), fin=fmt(CAPTURE_HORA_FIN,0);
+  var inicio=fmt(CAPTURE_HORA_INICIO,0), fin=fmt(CAPTURE_HORA_FIN,CAPTURE_MIN_FIN||0);
   document.getElementById('blockedMsg').textContent='El registro esta disponible entre las '+inicio+' y las '+fin+' (hora Bogota).';
   document.getElementById('blockedHorario').textContent='Horario permitido: '+inicio+' - '+fin;
   showScreen('blockedScreen');
