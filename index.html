@@ -25,7 +25,7 @@
       --glass-border:rgba(255,255,255,0.15);
       --glass-strong:rgba(255,255,255,0.12);
       --card:rgba(255,255,255,0.07);
-      --fg:#F0F4FF;--muted:rgba(255,255,255,0.5);--border:rgba(255,255,255,0.12);--radius:16px;
+      --fg:#F0F4FF;--muted:rgba(255,255,255,0.5);--border:rgba(255,255,255,0.12);--radius:16px;--surface-2:rgba(255,255,255,0.07);
     }
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
     body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);background-attachment:fixed;color:var(--fg);overflow-x:hidden;min-height:100vh;}
@@ -316,7 +316,7 @@
       <div style="border-top:1.5px solid var(--border);margin:16px 0 14px;"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <div style="font-size:13px;font-weight:700;color:var(--fg);">Inventario del punto</div>
-        <button type="button" onclick="addInventarioRow()" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;"><i class="fa-solid fa-plus"></i> Agregar producto</button>
+        <button type="button" onclick="addInventarioRow('inventarioRows')" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;"><i class="fa-solid fa-plus"></i> Agregar producto</button>
       </div>
       <div id="inventarioRows"></div>
     </div>
@@ -1440,7 +1440,9 @@ function selectVisitType(tipo){
       vgInv.style.display=isAbbott?'':'none';
       document.getElementById('vgInventarioRows').innerHTML='';
     }
+    initEspecialidadField();
   }
+  if(!tipo) initEspecialidadField();
   if(tipo==='profesional'){obtenerGPS('gpsTextProf');if(!_profFirmaCanvas)initFirma();}
 }
 function previewFoto(input,previewId,target){
@@ -1767,7 +1769,7 @@ function guardarCorreria(){
 var _profKetolanceList=[];
 
 function loadProfKetolance(){
-  if(!window._db||currentUser.labId!=='ketolance') return;
+  if(!window._db||!currentUser||currentUser.labId!=='ketolance') return;
   window._db.ref('medvisit/profKetolance').once('value',function(snap){
     _profKetolanceList=toArray(snap.val()||[]);
   });
@@ -1776,7 +1778,7 @@ function loadProfKetolance(){
 function autocompletarProfesional(val){
   var sug=document.getElementById('vp-nombre-sugerencias');
   if(!sug) return;
-  if(currentUser.labId!=='ketolance'||!val||val.length<2||!_profKetolanceList.length){
+  if(!currentUser||currentUser.labId!=='ketolance'||!val||val.length<2||!_profKetolanceList.length){
     sug.style.display='none';return;
   }
   var q=val.toLowerCase();
@@ -1839,7 +1841,7 @@ function initEspecialidadField(){
 function renderProfVisitador(){
   var el=document.getElementById('visitorProfList');
   if(!el)return;
-  if(currentUser.labId!=='ketolance'){el.innerHTML='';return;}
+  if(!currentUser||currentUser.labId!=='ketolance'){el.innerHTML='';return;}
   el.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px;">Cargando...</div>';
   if(!window._db){el.innerHTML='<div class="empty-state"><i class="fa-solid fa-wifi-slash"></i><p>Sin conexión</p></div>';return;}
   var hace7=new Date();hace7.setDate(hace7.getDate()-7);
