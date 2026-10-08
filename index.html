@@ -301,6 +301,7 @@
     <div class="modal-title">Cerrar visita</div>
     <input type="hidden" id="closeVisitId">
     <input type="hidden" id="closeVisitPointName">
+    <input type="hidden" id="closeVisitPointAddr">
     <div style="background:var(--primary-50);border-radius:10px;padding:12px;margin-bottom:16px;">
       <div style="font-size:13px;font-weight:700;color:var(--primary);" id="closeVisitName"></div>
       <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="closeVisitAddr"></div>
@@ -750,7 +751,7 @@ function pushVisit(visit){
 }
 function saveVisitUpdate(visit){
   if(!window._db)return;
-  var update={status:visit.status,completedAt:visit.completedAt||null,photo:visit.photo||null,jefe:visit.jefe||null,notes:visit.notes||null,inventario:visit.inventario||null,pointName:visit.pointName||null};
+  var update={status:visit.status,completedAt:visit.completedAt||null,photo:visit.photo||null,jefe:visit.jefe||null,notes:visit.notes||null,inventario:visit.inventario||null,pointName:visit.pointName||null,address:visit.address||null};
   setSyncState('syncing');
   if(visit._fbKey){
     window._db.ref('medvisit/visits/'+visit._fbKey).update(update)
@@ -1332,6 +1333,7 @@ function openCloseVisit(vid,pid){
   var p=pointById(pid)||{};
   document.getElementById('closeVisitId').value=vid;
   document.getElementById('closeVisitPointName').value=p.name||'';
+  document.getElementById('closeVisitPointAddr').value=p.address||'';
   document.getElementById('closeVisitName').textContent=p.name||'';
   document.getElementById('closeVisitAddr').textContent=p.address||'';
   document.getElementById('closeJefe').value='';
@@ -1380,6 +1382,8 @@ function completeVisit(){
   // Guardar nombre del punto en la visita para que no se pierda si se cambia la ruta
   var _pname=document.getElementById('closeVisitPointName').value;
   if(_pname) D.visits[idx].pointName=_pname;
+  var _paddr=document.getElementById('closeVisitPointAddr').value;
+  if(_paddr) D.visits[idx].address=_paddr;
   if(currentUser&&currentUser.labId==='abbott'){
     var invItems=[];
     var invError=false;
