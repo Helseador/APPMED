@@ -300,6 +300,7 @@
     <div class="modal-handle"></div>
     <div class="modal-title">Cerrar visita</div>
     <input type="hidden" id="closeVisitId">
+    <input type="hidden" id="closeVisitPointName">
     <div style="background:var(--primary-50);border-radius:10px;padding:12px;margin-bottom:16px;">
       <div style="font-size:13px;font-weight:700;color:var(--primary);" id="closeVisitName"></div>
       <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="closeVisitAddr"></div>
@@ -749,7 +750,7 @@ function pushVisit(visit){
 }
 function saveVisitUpdate(visit){
   if(!window._db)return;
-  var update={status:visit.status,completedAt:visit.completedAt||null,photo:visit.photo||null,jefe:visit.jefe||null,notes:visit.notes||null,inventario:visit.inventario||null};
+  var update={status:visit.status,completedAt:visit.completedAt||null,photo:visit.photo||null,jefe:visit.jefe||null,notes:visit.notes||null,inventario:visit.inventario||null,pointName:visit.pointName||null};
   setSyncState('syncing');
   if(visit._fbKey){
     window._db.ref('medvisit/visits/'+visit._fbKey).update(update)
@@ -1330,6 +1331,7 @@ function removeInventarioRow(id){
 function openCloseVisit(vid,pid){
   var p=pointById(pid)||{};
   document.getElementById('closeVisitId').value=vid;
+  document.getElementById('closeVisitPointName').value=p.name||'';
   document.getElementById('closeVisitName').textContent=p.name||'';
   document.getElementById('closeVisitAddr').textContent=p.address||'';
   document.getElementById('closeJefe').value='';
@@ -1375,14 +1377,20 @@ function completeVisit(){
   if(photo&&photo.startsWith('data:')) D.visits[idx].photo=photo;
   D.visits[idx].jefe=document.getElementById('closeJefe').value.trim();
   D.visits[idx].notes=document.getElementById('closeNotes').value.trim();
+  // Guardar nombre del punto en la visita para que no se pierda si se cambia la ruta
+  var _pname=document.getElementById('closeVisitPointName').value;
+  if(_pname) D.visits[idx].pointName=_pname;
   if(currentUser&&currentUser.labId==='abbott'){
     var invItems=[];
+    var invError=false;
     document.querySelectorAll('#inventarioRows .inv-row').forEach(function(row){
       var prod=row.querySelector('.inv-prod').value;
       var uds=row.querySelector('.inv-uds').value.trim();
       var venc=row.querySelector('.inv-venc').value;
-      if(prod){invItems.push({producto:prod,unidades:uds||'',vencimiento:venc||''});}
+      if(prod&&!uds){invError=true;row.querySelector('.inv-uds').style.border='2px solid #FF6B6B';}
+      else if(prod){row.querySelector('.inv-uds').style.border='';invItems.push({producto:prod,unidades:uds,vencimiento:venc||''});}
     });
+    if(invError){toast('Completa las unidades de todos los productos del inventario','err');return;}
     D.visits[idx].inventario=invItems.length?invItems:null;
   }
   saveVisitUpdate(D.visits[idx]);
@@ -1496,12 +1504,15 @@ function guardarVisitaGeneral(){
   if(_visitaGps){v.lat=_visitaGps.lat;v.lng=_visitaGps.lng;}
   if(currentUser&&currentUser.labId==='abbott'){
     var invItems=[];
+    var invError=false;
     document.querySelectorAll('#vgInventarioRows .inv-row').forEach(function(row){
       var prod=row.querySelector('.inv-prod').value;
       var uds=row.querySelector('.inv-uds').value.trim();
       var venc=row.querySelector('.inv-venc').value;
-      if(prod){invItems.push({producto:prod,unidades:uds||'',vencimiento:venc||''});}
+      if(prod&&!uds){invError=true;row.querySelector('.inv-uds').style.border='2px solid #FF6B6B';}
+      else if(prod){row.querySelector('.inv-uds').style.border='';invItems.push({producto:prod,unidades:uds,vencimiento:venc||''});}
     });
+    if(invError){toast('Completa las unidades de todos los productos del inventario','err');return;}
     if(invItems.length) v.inventario=invItems;
   }
   pushVisit(v);
