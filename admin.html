@@ -698,7 +698,8 @@ function renderVisitasGenerales(){
     +filtradas.map(function(v){
       var visName=getUserName(v.visitorId||v.userId);
       var labName=getLabName(v.labId);
-      var punto=v.pointName||v.placeName||'-';
+      var _pt=v.pointId?D.points.find(function(p){return p.id===v.pointId;}):null;
+      var punto=v.pointName||(_pt?_pt.name:'')||v.placeName||'-';
       var estado=v.status==='completed'?'<span class="badge badge-ok">Completada</span>':v.status==='in-progress'?'<span class="badge badge-warn">En curso</span>':'<span class="badge badge-info">Pendiente</span>';
       var foto=v.photo?'<button class="btn btn-sm btn-outline" onclick="openFoto(\''+v.photo+'\')"><i class="fa-solid fa-image"></i></button>':'-';
       var ubicacion=(v.lat&&v.lng)?'<a href="https://www.google.com/maps?q='+v.lat+','+v.lng+'" target="_blank" class="btn btn-sm btn-outline"><i class="fa-solid fa-location-dot"></i></a>':'-';
