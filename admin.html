@@ -2156,6 +2156,13 @@ function renderInformes(){
     +'</div>'
     +'<div style="font-size:12px;color:var(--muted);">Periodo: <strong id="rptRangeLabel">Hoy</strong></div>'
     +'</div>';
+  // Tabla resumen gestores — visible inmediatamente tras el selector de fechas
+  html+='<div class="card" style="margin-bottom:14px;">'
+    +'<div class="section-title" style="margin-bottom:12px;display:flex;align-items:center;gap:8px;">'
+    +'<i class="fa-solid fa-table-list" style="color:var(--primary);"></i> Resumen de visitas por gestor'
+    +'</div>'
+    +'<div id="resumenGestoresSection"><div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">Cargando...</div></div>'
+    +'</div>';
   // Botón generar informe (modal wizard)
   html+='<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">'
@@ -2190,10 +2197,6 @@ function renderInformes(){
   html+='<div class="card" style="margin-bottom:14px;">'
     +'<div class="section-title" style="margin-bottom:12px;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-chart-pie" style="color:#7C3AED;"></i> Rendimiento de gestores</div>'
     +'<div id="cumplimientoSection"></div>'
-    +'</div>';
-  html+='<div class="card" style="margin-bottom:14px;">'
-    +'<div class="section-title" style="margin-bottom:12px;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-table-list" style="color:var(--primary);"></i> Resumen de visitas por gestor</div>'
-    +'<div id="resumenGestoresSection"></div>'
     +'</div>';
   el.innerHTML=html;
   setRptPreset('hoy');
