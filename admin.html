@@ -2134,6 +2134,61 @@ function renderResumenGestores(desde, hasta){
   return html;
 }
 
+var _resumenGestoresOpen=true;
+function toggleResumenGestores(){
+  _resumenGestoresOpen=!_resumenGestoresOpen;
+  var sec=document.getElementById('resumenGestoresSection');
+  var chev=document.getElementById('resumenGestoresChevron');
+  if(sec) sec.style.display=_resumenGestoresOpen?'':'none';
+  if(chev) chev.style.transform=_resumenGestoresOpen?'':'rotate(-90deg)';
+}
+
+function descargarResumenGestores(){
+  var desde=rptDesde||today();
+  var hasta=rptHasta||today();
+  var FESTIVOS_CO={
+    '2026-01-01':1,'2026-01-12':1,'2026-03-23':1,'2026-04-02':1,'2026-04-03':1,
+    '2026-05-01':1,'2026-05-18':1,'2026-06-08':1,'2026-06-15':1,'2026-06-29':1,
+    '2026-07-20':1,'2026-08-07':1,'2026-08-17':1,'2026-10-12':1,'2026-11-02':1,
+    '2026-11-16':1,'2026-12-08':1,'2026-12-25':1
+  };
+  var diasHabilesRango=[];
+  var dIter=new Date(desde+'T12:00:00');
+  var dFin=new Date(hasta+'T12:00:00');
+  while(dIter<=dFin){
+    var f=dIter.toISOString().slice(0,10);
+    var dow=dIter.getDay();
+    if(dow>=1&&dow<=5&&!FESTIVOS_CO[f]) diasHabilesRango.push(f);
+    dIter.setDate(dIter.getDate()+1);
+  }
+  var gestores=D.users.filter(function(u){
+    return u.role==='visitor'&&u.active!==false&&(!currentLabId||u.labId===currentLabId);
+  }).sort(function(a,b){
+    var la=getLabName(a.labId)||'',lb=getLabName(b.labId)||'';
+    return la.localeCompare(lb)||a.name.localeCompare(b.name);
+  });
+  var filas=[['Laboratorio','Gestor','Ausencias','Dias habiles','Dias efectivos','Dias trabajados','Generales','Profesionales','Correria','Total']];
+  gestores.forEach(function(u){
+    var ausEnRango=(D.ausencias||[]).filter(function(a){return a.userId===u.id&&a.fecha>=desde&&a.fecha<=hasta;}).map(function(a){return a.fecha;});
+    var diasEfSet={};
+    diasHabilesRango.forEach(function(f){if(ausEnRango.indexOf(f)<0) diasEfSet[f]=true;});
+    var visitasEf=D.visits.filter(function(v){return (v.visitorId||v.userId)===u.id&&diasEfSet[v.date]&&v.status==='completed';});
+    var general=visitasEf.filter(function(v){return v.type!=='profesional'&&v.type!=='correria';}).length;
+    var profesional=visitasEf.filter(function(v){return v.type==='profesional';}).length;
+    var correria=visitasEf.filter(function(v){return v.type==='correria';}).length;
+    var diasTrabSet={};visitasEf.forEach(function(v){diasTrabSet[v.date]=true;});
+    filas.push([getLabName(u.labId)||u.labId,u.name,ausEnRango.length,diasHabilesRango.length,Object.keys(diasEfSet).length,Object.keys(diasTrabSet).length,general,profesional,correria,general+profesional+correria]);
+  });
+  // Generar CSV y descargar
+  var csv=filas.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');
+  var bom='\uFEFF';
+  var blob=new Blob([bom+csv],{type:'text/csv;charset=utf-8;'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download='Resumen_Visitas_'+desde+'_'+hasta+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
 function renderInformes(){
   var el=document.getElementById('tabContent');
   if(!el) return;
@@ -2156,12 +2211,18 @@ function renderInformes(){
     +'</div>'
     +'<div style="font-size:12px;color:var(--muted);">Periodo: <strong id="rptRangeLabel">Hoy</strong></div>'
     +'</div>';
-  // Tabla resumen gestores — visible inmediatamente tras el selector de fechas
+  // Tabla resumen gestores — desplegable con botón de descarga
   html+='<div class="card" style="margin-bottom:14px;">'
-    +'<div class="section-title" style="margin-bottom:12px;display:flex;align-items:center;gap:8px;">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;" onclick="toggleResumenGestores()">'
+    +'<div class="section-title" style="margin:0;display:flex;align-items:center;gap:8px;">'
     +'<i class="fa-solid fa-table-list" style="color:var(--primary);"></i> Resumen de visitas por gestor'
     +'</div>'
-    +'<div id="resumenGestoresSection"><div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">Cargando...</div></div>'
+    +'<div style="display:flex;align-items:center;gap:8px;">'
+    +'<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();descargarResumenGestores()" title="Descargar Excel"><i class="fa-solid fa-file-excel" style="color:#16A34A;"></i> Descargar</button>'
+    +'<i class="fa-solid fa-chevron-down" id="resumenGestoresChevron" style="color:var(--muted);transition:transform .3s;"></i>'
+    +'</div>'
+    +'</div>'
+    +'<div id="resumenGestoresSection" style="margin-top:14px;"><div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">Cargando...</div></div>'
     +'</div>';
   // Botón generar informe (modal wizard)
   html+='<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;">'
