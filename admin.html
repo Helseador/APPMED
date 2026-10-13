@@ -286,6 +286,10 @@
       <label class="form-label">Laboratorio</label>
       <select class="form-input" id="mu-lab"></select>
     </div>
+    <div class="form-group">
+      <label class="form-label">Ciudad base del gestor</label>
+      <input class="form-input" id="mu-ciudad" placeholder="Ej: Bogotá, Medellín, Cali...">
+    </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('modalUsuario')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveUsuario()"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
@@ -625,16 +629,19 @@ function renderCurrentTab(){
 function renderVisitas(){
   if(typeof window._visSubTab==='undefined') window._visSubTab='general';
 
-  var html='<div style="display:flex;gap:8px;margin-bottom:16px;">'
-    +'<button class="btn btn-sm" style="flex:1;'+(window._visSubTab==='general'?'background:var(--primary);color:#fff;':'background:var(--bg);color:var(--fg);border:1.5px solid var(--border);')+'" onclick="window._visSubTab=\'general\';renderCurrentTab()"><i class="fa-solid fa-route"></i> Visitas generales</button>'
-    +'<button class="btn btn-sm" style="flex:1;'+(window._visSubTab==='profesional'?'background:#7C3AED;color:#fff;':'background:var(--bg);color:var(--fg);border:1.5px solid var(--border);')+'" onclick="window._visSubTab=\'profesional\';renderCurrentTab()"><i class="fa-solid fa-user-doctor"></i> A profesionales</button>'
+  var html='<div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">'
+    +'<button class="btn btn-sm" style="flex:1;'+(window._visSubTab==='general'?'background:var(--primary);color:#fff;':'background:var(--bg);color:var(--fg);border:1.5px solid var(--border);')+'" onclick="window._visSubTab=\'general\';renderCurrentTab()"><i class="fa-solid fa-route"></i> Generales</button>'
+    +'<button class="btn btn-sm" style="flex:1;'+(window._visSubTab==='profesional'?'background:#7C3AED;color:#fff;':'background:var(--bg);color:var(--fg);border:1.5px solid var(--border);')+'" onclick="window._visSubTab=\'profesional\';renderCurrentTab()"><i class="fa-solid fa-user-doctor"></i> Profesionales</button>'
     +'<button class="btn btn-sm" style="flex:1;'+(window._visSubTab==='capacitaciones'?'background:#0891B2;color:#fff;':'background:var(--bg);color:var(--fg);border:1.5px solid var(--border);')+'" onclick="window._visSubTab=\'capacitaciones\';renderCurrentTab()"><i class="fa-solid fa-graduation-cap"></i> Capacitaciones</button>'
+    +'<button class="btn btn-sm" style="flex:1;'+(window._visSubTab==='correrias'?'background:#EA580C;color:#fff;':'background:var(--bg);color:var(--fg);border:1.5px solid var(--border);')+'" onclick="window._visSubTab=\'correrias\';renderCurrentTab()"><i class="fa-solid fa-map-location-dot"></i> Correría</button>'
     +'</div>';
 
   if(window._visSubTab==='profesional'){
     html+=renderVisitasProfesionales();
   } else if(window._visSubTab==='capacitaciones'){
     html+=renderCapacitaciones();
+  } else if(window._visSubTab==='correrias'){
+    html+=renderVisitasCorrerias();
   } else {
     html+=renderVisitasGenerales();
   }
@@ -646,7 +653,7 @@ function renderVisitasGenerales(){
     if(currentLabId) return v.labId===currentLabId;
     return true;
   });
-  var visits=visits.filter(function(v){return v.type!=='profesional';});
+  var visits=visits.filter(function(v){return v.type!=='profesional'&&v.type!=='correria';});
   var hoy=today();
   var hoyVisitas=visits.filter(function(v){return v.date===hoy;});
   var completadas=hoyVisitas.filter(function(v){return v.status==='completed';}).length;
@@ -728,6 +735,54 @@ function renderVisitasGenerales(){
     }).join('')
     +'</tbody></table></div>';
 
+  return html;
+}
+
+function renderVisitasCorrerias(){
+  var visits=D.visits.filter(function(v){
+    if(currentLabId) return v.labId===currentLabId;
+    return true;
+  }).filter(function(v){return v.type==='correria';});
+
+  var hoy=today();
+  if(typeof window._visFiltros==='undefined') window._visFiltros={desde:hoy,hasta:hoy,lab:'',vis:''};
+  var desde=window._visFiltros.desde||hoy;
+  var hasta=window._visFiltros.hasta||hoy;
+  var filtradas=visits.filter(function(v){return v.date>=desde&&v.date<=hasta;});
+  if(typeof window._visFilVis!=='undefined'&&window._visFilVis) filtradas=filtradas.filter(function(v){return (v.visitorId||v.userId)===window._visFilVis;});
+
+  var html='<div class="stats-grid">'
+    +'<div class="stat-card"><div class="stat-num">'+filtradas.filter(function(v){return v.date===hoy;}).length+'</div><div class="stat-label">Hoy</div></div>'
+    +'<div class="stat-card"><div class="stat-num">'+filtradas.length+'</div><div class="stat-label">En el periodo</div></div>'
+    +'<div class="stat-card"><div class="stat-num">'+visits.length+'</div><div class="stat-label">Histórico</div></div>'
+    +'</div>';
+
+  if(!filtradas.length) return html+'<div class="empty"><i class="fa-solid fa-map-location-dot"></i><p>Sin visitas en correría en el periodo</p></div>';
+
+  html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
+    +'<th>Gestor</th><th>Lab</th><th>Punto</th><th>Ciudad</th><th>Ciudad base</th><th>Dirección</th><th>Contacto</th><th>Notas</th><th>Fecha</th><th>Ubicación</th><th>Foto</th>'
+    +'</tr></thead><tbody>'
+    +filtradas.map(function(v){
+      var visName=getUserName(v.visitorId||v.userId);
+      var labName=getLabName(v.labId);
+      var ubicacion=(v.lat&&v.lng)?'<a href="https://www.google.com/maps?q='+v.lat+','+v.lng+'" target="_blank" class="btn btn-sm btn-outline"><i class="fa-solid fa-location-dot"></i></a>':'-';
+      var foto=v.photo?'<button class="btn btn-sm btn-outline" onclick="openFoto(\''+v.photo+'\')"><i class="fa-solid fa-image"></i></button>':'-';
+      var notasCol=v.notes?'<div style="max-width:160px;font-size:12px;line-height:1.4;white-space:pre-wrap;word-break:break-word;">'+esc(v.notes)+'</div>':'-';
+      return '<tr>'
+        +'<td><b>'+esc(visName)+'</b></td>'
+        +'<td>'+esc(labName)+'</td>'
+        +'<td>'+esc(v.placeName||'-')+'</td>'
+        +'<td><span style="background:#FFF0E6;color:#EA580C;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">'+esc(v.ciudad||'-')+'</span></td>'
+        +'<td style="font-size:11px;color:var(--muted);">'+esc(v.ciudadBase||'-')+'</td>'
+        +'<td style="font-size:11px;">'+esc(v.address||'-')+'</td>'
+        +'<td>'+esc(v.contact||'-')+'</td>'
+        +'<td>'+notasCol+'</td>'
+        +'<td>'+fmtDate(v.date)+(v.completedAt?' <span style="font-size:11px;color:var(--muted);">'+fmtHoraBogota(v.completedAt)+'</span>':'')+'</td>'
+        +'<td>'+ubicacion+'</td>'
+        +'<td>'+foto+'</td>'
+        +'</tr>';
+    }).join('')
+    +'</tbody></table></div>';
   return html;
 }
 
@@ -2781,6 +2836,7 @@ function abrirModalUsuario(uid){
   document.getElementById('mu-role').value=u?u.role:'visitor';
   var labSel=document.getElementById('mu-lab');
   labSel.innerHTML=LABS.map(function(l){return '<option value="'+l.id+'"'+(u&&u.labId===l.id?' selected':'')+'>'+esc(l.name)+'</option>';}).join('');
+  document.getElementById('mu-ciudad').value=u?u.ciudad||'':'';
   onMuRoleChange();
   openModal('modalUsuario');
 }
@@ -3332,6 +3388,7 @@ function saveUsuario(){
   var password=document.getElementById('mu-password').value;
   var role=document.getElementById('mu-role').value;
   var labId=(role==='adminGeneral'||role==='super')?'':document.getElementById('mu-lab').value;
+  var ciudad=document.getElementById('mu-ciudad').value.trim();
   if(!name||!username){toast('Nombre y usuario son obligatorios','err');return;}
   if(!id&&!password){toast('La contraseña es obligatoria para usuarios nuevos','err');return;}
   var dup=D.users.find(function(u){return u.username===username&&u.id!==id;});
@@ -3339,11 +3396,11 @@ function saveUsuario(){
   if(id){
     var u=D.users.find(function(x){return x.id===id;});
     if(!u){toast('Usuario no encontrado','err');return;}
-    u.name=name;u.username=username;u.role=role;u.labId=labId;
+    u.name=name;u.username=username;u.role=role;u.labId=labId;u.ciudad=ciudad||null;
     if(password) u.password=password;
   } else {
     D.users.push({id:'usr_'+Date.now()+'_'+Math.random().toString(36).substr(2,4),
-      name:name,username:username,password:password,role:role,labId:labId,active:true});
+      name:name,username:username,password:password,role:role,labId:labId,ciudad:ciudad||null,active:true});
   }
   db.ref('medvisit/users').set(D.users)
     .then(function(){toast(id?'Usuario actualizado':'Usuario creado');closeModal('modalUsuario');})

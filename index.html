@@ -257,6 +257,7 @@
     <div style="display:flex;align-items:center;gap:6px;">
       <button id="visitorMktBtn" onclick="abrirMarketing()" style="display:none;background:#7C3AED;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-receipt"></i> Factura</button>
       <button id="visitorCorrBtn" onclick="abrirCorreria()" style="display:none;background:#0891B2;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-car"></i> Correría</button>
+      <button id="visitorVisitaCorrBtn" onclick="abrirVisitaCorreria()" style="display:none;background:#EA580C;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-map-location-dot"></i> Visita correría</button>
       <button id="visitorCapBtn" onclick="abrirCapacitacion()" style="display:none;background:#16A34A;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-graduation-cap"></i> Capacitación</button>
       <div class="sync-badge synced" id="syncBadge"><span class="sync-dot"></span><span id="syncLabel">Cloud</span></div>
       <button class="header-btn" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
@@ -325,6 +326,29 @@
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalCloseVisit')">Cancelar</button>
       <button class="btn btn-success" style="flex:1;" onclick="completeVisit()"><i class="fa-solid fa-check"></i> Completar</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalVisitaCorreria">
+  <div class="modal-sheet" style="max-height:94vh;overflow-y:auto;">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="fa-solid fa-map-location-dot" style="color:#EA580C;margin-right:8px;"></i>Visita en correría</div>
+    <div style="background:rgba(234,88,12,0.12);border:1px solid rgba(234,88,12,0.3);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#EA580C;font-weight:600;"><i class="fa-solid fa-location-dot" style="margin-right:6px;"></i>Visita fuera de tu ciudad base</div>
+    <div class="gps-chip" id="gpsChipCorreria"><i class="fa-solid fa-satellite-dish" style="font-size:10px;"></i> <span id="gpsTextCorreria">Obteniendo ubicacion...</span></div>
+    <div class="form-group"><label class="form-label">Nombre del punto *</label><input class="form-input" id="vc-lugar" placeholder="Ej. Drogueria La Rebaja"></div>
+    <div class="form-group"><label class="form-label">Ciudad *</label><input class="form-input" id="vc-ciudad" placeholder="Ciudad donde estás visitando"></div>
+    <div class="form-group"><label class="form-label">Dirección</label><input class="form-input" id="vc-direccion" placeholder="Calle / Carrera / Barrio"></div>
+    <div class="form-group"><label class="form-label">Contacto</label><input class="form-input" id="vc-contacto" placeholder="Nombre de quien atendió"></div>
+    <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="vc-notas" placeholder="Observaciones..."></textarea></div>
+    <div class="form-group">
+      <label class="form-label">Foto de evidencia</label>
+      <input type="file" id="vc-foto" accept="image/*" capture="environment" style="display:none;" onchange="previewFoto(this,'vc-preview','correria')">
+      <div class="photo-capture-btn" onclick="document.getElementById('vc-foto').click()"><i class="fa-solid fa-camera"></i><span>Tomar foto</span></div>
+      <img id="vc-preview" class="photo-preview" style="display:none;">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:12px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalVisitaCorreria')">Cancelar</button>
+      <button class="btn" style="flex:1;background:#EA580C;color:#fff;" onclick="guardarVisitaCorreria()"><i class="fa-solid fa-check"></i> Guardar</button>
     </div>
   </div>
 </div>
@@ -886,7 +910,7 @@ function doLogin(){
   entrarComoVisitador();
 }
 function setCurrentUser(user){
-  currentUser={id:user.id,username:user.username,role:user.role,name:user.name,labId:user.labId||'',freeVisit:user.freeVisit===true};
+  currentUser={id:user.id,username:user.username,role:user.role,name:user.name,labId:user.labId||'',freeVisit:user.freeVisit===true,ciudad:user.ciudad||''};
   try{localStorage.setItem('appmed_vsess',JSON.stringify({uid:user.id,ts:Date.now()}));}catch(e){}
 }
 function entrarComoVisitador(){
@@ -971,6 +995,8 @@ function renderVisitor(){
   if(mktBtn)mktBtn.style.display='inline-block';
   var corrBtn=document.getElementById('visitorCorrBtn');
   if(corrBtn)corrBtn.style.display='inline-block';
+  var vcorrBtn=document.getElementById('visitorVisitaCorrBtn');
+  if(vcorrBtn)vcorrBtn.style.display='inline-block';
   var capBtn=document.getElementById('visitorCapBtn');
   if(capBtn)capBtn.style.display='inline-block';
   var profTab=document.getElementById('tabBtnProf');
@@ -1414,6 +1440,34 @@ function buildMapsUrl(pts){
   var wp=v.slice(1,-1).map(function(p){return p.lat+','+p.lng;}).join('|');
   return'https://www.google.com/maps/dir/?api=1&origin='+v[0].lat+','+v[0].lng+'&destination='+v[v.length-1].lat+','+v[v.length-1].lng+(wp?'&waypoints='+wp:'');
 }
+var _visitaFotoCorreria=null;
+function abrirVisitaCorreria(){
+  _visitaGps=null;_visitaFotoCorreria=null;
+  ['vc-lugar','vc-ciudad','vc-direccion','vc-contacto','vc-notas'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('vc-preview').style.display='none';
+  document.getElementById('vc-foto').value='';
+  obtenerGPS('gpsTextCorreria');
+  openModal('modalVisitaCorreria');
+}
+function guardarVisitaCorreria(){
+  var lugar=document.getElementById('vc-lugar').value.trim();
+  var ciudad=document.getElementById('vc-ciudad').value.trim();
+  if(!lugar){toast('El nombre del punto es obligatorio','err');return;}
+  if(!ciudad){toast('La ciudad es obligatoria','err');return;}
+  var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentUser.labId,
+    date:today(),status:'completed',completedAt:new Date().toISOString(),
+    type:'correria',placeName:lugar,ciudad:ciudad,
+    address:document.getElementById('vc-direccion').value.trim(),
+    contact:document.getElementById('vc-contacto').value.trim(),
+    notes:document.getElementById('vc-notas').value.trim(),
+    ciudadBase:currentUser.ciudad||''};
+  if(_visitaFotoCorreria) v.photo=_visitaFotoCorreria;
+  if(_visitaGps){v.lat=_visitaGps.lat;v.lng=_visitaGps.lng;}
+  pushVisit(v);
+  closeModal('modalVisitaCorreria');
+  renderHoy();
+  toast('Visita en correría guardada');
+}
 function abrirVisitaLibre(){
   _visitaGps=null;_visitaFotoGeneral=null;
   ['vg-lugar','vg-direccion','vg-contacto','vg-notas'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
@@ -1471,6 +1525,7 @@ function previewFoto(input,previewId,target){
       var prev=document.getElementById(previewId);
       if(prev){prev.src=data;prev.style.display='block';}
       if(target==='general') _visitaFotoGeneral=data;
+      else if(target==='correria') _visitaFotoCorreria=data;
       else _visitaFotoProf=data;
     };
     img.src=e.target.result;
