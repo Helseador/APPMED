@@ -361,6 +361,23 @@
 </div>
 
 <!-- MODAL: GENERAR INFORME -->
+<div class="modal-overlay" id="modalDescargaResumen">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-title"><i class="fa-solid fa-file-excel" style="color:#16A34A;margin-right:8px;"></i>Descargar resumen</div>
+    <div class="form-group">
+      <label class="form-label">Selecciona los gestores a incluir</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <button class="btn btn-sm btn-outline" onclick="seleccionarTodosResumen(true)">Todos</button>
+        <button class="btn btn-sm btn-outline" onclick="seleccionarTodosResumen(false)">Ninguno</button>
+      </div>
+      <div id="modalDescargaResumenLista" style="max-height:320px;overflow-y:auto;border:1.5px solid var(--border);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:4px;"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modalDescargaResumen')">Cancelar</button>
+      <button class="btn btn-primary" onclick="descargarResumenGestores()"><i class="fa-solid fa-download"></i> Descargar</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modalInforme">
   <div class="modal-box" style="max-width:480px;">
     <div class="modal-title"><i class="fa-solid fa-chart-line" style="color:var(--primary);margin-right:8px;"></i>Generar informe</div>
@@ -2135,6 +2152,28 @@ function renderResumenGestores(desde, hasta){
 }
 
 var _resumenGestoresOpen=true;
+function abrirModalDescargaResumen(){
+  var gestores=D.users.filter(function(u){
+    return u.role==='visitor'&&u.active!==false&&(!currentLabId||u.labId===currentLabId);
+  }).sort(function(a,b){
+    var la=getLabName(a.labId)||'',lb=getLabName(b.labId)||'';
+    return la.localeCompare(lb)||a.name.localeCompare(b.name);
+  });
+  var lista=document.getElementById('modalDescargaResumenLista');
+  if(!lista) return;
+  lista.innerHTML=gestores.map(function(u){
+    var lab=LABS.find(function(l){return l.id===u.labId;})||{name:u.labId||'-',color:'#64748B'};
+    return '<label style="display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:8px;cursor:pointer;background:var(--surface-2);">'
+      +'<input type="checkbox" checked value="'+u.id+'" style="width:16px;height:16px;accent-color:var(--primary);flex-shrink:0;">'
+      +'<span style="flex:1;font-size:13px;font-weight:600;">'+esc(u.name)+'</span>'
+      +'<span style="font-size:11px;font-weight:700;color:'+lab.color+';">'+esc(lab.name)+'</span>'
+      +'</label>';
+  }).join('');
+  openModal('modalDescargaResumen');
+}
+function seleccionarTodosResumen(val){
+  document.querySelectorAll('#modalDescargaResumenLista input[type=checkbox]').forEach(function(c){c.checked=val;});
+}
 function toggleResumenGestores(){
   _resumenGestoresOpen=!_resumenGestoresOpen;
   var sec=document.getElementById('resumenGestoresSection');
@@ -2146,6 +2185,12 @@ function toggleResumenGestores(){
 function descargarResumenGestores(){
   var desde=rptDesde||today();
   var hasta=rptHasta||today();
+
+  // IDs seleccionados en el modal
+  var seleccionados=[];
+  document.querySelectorAll('#modalDescargaResumenLista input[type=checkbox]:checked').forEach(function(c){seleccionados.push(c.value);});
+  if(!seleccionados.length){toast('Selecciona al menos un gestor','err');return;}
+
   var FESTIVOS_CO={
     '2026-01-01':1,'2026-01-12':1,'2026-03-23':1,'2026-04-02':1,'2026-04-03':1,
     '2026-05-01':1,'2026-05-18':1,'2026-06-08':1,'2026-06-15':1,'2026-06-29':1,
@@ -2162,7 +2207,7 @@ function descargarResumenGestores(){
     dIter.setDate(dIter.getDate()+1);
   }
   var gestores=D.users.filter(function(u){
-    return u.role==='visitor'&&u.active!==false&&(!currentLabId||u.labId===currentLabId);
+    return u.role==='visitor'&&u.active!==false&&seleccionados.indexOf(u.id)>=0;
   }).sort(function(a,b){
     var la=getLabName(a.labId)||'',lb=getLabName(b.labId)||'';
     return la.localeCompare(lb)||a.name.localeCompare(b.name);
@@ -2179,14 +2224,13 @@ function descargarResumenGestores(){
     var diasTrabSet={};visitasEf.forEach(function(v){diasTrabSet[v.date]=true;});
     filas.push([getLabName(u.labId)||u.labId,u.name,ausEnRango.length,diasHabilesRango.length,Object.keys(diasEfSet).length,Object.keys(diasTrabSet).length,general,profesional,correria,general+profesional+correria]);
   });
-  // Generar CSV y descargar
   var csv=filas.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');
-  var bom='\uFEFF';
-  var blob=new Blob([bom+csv],{type:'text/csv;charset=utf-8;'});
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
   a.href=url;a.download='Resumen_Visitas_'+desde+'_'+hasta+'.csv';
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  closeModal('modalDescargaResumen');
 }
 
 function renderInformes(){
@@ -2218,7 +2262,7 @@ function renderInformes(){
     +'<i class="fa-solid fa-table-list" style="color:var(--primary);"></i> Resumen de visitas por gestor'
     +'</div>'
     +'<div style="display:flex;align-items:center;gap:8px;">'
-    +'<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();descargarResumenGestores()" title="Descargar Excel"><i class="fa-solid fa-file-excel" style="color:#16A34A;"></i> Descargar</button>'
+    +'<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();abrirModalDescargaResumen()" title="Descargar Excel"><i class="fa-solid fa-file-excel" style="color:#16A34A;"></i> Descargar</button>'
     +'<i class="fa-solid fa-chevron-down" id="resumenGestoresChevron" style="color:var(--muted);transition:transform .3s;"></i>'
     +'</div>'
     +'</div>'
