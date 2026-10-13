@@ -2061,6 +2061,79 @@ function exportarInformeProfKetolance(){
   XLSX.writeFile(wb,'Informe_Profesionales_Ketolance_'+today()+'.xlsx');
 }
 
+function renderResumenGestores(desde, hasta){
+  var FESTIVOS_CO={
+    '2026-01-01':1,'2026-01-12':1,'2026-03-23':1,'2026-04-02':1,'2026-04-03':1,
+    '2026-05-01':1,'2026-05-18':1,'2026-06-08':1,'2026-06-15':1,'2026-06-29':1,
+    '2026-07-20':1,'2026-08-07':1,'2026-08-17':1,'2026-10-12':1,'2026-11-02':1,
+    '2026-11-16':1,'2026-12-08':1,'2026-12-25':1
+  };
+
+  // Construir días hábiles del rango (sin festivos, sin fines de semana)
+  var diasHabilesRango=[];
+  var dIter=new Date(desde+'T12:00:00');
+  var dFin=new Date(hasta+'T12:00:00');
+  while(dIter<=dFin){
+    var f=dIter.toISOString().slice(0,10);
+    var dow=dIter.getDay();
+    if(dow>=1&&dow<=5&&!FESTIVOS_CO[f]) diasHabilesRango.push(f);
+    dIter.setDate(dIter.getDate()+1);
+  }
+
+  var gestores=D.users.filter(function(u){
+    return u.role==='visitor'&&u.active!==false&&(!currentLabId||u.labId===currentLabId);
+  }).sort(function(a,b){
+    var la=getLabName(a.labId)||'',lb=getLabName(b.labId)||'';
+    return la.localeCompare(lb)||a.name.localeCompare(b.name);
+  });
+
+  if(!gestores.length) return '<div class="empty"><p>Sin gestores</p></div>';
+
+  var rows=gestores.map(function(u){
+    // Ausencias en el rango
+    var ausEnRango=(D.ausencias||[]).filter(function(a){return a.userId===u.id&&a.fecha>=desde&&a.fecha<=hasta;}).map(function(a){return a.fecha;});
+    // Días efectivos = hábiles - ausencias
+    var diasEfSet={};
+    diasHabilesRango.forEach(function(f){if(ausEnRango.indexOf(f)<0) diasEfSet[f]=true;});
+    var diasEfectivos=Object.keys(diasEfSet).length;
+
+    // Conteos solo en días efectivos
+    var visitasEf=D.visits.filter(function(v){return (v.visitorId||v.userId)===u.id&&diasEfSet[v.date]&&v.status==='completed';});
+    var general=visitasEf.filter(function(v){return v.type!=='profesional'&&v.type!=='correria';}).length;
+    var profesional=visitasEf.filter(function(v){return v.type==='profesional';}).length;
+    var correria=visitasEf.filter(function(v){return v.type==='correria';}).length;
+    var total=general+profesional+correria;
+
+    // Días realmente trabajados (con al menos 1 visita completada en día efectivo)
+    var diasTrabSet={};
+    visitasEf.forEach(function(v){diasTrabSet[v.date]=true;});
+    var diasTrabajados=Object.keys(diasTrabSet).length;
+
+    var lab=LABS.find(function(l){return l.id===u.labId;})||{name:u.labId||'-',color:'#64748B'};
+    return {u:u,lab:lab,ausencias:ausEnRango.length,diasHabiles:diasHabilesRango.length,diasEfectivos:diasEfectivos,diasTrabajados:diasTrabajados,general:general,profesional:profesional,correria:correria,total:total};
+  });
+
+  var html='<div class="table-wrap"><table class="data-table"><thead><tr>'
+    +'<th>Laboratorio</th><th>Gestor</th><th>Ausencias</th><th>Días hábiles</th><th>Días efectivos</th><th>Días trabajados</th><th>Generales</th><th>Profesionales</th><th>Correría</th><th style="font-weight:900;">Total</th>'
+    +'</tr></thead><tbody>'
+    +rows.map(function(r){
+      return '<tr>'
+        +'<td><span style="background:'+r.lab.color+'22;color:'+r.lab.color+';border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">'+esc(r.lab.name)+'</span></td>'
+        +'<td><b>'+esc(r.u.name)+'</b></td>'
+        +'<td style="text-align:center;">'+(r.ausencias>0?'<span style="color:#DC2626;font-weight:700;">'+r.ausencias+'</span>':'0')+'</td>'
+        +'<td style="text-align:center;color:var(--muted);">'+r.diasHabiles+'</td>'
+        +'<td style="text-align:center;">'+r.diasEfectivos+'</td>'
+        +'<td style="text-align:center;">'+r.diasTrabajados+'</td>'
+        +'<td style="text-align:center;">'+r.general+'</td>'
+        +'<td style="text-align:center;">'+r.profesional+'</td>'
+        +'<td style="text-align:center;">'+(r.correria>0?'<span style="color:#EA580C;font-weight:700;">'+r.correria+'</span>':'0')+'</td>'
+        +'<td style="text-align:center;font-weight:900;font-size:15px;">'+r.total+'</td>'
+        +'</tr>';
+    }).join('')
+    +'</tbody></table></div>';
+  return html;
+}
+
 function renderInformes(){
   var el=document.getElementById('tabContent');
   if(!el) return;
@@ -2118,6 +2191,10 @@ function renderInformes(){
     +'<div class="section-title" style="margin-bottom:12px;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-chart-pie" style="color:#7C3AED;"></i> Rendimiento de gestores</div>'
     +'<div id="cumplimientoSection"></div>'
     +'</div>';
+  html+='<div class="card" style="margin-bottom:14px;">'
+    +'<div class="section-title" style="margin-bottom:12px;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-table-list" style="color:var(--primary);"></i> Resumen de visitas por gestor</div>'
+    +'<div id="resumenGestoresSection"></div>'
+    +'</div>';
   el.innerHTML=html;
   setRptPreset('hoy');
 }
@@ -2170,6 +2247,8 @@ function renderInformesCards(){
   var hasta=rptHasta||today();
   var secCumpl=document.getElementById('cumplimientoSection');
   if(secCumpl) secCumpl.innerHTML=renderCumplimientoTodos(desde,hasta);
+  var secRes=document.getElementById('resumenGestoresSection');
+  if(secRes) secRes.innerHTML=renderResumenGestores(desde,hasta);
   var el=document.getElementById('rptLabCards');
   if(!el) return;
   var labsToShow=currentLabId?LABS.filter(function(l){return l.id===currentLabId;}):LABS;
