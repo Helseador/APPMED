@@ -1725,20 +1725,63 @@ function renderCanvasDashboard(){
 }
 // ── SELECTOR DE LABORATORIOS (adminGeneral y super) ────────────
 function renderLabSelector(){
-  var html='<div style="margin-bottom:20px;"><div style="font-size:20px;font-weight:800;margin-bottom:4px;">Selecciona un laboratorio</div>'
-    +'<div style="font-size:13px;color:var(--muted);">Elige el laboratorio que quieres gestionar</div></div>'
-    +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;">';
+  var hoy=today();
+  var html='<div style="margin-bottom:24px;">'
+    +'<div style="font-size:22px;font-weight:900;margin-bottom:4px;">Panel de laboratorios</div>'
+    +'<div style="font-size:13px;color:var(--muted);">Selecciona el laboratorio que quieres gestionar</div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;">';
+
   LABS.forEach(function(lab){
-    var visCount=D.users.filter(function(u){return u.labId===lab.id&&u.role==="visitor";}).length;
-    var hoyCount=D.visits.filter(function(v){return v.labId===lab.id&&v.date===today()&&v.status==="completed";}).length;
-    html+='<div class="card" style="cursor:pointer;border-left:5px solid '+lab.color+';" onclick="seleccionarLab(this.dataset.id)" data-id="'+lab.id+'">'
-      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
-      +'<div style="width:40px;height:40px;border-radius:10px;background:'+lab.color+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;"><i class="fa-solid fa-flask"></i></div>'
-      +'<div><div style="font-weight:800;font-size:15px;">'+esc(lab.name)+'</div>'
-      +'<div style="font-size:12px;color:var(--muted);">'+visCount+' visitadores</div></div></div>'
-      +'<div style="font-size:12px;color:var(--muted);">Hoy: <strong style="color:'+lab.color+';">'+hoyCount+'</strong> completadas</div>'
+    var visCount=D.users.filter(function(u){return u.labId===lab.id&&u.role==='visitor'&&u.active!==false;}).length;
+    var totalPuntos=D.points.filter(function(p){
+      var u=D.users.find(function(x){return x.id===p.assignedTo;});
+      return u&&u.labId===lab.id;
+    }).length;
+    var hoyCount=D.visits.filter(function(v){return v.labId===lab.id&&v.date===hoy&&v.status==='completed';}).length;
+    var enCurso=D.visits.filter(function(v){return v.labId===lab.id&&v.date===hoy&&v.status==='in-progress';}).length;
+    var pct=totalPuntos>0?Math.min(100,Math.round(hoyCount/totalPuntos*100)):0;
+    var pctColor=pct>=100?'#16A34A':pct>=60?'#D97706':'#DC2626';
+
+    html+='<div onclick="seleccionarLab(\''+lab.id+'\')" style="cursor:pointer;border-radius:14px;overflow:hidden;border:1.5px solid var(--border);transition:transform .15s,box-shadow .15s;box-shadow:0 2px 8px rgba(0,0,0,0.06);" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 20px rgba(0,0,0,0.12)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.06)\'">'
+      // Header con color del lab
+      +'<div style="background:linear-gradient(135deg,'+lab.color+','+lab.color+'cc);padding:16px;position:relative;overflow:hidden;">'
+      +'<div style="position:absolute;top:-10px;right:-10px;width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,0.1);"></div>'
+      +'<div style="position:absolute;bottom:-20px;right:20px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,0.08);"></div>'
+      +'<div style="display:flex;align-items:center;gap:10px;">'
+      +'<div style="width:42px;height:42px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;backdrop-filter:blur(4px);"><i class="fa-solid fa-flask"></i></div>'
+      +'<div>'
+      +'<div style="font-weight:900;font-size:16px;color:#fff;">'+esc(lab.name)+'</div>'
+      +'<div style="font-size:11px;color:rgba(255,255,255,0.75);">'+visCount+' gestor'+(visCount!==1?'es':'')+'</div>'
+      +'</div></div>'
+      +'</div>'
+      // Cuerpo
+      +'<div style="background:var(--surface);padding:14px;">'
+      // Stats fila
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">'
+      +'<div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;">'
+      +'<div style="font-size:22px;font-weight:900;color:var(--primary);">'+hoyCount+'</div>'
+      +'<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;">Completadas hoy</div>'
+      +'</div>'
+      +'<div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;">'
+      +'<div style="font-size:22px;font-weight:900;color:'+(enCurso>0?'#D97706':'var(--muted)')+';">'+enCurso+'</div>'
+      +'<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;">En curso</div>'
+      +'</div>'
+      +'</div>'
+      // Barra progreso
+      +(totalPuntos>0
+        ?'<div style="margin-bottom:6px;display:flex;justify-content:space-between;font-size:11px;font-weight:700;">'
+          +'<span style="color:var(--muted);">Avance del día</span>'
+          +'<span style="color:'+pctColor+';">'+pct+'%</span>'
+          +'</div>'
+          +'<div style="background:var(--border);border-radius:6px;height:6px;">'
+          +'<div style="background:'+pctColor+';width:'+pct+'%;height:6px;border-radius:6px;transition:width .4s;"></div>'
+          +'</div>'
+        :'<div style="font-size:11px;color:var(--muted);text-align:center;">Sin puntos asignados</div>')
+      +'</div>'
       +'</div>';
   });
+
   html+='</div>';
   return html;
 }
