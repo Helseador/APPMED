@@ -1815,18 +1815,18 @@ function calcCumplimientoRango(uid, desde, hasta){
   var avgGen=diasRuta.length?Math.round(sumGen/diasRuta.length):0;
 
   // 4. KPI Profesionales — total en rango sobre días hábiles
-  var _diasSet={};dias.forEach(function(f){_diasSet[f]=true;});
+  // Profesionales y correría cuentan en TODO el rango — las ausencias solo afectan la ruta
   var totalProf=D.visits.filter(function(v){
-    return (v.visitorId||v.userId)===uid&&_diasSet[v.date]&&v.status==='completed'&&v.type==='profesional';
+    return (v.visitorId||v.userId)===uid&&v.date>=desde&&v.date<=hasta&&v.status==='completed'&&v.type==='profesional';
   }).length;
   var pctProf=Math.round(totalProf/CUMPL.PROF_MES*100); // sin tope: exceso suma al global
 
-  // 5. KPI Correría — días de correría sobre días hábiles
+  // 5. KPI Correría — sin restricción de ausencias
   var totalCorr=D.visits.filter(function(v){
-    return (v.visitorId||v.userId)===uid&&_diasSet[v.date]&&v.status==='completed'&&v.type==='correria';
+    return (v.visitorId||v.userId)===uid&&v.date>=desde&&v.date<=hasta&&v.status==='completed'&&v.type==='correria';
   }).length;
 
-  // 6. KPI Capacitaciones
+  // 6. KPI Capacitaciones — sin restricción de ausencias
   var totalCap=(D.capacitaciones||[]).filter(function(c){
     return c.userId===uid&&c.fecha>=desde&&c.fecha<=hasta;
   }).length;
