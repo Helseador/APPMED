@@ -1815,9 +1815,8 @@ function calcCumplimientoRango(uid, desde, hasta){
   var avgGen=diasRuta.length?Math.round(sumGen/diasRuta.length):0;
 
   // 4. KPI Profesionales — total en rango sobre días hábiles
-  // Profesionales — usar _profVisits si están cargadas (tienen historial completo), sino D.visits
-  var _fuenteProf=(window._profVisits&&window._profVisits.length)?window._profVisits:D.visits;
-  var totalProf=_fuenteProf.filter(function(v){
+  // Profesionales — siempre usar D.visits (cargado desde el mes anterior, incluye todos los tipos)
+  var totalProf=D.visits.filter(function(v){
     return (v.visitorId||v.userId)===uid&&v.date>=desde&&v.date<=hasta&&v.status==='completed'&&v.type==='profesional';
   }).length;
   var pctProf=Math.round(totalProf/CUMPL.PROF_MES*100); // sin tope: exceso suma al global
