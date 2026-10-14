@@ -1790,8 +1790,8 @@ function calcCumplimientoDia(uid, fecha){
   var prof=D.visits.filter(function(v){
     return (v.visitorId||v.userId)===uid&&v.date===fecha&&v.status==='completed'&&v.type==='profesional';
   }).length;
-  var pctGen=Math.min(100, Math.round(gen/CUMPL.GEN_TECHO*100));
-  var pctProf=Math.min(100, Math.round(gen/CUMPL.GEN_TECHO*100)); // diario usa generales
+  var pctGen=Math.round(gen/CUMPL.GEN_TECHO*100);
+  var pctProf=Math.round(gen/CUMPL.GEN_TECHO*100);
   var pctDia=pctGen;
   return {gen:gen,prof:prof,pctGen:pctGen,pctProf:pctProf,pctDia:pctDia};
 }
@@ -1821,10 +1821,10 @@ function calcCumplimientoRango(uid, desde, hasta){
       diasActividad.push(fecha);
     } else {
       diasRuta.push(fecha);
-      var pctGen=Math.min(100,Math.round(gen/CUMPL.GEN_TECHO*100));
+      var pctGen=Math.round(gen/CUMPL.GEN_TECHO*100); // sin tope: exceso diario suma al promedio
       sumGen+=pctGen;
     }
-    return {fecha:fecha,gen:gen,prof:prof,corr:corr,esDiaActividad:esDiaActividad,pctDia:esDiaActividad?null:Math.min(100,Math.round(gen/CUMPL.GEN_TECHO*100))};
+    return {fecha:fecha,gen:gen,prof:prof,corr:corr,esDiaActividad:esDiaActividad,pctDia:esDiaActividad?null:Math.round(gen/CUMPL.GEN_TECHO*100)};
   });
 
   // 3. avgGen solo sobre días de ruta (excluye días de actividad)
