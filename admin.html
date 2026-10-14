@@ -1815,8 +1815,9 @@ function calcCumplimientoRango(uid, desde, hasta){
   var avgGen=diasRuta.length?Math.round(sumGen/diasRuta.length):0;
 
   // 4. KPI Profesionales — total en rango sobre días hábiles
-  // Profesionales y correría cuentan en TODO el rango — las ausencias solo afectan la ruta
-  var totalProf=D.visits.filter(function(v){
+  // Profesionales — usar _profVisits si están cargadas (tienen historial completo), sino D.visits
+  var _fuenteProf=(window._profVisits&&window._profVisits.length)?window._profVisits:D.visits;
+  var totalProf=_fuenteProf.filter(function(v){
     return (v.visitorId||v.userId)===uid&&v.date>=desde&&v.date<=hasta&&v.status==='completed'&&v.type==='profesional';
   }).length;
   var pctProf=Math.round(totalProf/CUMPL.PROF_MES*100); // sin tope: exceso suma al global
@@ -2158,11 +2159,11 @@ function renderResumenGestores(desde, hasta){
     var r=calcCumplimientoRango(u.id,desde,hasta);
     var lab=LABS.find(function(l){return l.id===u.labId;})||{name:u.labId||'-',color:'#64748B'};
     var cap=(D.capacitaciones||[]).filter(function(c){return c.userId===u.id&&c.fecha>=desde&&c.fecha<=hasta;}).length;
-    // diasHabiles real por gestor = días de ruta + días de actividad + ausencias (esDiaHabil ya descuenta ausencias del gestor)
-    var diasHabilesGestor=r.diasRuta+r.diasActividad+ausEnRango;
+    // días efectivos = hábiles del periodo - ausencias
+    var diasEfectivos=diasHabilesRango.length-ausEnRango;
     return {u:u,lab:lab,ausencias:ausEnRango,
       diasHabiles:diasHabilesRango.length,   // referencia general del periodo
-      diasEfectivos:diasHabilesGestor,        // días hábiles reales del gestor (sin ausencias)
+      diasEfectivos:diasEfectivos,            // días hábiles - ausencias
       diasRuta:r.diasRuta,diasActividad:r.diasActividad,
       general:r.totalGen,profesional:r.totalProf,correria:r.totalCorr||0,cap:cap,
       pctRuta:r.avgGen,pctProf:r.pctProf,pctCap:r.pctCap,pctGlobal:r.pct};
@@ -2182,7 +2183,7 @@ function renderResumenGestores(desde, hasta){
         +'</div>'
         // chips de días
         +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">'
-        +'<div style="font-size:11px;color:var(--muted);">📅 <b>'+r.diasEfectivos+'</b>/'+r.diasHabiles+' días · <b>'+r.diasRuta+'</b> ruta · <b>'+r.diasActividad+'</b> act.'+(r.ausencias>0?' · <span style="color:#DC2626;font-weight:700;">⚠ '+r.ausencias+' aus.</span>':'')+'</div>'
+        +'<div style="font-size:11px;color:var(--muted);">📅 <b>'+r.diasEfectivos+'</b>/'+r.diasHabiles+' días efectivos · <b>'+r.diasRuta+'</b> ruta · <b>'+r.diasActividad+'</b> act.'+(r.ausencias>0?' · <span style="color:#DC2626;font-weight:700;">⚠ '+r.ausencias+' aus.</span>':'')+'</div>'
         +(r.correria>0?'<div style="font-size:11px;color:#EA580C;font-weight:700;"><i class="fa-solid fa-map-location-dot"></i> '+r.correria+' visitas correría</div>':'')
         +'</div>'
         +'</div>'
