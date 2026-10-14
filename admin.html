@@ -1819,7 +1819,7 @@ function calcCumplimientoRango(uid, desde, hasta){
   var totalProf=D.visits.filter(function(v){
     return (v.visitorId||v.userId)===uid&&_diasSet[v.date]&&v.status==='completed'&&v.type==='profesional';
   }).length;
-  var pctProf=Math.min(100,Math.round(totalProf/CUMPL.PROF_MES*100));
+  var pctProf=Math.round(totalProf/CUMPL.PROF_MES*100); // sin tope: exceso suma al global
 
   // 5. KPI Correría — días de correría sobre días hábiles
   var totalCorr=D.visits.filter(function(v){
@@ -1830,7 +1830,7 @@ function calcCumplimientoRango(uid, desde, hasta){
   var totalCap=(D.capacitaciones||[]).filter(function(c){
     return c.userId===uid&&c.fecha>=desde&&c.fecha<=hasta;
   }).length;
-  var pctCap=Math.min(100,Math.round(totalCap/CUMPL.CAP_MES*100));
+  var pctCap=Math.round(totalCap/CUMPL.CAP_MES*100); // sin tope: exceso suma al global
 
   // 7. Total generales solo en días de ruta
   var _diasRutaSet={};diasRuta.forEach(function(f){_diasRutaSet[f]=true;});
@@ -2132,61 +2132,67 @@ function renderResumenGestores(desde, hasta){
 
   if(!gestores.length) return '<div class="empty"><p>Sin gestores</p></div>';
 
-  var rows=gestores.map(function(u){
-    var ausEnRango=(D.ausencias||[]).filter(function(a){return a.userId===u.id&&a.fecha>=desde&&a.fecha<=hasta;}).length;
-    // Usar calcCumplimientoRango para tener los mismos números que el resto de la plataforma
-    var r=calcCumplimientoRango(u.id,desde,hasta);
-    var lab=LABS.find(function(l){return l.id===u.labId;})||{name:u.labId||'-',color:'#64748B'};
-    return {u:u,lab:lab,
-      ausencias:ausEnRango,
-      diasHabiles:diasHabilesRango.length,
-      diasRuta:r.diasRuta,
-      diasActividad:r.diasActividad,
-      general:r.totalGen,
-      profesional:r.totalProf,
-      correria:r.totalCorr,
-      total:r.totalGen+r.totalProf+(r.totalCorr||0),
-      pctRuta:r.avgGen,          // % cumplimiento días de ruta (meta 12)
-      pctProf:r.pctProf,         // % cumplimiento profesionales
-      pctCap:r.pctCap,           // % cumplimiento capacitaciones
-      pctGlobal:r.pct            // % global ponderado
-    };
-  });
-
-  function badgePct(pct){
-    var c=pct>=100?'#16A34A':pct>=83?'#D97706':'#DC2626';
-    return '<span style="background:'+c+'22;color:'+c+';border-radius:6px;padding:2px 8px;font-size:11px;font-weight:800;">'+pct+'%</span>';
+  function pctColor(pct){return pct>=100?'#16A34A':pct>=83?'#D97706':'#DC2626';}
+  function miniBar(pct,color){
+    var w=Math.min(pct,150); // barra puede llegar a 150% visualmente
+    var bColor=color||pctColor(pct);
+    return '<div style="background:#E2E8F0;border-radius:4px;height:6px;width:100%;margin-top:3px;">'
+      +'<div style="background:'+bColor+';width:'+Math.min(w,100)+'%;height:6px;border-radius:4px;"></div>'
+      +'</div>';
+  }
+  function pctBadge(pct,label,visitas,meta){
+    var c=pctColor(pct);
+    var extra=pct>100?'<span style="font-size:9px;color:#16A34A;font-weight:700;margin-left:3px;">+'+Math.round((pct-100)*meta/100)+'</span>':'';
+    return '<div style="flex:1;background:var(--bg);border-radius:10px;padding:8px 10px;">'
+      +'<div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">'+label+'</div>'
+      +'<div style="display:flex;align-items:baseline;gap:4px;">'
+      +'<span style="font-size:18px;font-weight:900;color:'+c+';">'+pct+'%</span>'+extra
+      +'<span style="font-size:11px;color:var(--muted);margin-left:auto;">'+visitas+'/'+meta+'</span>'
+      +'</div>'
+      +miniBar(pct,c)
+      +'</div>';
   }
 
-  var html='<div class="table-wrap"><table class="data-table"><thead><tr>'
-    +'<th>Laboratorio</th><th>Gestor</th><th>Ausencias</th>'
-    +'<th>Días hábiles</th><th>Días ruta</th><th>Días actividad</th>'
-    +'<th>Generales</th><th>% Ruta</th>'
-    +'<th>Profesionales</th><th>% Prof.</th>'
-    +'<th>Correría</th>'
-    +'<th>Cap.</th><th>% Cap.</th>'
-    +'<th style="font-weight:900;">Total</th><th style="font-weight:900;">% Global</th>'
-    +'</tr></thead><tbody>'
+  var rows=gestores.map(function(u){
+    var ausEnRango=(D.ausencias||[]).filter(function(a){return a.userId===u.id&&a.fecha>=desde&&a.fecha<=hasta;}).length;
+    var r=calcCumplimientoRango(u.id,desde,hasta);
+    var lab=LABS.find(function(l){return l.id===u.labId;})||{name:u.labId||'-',color:'#64748B'};
+    var cap=(D.capacitaciones||[]).filter(function(c){return c.userId===u.id&&c.fecha>=desde&&c.fecha<=hasta;}).length;
+    return {u:u,lab:lab,ausencias:ausEnRango,diasHabiles:diasHabilesRango.length,
+      diasRuta:r.diasRuta,diasActividad:r.diasActividad,
+      general:r.totalGen,profesional:r.totalProf,correria:r.totalCorr||0,cap:cap,
+      pctRuta:r.avgGen,pctProf:r.pctProf,pctCap:r.pctCap,pctGlobal:r.pct};
+  });
+
+  var html='<div style="display:flex;flex-direction:column;gap:10px;">'
     +rows.map(function(r){
-      return '<tr>'
-        +'<td><span style="background:'+r.lab.color+'22;color:'+r.lab.color+';border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">'+esc(r.lab.name)+'</span></td>'
-        +'<td><b>'+esc(r.u.name)+'</b></td>'
-        +'<td style="text-align:center;">'+(r.ausencias>0?'<span style="color:#DC2626;font-weight:700;">'+r.ausencias+'</span>':'0')+'</td>'
-        +'<td style="text-align:center;color:var(--muted);">'+r.diasHabiles+'</td>'
-        +'<td style="text-align:center;">'+r.diasRuta+'</td>'
-        +'<td style="text-align:center;">'+(r.diasActividad>0?'<span style="color:#EA580C;font-weight:700;">'+r.diasActividad+'</span>':'0')+'</td>'
-        +'<td style="text-align:center;">'+r.general+'</td>'
-        +'<td style="text-align:center;">'+badgePct(r.pctRuta)+'</td>'
-        +'<td style="text-align:center;">'+r.profesional+'</td>'
-        +'<td style="text-align:center;">'+badgePct(r.pctProf)+'</td>'
-        +'<td style="text-align:center;">'+(r.correria>0?'<span style="color:#EA580C;font-weight:700;">'+r.correria+'</span>':'0')+'</td>'
-        +'<td style="text-align:center;">'+((D.capacitaciones||[]).filter(function(c){return c.userId===r.u.id&&c.fecha>=desde&&c.fecha<=hasta;}).length)+'</td>'
-        +'<td style="text-align:center;">'+badgePct(r.pctCap)+'</td>'
-        +'<td style="text-align:center;font-weight:900;font-size:15px;">'+r.total+'</td>'
-        +'<td style="text-align:center;">'+badgePct(r.pctGlobal)+'</td>'
-        +'</tr>';
+      var cGlobal=pctColor(r.pctGlobal);
+      return '<div style="background:var(--surface);border:1.5px solid var(--border);border-left:4px solid '+cGlobal+';border-radius:12px;padding:14px 16px;">'
+
+        // Fila 1: nombre + lab + % global
+        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">'
+        +'<div style="width:44px;height:44px;border-radius:50%;border:3px solid '+cGlobal+';display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:'+cGlobal+';flex-shrink:0;">'+r.pctGlobal+'%</div>'
+        +'<div style="flex:1;">'
+        +'<div style="font-weight:800;font-size:14px;">'+esc(r.u.name)+'</div>'
+        +'<span style="background:'+r.lab.color+'22;color:'+r.lab.color+';border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">'+esc(r.lab.name)+'</span>'
+        +'</div>'
+        // chips de días
+        +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">'
+        +'<div style="font-size:11px;color:var(--muted);">📅 <b>'+r.diasRuta+'</b> días ruta · <b>'+r.diasActividad+'</b> actividad'+(r.ausencias>0?' · <span style="color:#DC2626;">⚠ '+r.ausencias+' aus.</span>':'')+'</div>'
+        +(r.correria>0?'<div style="font-size:11px;color:#EA580C;font-weight:700;"><i class="fa-solid fa-map-location-dot"></i> '+r.correria+' visitas correría</div>':'')
+        +'</div>'
+        +'</div>'
+
+        // Fila 2: KPIs
+        +'<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+        +pctBadge(r.pctRuta,'🏪 Ruta (meta '+CUMPL.GEN_TECHO+'/día)',r.general,CUMPL.GEN_TECHO*(r.diasRuta||1))
+        +pctBadge(r.pctProf,'👨‍⚕️ Profesionales (meta '+CUMPL.PROF_MES+')',r.profesional,CUMPL.PROF_MES)
+        +pctBadge(r.pctCap,'🎓 Capacitaciones (meta '+CUMPL.CAP_MES+')',r.cap,CUMPL.CAP_MES)
+        +'</div>'
+
+        +'</div>';
     }).join('')
-    +'</tbody></table></div>';
+    +'</div>';
   return html;
 }
 
