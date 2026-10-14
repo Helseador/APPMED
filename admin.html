@@ -518,12 +518,28 @@ function initFirebase(){
     var _fechaFoto=new Date();_fechaFoto.setDate(_fechaFoto.getDate()-7);
     var _fechaFotoStr=_fechaFoto.toISOString().slice(0,10);
     db.ref('medvisit/visits').orderByChild('date').startAt(_fechaLimiteAdminStr).on('value',function(snap){
-      D.visits=toArray(snap.val()).map(function(v){
+      var generales=toArray(snap.val()).map(function(v){
         if(v.date&&v.date<_fechaFotoStr){delete v.photo;delete v.firma;}
         return v;
       });
+      // Fusionar con profesionales ya cargadas para no perderlas
+      var profIds={};
+      (window._profVisits||[]).forEach(function(v){profIds[v.id]=true;});
+      var merged=generales.filter(function(v){return !profIds[v.id];}).concat(window._profVisits||[]);
+      D.visits=merged;
       render();
     },function(err){console.error('Error visits:',err);toast('No se pudieron cargar las visitas. Contacta soporte.','err');});
+    // Cargar todas las visitas profesionales por separado (sin límite de registros)
+    db.ref('medvisit/visits').orderByChild('type').equalTo('profesional').once('value',function(snap){
+      window._profVisits=toArray(snap.val()).filter(function(v){
+        return !currentLabId||v.labId===currentLabId;
+      });
+      // Fusionar en D.visits sin duplicar
+      var profIds={};
+      window._profVisits.forEach(function(v){profIds[v.id]=true;});
+      D.visits=D.visits.filter(function(v){return !profIds[v.id];}).concat(window._profVisits);
+      render();
+    });
     db.ref('medvisit/points').on('value',function(snap){D.points=toArray(snap.val());render();});
     db.ref('medvisit/pendientes').on('value',function(snap){D.pendientes=toArray(snap.val()||[]);render();});
     db.ref('medvisit/ausencias').on('value',function(snap){D.ausencias=toArray(snap.val()||[]);render();});
