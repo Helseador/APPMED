@@ -2158,7 +2158,11 @@ function renderResumenGestores(desde, hasta){
     var r=calcCumplimientoRango(u.id,desde,hasta);
     var lab=LABS.find(function(l){return l.id===u.labId;})||{name:u.labId||'-',color:'#64748B'};
     var cap=(D.capacitaciones||[]).filter(function(c){return c.userId===u.id&&c.fecha>=desde&&c.fecha<=hasta;}).length;
-    return {u:u,lab:lab,ausencias:ausEnRango,diasHabiles:diasHabilesRango.length,
+    // diasHabiles real por gestor = días de ruta + días de actividad + ausencias (esDiaHabil ya descuenta ausencias del gestor)
+    var diasHabilesGestor=r.diasRuta+r.diasActividad+ausEnRango;
+    return {u:u,lab:lab,ausencias:ausEnRango,
+      diasHabiles:diasHabilesRango.length,   // referencia general del periodo
+      diasEfectivos:diasHabilesGestor,        // días hábiles reales del gestor (sin ausencias)
       diasRuta:r.diasRuta,diasActividad:r.diasActividad,
       general:r.totalGen,profesional:r.totalProf,correria:r.totalCorr||0,cap:cap,
       pctRuta:r.avgGen,pctProf:r.pctProf,pctCap:r.pctCap,pctGlobal:r.pct};
@@ -2178,7 +2182,7 @@ function renderResumenGestores(desde, hasta){
         +'</div>'
         // chips de días
         +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">'
-        +'<div style="font-size:11px;color:var(--muted);">📅 <b>'+r.diasRuta+'</b> días ruta · <b>'+r.diasActividad+'</b> actividad'+(r.ausencias>0?' · <span style="color:#DC2626;">⚠ '+r.ausencias+' aus.</span>':'')+'</div>'
+        +'<div style="font-size:11px;color:var(--muted);">📅 <b>'+r.diasEfectivos+'</b>/'+r.diasHabiles+' días · <b>'+r.diasRuta+'</b> ruta · <b>'+r.diasActividad+'</b> act.'+(r.ausencias>0?' · <span style="color:#DC2626;font-weight:700;">⚠ '+r.ausencias+' aus.</span>':'')+'</div>'
         +(r.correria>0?'<div style="font-size:11px;color:#EA580C;font-weight:700;"><i class="fa-solid fa-map-location-dot"></i> '+r.correria+' visitas correría</div>':'')
         +'</div>'
         +'</div>'
@@ -2257,12 +2261,13 @@ function descargarResumenGestores(){
     var la=getLabName(a.labId)||'',lb=getLabName(b.labId)||'';
     return la.localeCompare(lb)||a.name.localeCompare(b.name);
   });
-  var filas=[['Laboratorio','Gestor','Ausencias','Dias habiles','Dias ruta','Dias actividad','Generales','% Ruta','Profesionales','% Prof.','Correria','Capacitaciones','% Cap.','Total','% Global']];
+  var filas=[['Laboratorio','Gestor','Ausencias','Dias habiles periodo','Dias efectivos gestor','Dias ruta','Dias actividad','Generales','% Ruta','Profesionales','% Prof.','Correria','Capacitaciones','% Cap.','Total','% Global']];
   gestores.forEach(function(u){
     var ausEnRango=(D.ausencias||[]).filter(function(a){return a.userId===u.id&&a.fecha>=desde&&a.fecha<=hasta;}).length;
     var r=calcCumplimientoRango(u.id,desde,hasta);
     var cap=(D.capacitaciones||[]).filter(function(c){return c.userId===u.id&&c.fecha>=desde&&c.fecha<=hasta;}).length;
-    filas.push([getLabName(u.labId)||u.labId,u.name,ausEnRango,diasHabilesRango.length,r.diasRuta,r.diasActividad,r.totalGen,r.avgGen+'%',r.totalProf,r.pctProf+'%',r.totalCorr||0,cap,r.pctCap+'%',r.totalGen+r.totalProf+(r.totalCorr||0),r.pct+'%']);
+    var diasEfGestor=r.diasRuta+r.diasActividad+ausEnRango;
+    filas.push([getLabName(u.labId)||u.labId,u.name,ausEnRango,diasHabilesRango.length,diasEfGestor,r.diasRuta,r.diasActividad,r.totalGen,r.avgGen+'%',r.totalProf,r.pctProf+'%',r.totalCorr||0,cap,r.pctCap+'%',r.totalGen+r.totalProf+(r.totalCorr||0),r.pct+'%']);
   });
   var csv=filas.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');
   var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
