@@ -1395,10 +1395,12 @@ function handlePhotoTaken(e){
   };
   reader.readAsDataURL(file);
 }
+var _guardando=false;
 function completeVisit(){
+  if(_guardando)return; _guardando=true;
   var vid=document.getElementById('closeVisitId').value;
   var idx=(D.visits||[]).findIndex(function(v){return v.id===vid;});
-  if(idx<0)return;
+  if(idx<0){_guardando=false;return;}
   var photo=document.getElementById('photoPreview').src;
   D.visits[idx].status='completed';
   D.visits[idx].completedAt=new Date().toISOString();
@@ -1420,13 +1422,14 @@ function completeVisit(){
       if(prod&&!uds){invError=true;row.querySelector('.inv-uds').style.border='2px solid #FF6B6B';}
       else if(prod){row.querySelector('.inv-uds').style.border='';invItems.push({producto:prod,unidades:uds,vencimiento:venc||''});}
     });
-    if(invError){toast('Completa las unidades de todos los productos del inventario','err');return;}
+    if(invError){toast('Completa las unidades de todos los productos del inventario','err');_guardando=false;return;}
     D.visits[idx].inventario=invItems.length?invItems:null;
   }
   saveVisitUpdate(D.visits[idx]);
   closeModal('modalCloseVisit');
   renderHoy();
   toast('Visita completada');
+  setTimeout(function(){_guardando=false;},2000);
 }
 function verFoto(vid){
   var v=visitById(vid);if(!v||!v.photo)return;
@@ -1450,10 +1453,11 @@ function abrirVisitaCorreria(){
   openModal('modalVisitaCorreria');
 }
 function guardarVisitaCorreria(){
+  if(_guardando)return; _guardando=true;
   var lugar=document.getElementById('vc-lugar').value.trim();
   var ciudad=document.getElementById('vc-ciudad').value.trim();
-  if(!lugar){toast('El nombre del punto es obligatorio','err');return;}
-  if(!ciudad){toast('La ciudad es obligatoria','err');return;}
+  if(!lugar){toast('El nombre del punto es obligatorio','err');_guardando=false;return;}
+  if(!ciudad){toast('La ciudad es obligatoria','err');_guardando=false;return;}
   var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentUser.labId,
     date:today(),status:'completed',completedAt:new Date().toISOString(),
     type:'correria',placeName:lugar,ciudad:ciudad,
@@ -1465,6 +1469,7 @@ function guardarVisitaCorreria(){
   if(_visitaGps){v.lat=_visitaGps.lat;v.lng=_visitaGps.lng;}
   pushVisit(v);
   closeModal('modalVisitaCorreria');
+  setTimeout(function(){_guardando=false;},2000);
   renderHoy();
   toast('Visita en correría guardada');
 }
@@ -1556,8 +1561,9 @@ function clearFirma(){
   // Firma es opcional - el botón queda habilitado
 }
 function guardarVisitaGeneral(){
+  if(_guardando)return; _guardando=true;
   var lugar=document.getElementById('vg-lugar').value.trim();
-  if(!lugar){toast('Nombre del lugar obligatorio','err');return;}
+  if(!lugar){toast('Nombre del lugar obligatorio','err');_guardando=false;return;}
   var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentUser.labId,date:today(),status:'completed',completedAt:new Date().toISOString(),type:'general',placeName:lugar,address:document.getElementById('vg-direccion').value.trim(),contact:document.getElementById('vg-contacto').value.trim(),notes:document.getElementById('vg-notas').value.trim()};
   if(_visitaFotoGeneral) v.photo=_visitaFotoGeneral;
   if(_visitaGps){v.lat=_visitaGps.lat;v.lng=_visitaGps.lng;}
@@ -1571,19 +1577,21 @@ function guardarVisitaGeneral(){
       if(prod&&!uds){invError=true;row.querySelector('.inv-uds').style.border='2px solid #FF6B6B';}
       else if(prod){row.querySelector('.inv-uds').style.border='';invItems.push({producto:prod,unidades:uds,vencimiento:venc||''});}
     });
-    if(invError){toast('Completa las unidades de todos los productos del inventario','err');return;}
+    if(invError){toast('Completa las unidades de todos los productos del inventario','err');_guardando=false;return;}
     if(invItems.length) v.inventario=invItems;
   }
   pushVisit(v);
   closeModal('modalNuevaVisita');
   renderHoy();
   toast('Visita guardada');
+  setTimeout(function(){_guardando=false;},2000);
 }
 function guardarVisitaProfesional(){
+  if(_guardando)return; _guardando=true;
   var nombre=document.getElementById('vp-nombre').value.trim();
   var tel=document.getElementById('vp-telefono').value.trim();
   var dir=document.getElementById('vp-direccion').value.trim();
-  if(!nombre||!tel||!dir){toast('Completa los campos obligatorios','err');return;}
+  if(!nombre||!tel||!dir){toast('Completa los campos obligatorios','err');_guardando=false;return;}
   var _espec='';
   if(currentUser&&currentUser.labId==='ketolance'){
     var _sel=document.getElementById('vp-especialidad-select');
@@ -1602,6 +1610,7 @@ function guardarVisitaProfesional(){
   closeModal('modalNuevaVisita');
   renderHoy();
   toast('Visita profesional guardada');
+  setTimeout(function(){_guardando=false;},2000);
 }
 var NIT_DB=[
   {n:['exito','almacenes exito'],r:'Almacenes Exito S.A.',nit:'890.900.608-9'},
