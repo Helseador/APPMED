@@ -689,13 +689,31 @@ function eliminarVisita(vid, fbKey){
 function renderInventarios(){
   var hoy=today();
   // Filtros
-  if(typeof window._invFiltros==='undefined') window._invFiltros={desde:hoy,hasta:hoy,vis:''};
+  if(typeof window._invFiltros==='undefined') window._invFiltros={desde:'2026-09-01',hasta:hoy,vis:''};
   var desde=window._invFiltros.desde||hoy;
   var hasta=window._invFiltros.hasta||hoy;
 
+  // Cargar historial completo de visitas con inventario si aún no está
+  if(typeof window._invVisits==='undefined') window._invVisits=null;
+  if(typeof window._invLoading==='undefined') window._invLoading=false;
+
+  if(!window._invVisits&&!window._invLoading){
+    window._invLoading=true;
+    db.ref('medvisit/visits').once('value',function(snap){
+      window._invVisits=toArray(snap.val()).filter(function(v){
+        return v.inventario&&v.inventario.length&&(!currentLabId||v.labId===currentLabId);
+      });
+      window._invLoading=false;
+      renderCurrentTab();
+    });
+    return '<div class="loading"><div class="spinner"></div><p>Cargando inventarios...</p></div>';
+  }
+
+  if(window._invLoading) return '<div class="loading"><div class="spinner"></div><p>Cargando inventarios...</p></div>';
+
   // Visitas con inventario en el rango
-  var conInv=D.visits.filter(function(v){
-    return v.inventario&&v.inventario.length&&v.date>=desde&&v.date<=hasta&&(!currentLabId||v.labId===currentLabId);
+  var conInv=(window._invVisits||[]).filter(function(v){
+    return v.date>=desde&&v.date<=hasta&&(!currentLabId||v.labId===currentLabId);
   });
   if(window._invFiltros.vis) conInv=conInv.filter(function(v){return (v.visitorId||v.userId)===window._invFiltros.vis;});
 
@@ -1913,6 +1931,7 @@ function renderLabSelector(){
 
 function seleccionarLab(labId){
   currentLabId=labId;
+  window._invVisits=null; // forzar recarga de inventarios al cambiar lab
   renderCurrentTab();
 }
 
