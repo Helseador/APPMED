@@ -659,6 +659,32 @@ function renderCurrentTab(){
 }
 
 // ── TAB VISITAS ───────────────────────────────────────────────
+function eliminarVisita(vid, fbKey){
+  if(currentUser.role!=='super'){toast('Solo el superadmin puede eliminar visitas','err');return;}
+  showConfirm('Eliminar visita','¿Seguro que quieres eliminar esta visita? Esta acción no se puede deshacer.','fa-trash','danger',function(){
+    // Eliminar de D.visits en memoria
+    var idx=D.visits.findIndex(function(v){return v.id===vid;});
+    if(idx>=0) D.visits.splice(idx,1);
+    // Eliminar de Firebase
+    if(fbKey){
+      db.ref('medvisit/visits/'+fbKey).remove()
+        .then(function(){toast('Visita eliminada');renderCurrentTab();})
+        .catch(function(e){toast('Error al eliminar: '+e.message,'err');});
+    } else {
+      // Buscar por id si no tenemos fbKey
+      db.ref('medvisit/visits').orderByChild('id').equalTo(vid).once('value',function(snap){
+        snap.forEach(function(child){child.ref.remove();});
+        toast('Visita eliminada');
+        renderCurrentTab();
+      });
+    }
+    // También eliminar de _profVisits si aplica
+    if(window._profVisits){
+      window._profVisits=window._profVisits.filter(function(v){return v.id!==vid;});
+    }
+  });
+}
+
 function renderVisitas(){
   if(typeof window._visSubTab==='undefined') window._visSubTab='general';
 
@@ -732,8 +758,10 @@ function renderVisitasGenerales(){
 
   if(!filtradas.length) return html+'<div class="empty"><i class="fa-solid fa-route"></i><p>Sin visitas en el periodo</p></div>';
 
+  var isSuper=currentUser.role==='super';
   html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
     +'<th>Visitador</th><th>Laboratorio</th><th>Punto</th><th>Jefe</th><th>Notas</th><th>Fecha</th><th>Estado</th><th>Ubicación</th><th>Foto</th><th>Inventario</th>'
+    +(isSuper?'<th></th>':'')
     +'</tr></thead><tbody>'
     +filtradas.map(function(v){
       var visName=getUserName(v.visitorId||v.userId);
@@ -764,7 +792,8 @@ function renderVisitasGenerales(){
           }).join('')
           +'</tbody></table></div>';
       }
-      return '<tr><td><b>'+esc(visName)+'</b></td><td>'+esc(labName)+'</td><td>'+esc(punto)+'</td><td>'+esc(v.jefe||'-')+'</td><td>'+notasCol+'</td><td>'+fmtDate(v.date)+(v.completedAt?' <span style="font-size:11px;color:var(--muted);">'+fmtHoraBogota(v.completedAt)+'</span>':'')+'</td><td>'+estado+'</td><td>'+ubicacion+'</td><td>'+foto+'</td><td>'+invCol+'</td></tr>';
+      var delBtn=isSuper?'<td><button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="eliminarVisita(\''+esc(v.id)+'\',\''+esc(v._fbKey||'')+'\')"><i class="fa-solid fa-trash"></i></button></td>':'';
+      return '<tr><td><b>'+esc(visName)+'</b></td><td>'+esc(labName)+'</td><td>'+esc(punto)+'</td><td>'+esc(v.jefe||'-')+'</td><td>'+notasCol+'</td><td>'+fmtDate(v.date)+(v.completedAt?' <span style="font-size:11px;color:var(--muted);">'+fmtHoraBogota(v.completedAt)+'</span>':'')+'</td><td>'+estado+'</td><td>'+ubicacion+'</td><td>'+foto+'</td><td>'+invCol+'</td>'+delBtn+'</tr>';
     }).join('')
     +'</tbody></table></div>';
 
@@ -792,8 +821,10 @@ function renderVisitasCorrerias(){
 
   if(!filtradas.length) return html+'<div class="empty"><i class="fa-solid fa-map-location-dot"></i><p>Sin visitas en correría en el periodo</p></div>';
 
+  var isSuperCorr=currentUser.role==='super';
   html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
     +'<th>Gestor</th><th>Lab</th><th>Punto</th><th>Ciudad</th><th>Ciudad base</th><th>Dirección</th><th>Contacto</th><th>Notas</th><th>Fecha</th><th>Ubicación</th><th>Foto</th>'
+    +(isSuperCorr?'<th></th>':'')
     +'</tr></thead><tbody>'
     +filtradas.map(function(v){
       var visName=getUserName(v.visitorId||v.userId);
@@ -801,6 +832,7 @@ function renderVisitasCorrerias(){
       var ubicacion=(v.lat&&v.lng)?'<a href="https://www.google.com/maps?q='+v.lat+','+v.lng+'" target="_blank" class="btn btn-sm btn-outline"><i class="fa-solid fa-location-dot"></i></a>':'-';
       var foto=v.photo?'<button class="btn btn-sm btn-outline" onclick="openFoto(\''+v.photo+'\')"><i class="fa-solid fa-image"></i></button>':'-';
       var notasCol=v.notes?'<div style="max-width:160px;font-size:12px;line-height:1.4;white-space:pre-wrap;word-break:break-word;">'+esc(v.notes)+'</div>':'-';
+      var delBtnC=isSuperCorr?'<td><button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="eliminarVisita(\''+esc(v.id)+'\',\''+esc(v._fbKey||'')+'\')"><i class="fa-solid fa-trash"></i></button></td>':'';
       return '<tr>'
         +'<td><b>'+esc(visName)+'</b></td>'
         +'<td>'+esc(labName)+'</td>'
@@ -813,6 +845,7 @@ function renderVisitasCorrerias(){
         +'<td>'+fmtDate(v.date)+(v.completedAt?' <span style="font-size:11px;color:var(--muted);">'+fmtHoraBogota(v.completedAt)+'</span>':'')+'</td>'
         +'<td>'+ubicacion+'</td>'
         +'<td>'+foto+'</td>'
+        +delBtnC
         +'</tr>';
     }).join('')
     +'</tbody></table></div>';
@@ -875,14 +908,17 @@ function renderVisitasProfesionales(){
 
   if(!filtradas.length) return html+'<div class="empty"><i class="fa-solid fa-user-doctor"></i><p>Sin visitas a profesionales</p></div>';
 
+  var isSuperProf=currentUser.role==='super';
   html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
     +'<th>Visitador</th><th>Lab</th><th>Profesional</th><th>Especialidad</th><th>Teléfono</th><th>Dirección</th><th>Obsequio</th><th>Notas</th><th>Fecha</th><th>Firma</th><th>Foto</th>'
+    +(isSuperProf?'<th></th>':'')
     +'</tr></thead><tbody>'
     +filtradas.map(function(v){
       var visName=getUserName(v.visitorId||v.userId);
       var firma=v.firma?'<span class="badge badge-ok"><i class="fa-solid fa-pen-nib"></i> Sí</span>':'<span class="badge badge-err">No</span>';
       var foto=v.photo?'<button class="btn btn-sm btn-outline" onclick="openFoto(\''+v.photo+'\')"><i class="fa-solid fa-image"></i></button>':'-';
       var notasProf=v.notes?'<div style="max-width:180px;font-size:12px;line-height:1.4;white-space:pre-wrap;word-break:break-word;">'+esc(v.notes)+'</div>':'-';
+      var delBtnP=isSuperProf?'<td><button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="eliminarVisita(\''+esc(v.id)+'\',\''+esc(v._fbKey||'')+'\')"><i class="fa-solid fa-trash"></i></button></td>':'';
       return '<tr>'
         +'<td><b>'+esc(visName)+'</b></td>'
         +'<td>'+esc(getLabName(v.labId))+'</td>'
@@ -895,6 +931,7 @@ function renderVisitasProfesionales(){
         +'<td>'+fmtDate(v.date)+'</td>'
         +'<td>'+firma+'</td>'
         +'<td>'+foto+'</td>'
+        +delBtnP
         +'</tr>';
     }).join('')
     +'</tbody></table></div>';
