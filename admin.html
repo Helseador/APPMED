@@ -512,7 +512,7 @@ function initFirebase(){
     });
     // Cargar datos
     db.ref('medvisit/users').on('value',function(snap){D.users=toArray(snap.val());render();});
-    var _fechaLimiteAdmin=new Date();_fechaLimiteAdmin.setDate(1);_fechaLimiteAdmin.setMonth(_fechaLimiteAdmin.getMonth()-1);
+    var _fechaLimiteAdmin=new Date();_fechaLimiteAdmin.setDate(1);_fechaLimiteAdmin.setMonth(_fechaLimiteAdmin.getMonth()-3);
     var _fechaLimiteAdminStr=_fechaLimiteAdmin.toISOString().slice(0,10);
     var _fechaLimiteAdminStr=_fechaLimiteAdmin.toISOString().slice(0,10);
     var _fechaFoto=new Date();_fechaFoto.setDate(_fechaFoto.getDate()-7);
@@ -693,27 +693,22 @@ function renderInventarios(){
   var desde=window._invFiltros.desde||hoy;
   var hasta=window._invFiltros.hasta||hoy;
 
-  // Cargar historial completo de visitas con inventario si aún no está
-  if(typeof window._invVisits==='undefined') window._invVisits=null;
-  if(typeof window._invLoading==='undefined') window._invLoading=false;
-
-  if(!window._invVisits&&!window._invLoading){
-    window._invLoading=true;
-    db.ref('medvisit/visits').once('value',function(snap){
-      window._invVisits=toArray(snap.val()).filter(function(v){
-        return v.inventario&&v.inventario.length&&(!currentLabId||v.labId===currentLabId);
-      });
-      window._invLoading=false;
-      renderCurrentTab();
-    });
-    return '<div class="loading"><div class="spinner"></div><p>Cargando inventarios...</p></div>';
+  // Si D.visits aún no cargó, mostrar spinner
+  if(!D.visits||!D.visits.length){
+    return '<div class="loading"><div class="spinner"></div><p>Cargando datos...</p></div>';
   }
 
-  if(window._invLoading) return '<div class="loading"><div class="spinner"></div><p>Cargando inventarios...</p></div>';
+  // Combinar D.visits (ya en memoria) con _profVisits y cualquier extra cargado
+  var fuenteBase=D.visits.slice();
+  // Agregar profesionales si están cargadas y no están ya en fuenteBase
+  if(window._profVisits&&window._profVisits.length){
+    var ids={};fuenteBase.forEach(function(v){ids[v.id]=true;});
+    window._profVisits.forEach(function(v){if(!ids[v.id])fuenteBase.push(v);});
+  }
 
   // Visitas con inventario en el rango
-  var conInv=(window._invVisits||[]).filter(function(v){
-    return v.date>=desde&&v.date<=hasta&&(!currentLabId||v.labId===currentLabId);
+  var conInv=fuenteBase.filter(function(v){
+    return v.inventario&&v.inventario.length&&v.date>=desde&&v.date<=hasta&&(!currentLabId||v.labId===currentLabId);
   });
   if(window._invFiltros.vis) conInv=conInv.filter(function(v){return (v.visitorId||v.userId)===window._invFiltros.vis;});
 
