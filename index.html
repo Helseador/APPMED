@@ -1342,12 +1342,14 @@ function addInventarioRow(containerId){
     '<button type="button" onclick="removeInventarioRow(\''+id+'\')" style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;"><i class="fa-solid fa-xmark"></i></button>'
     +'<div style="margin-bottom:7px;"><label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px;">Producto</label>'
     +'<select class="form-input inv-prod" style="font-size:13px;"><option value="">-- Selecciona producto --</option>'+opts+'</select></div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:7px;">'
     +'<div><label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px;">Unidades</label>'
     +'<input class="form-input inv-uds" type="number" min="0" placeholder="0" style="font-size:13px;"></div>'
     +'<div><label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px;">Fecha vencimiento</label>'
     +'<input class="form-input inv-venc" type="month" style="font-size:13px;"></div>'
-    +'</div>';
+    +'</div>'
+    +'<div><label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:3px;">Observaciones del producto</label>'
+    +'<input class="form-input inv-obs" placeholder="Ej: No rota, vencido próximo, solicitud pedido..." style="font-size:13px;"></div>';
   var container=document.getElementById(containerId||'inventarioRows');
   if(container)container.appendChild(row);
 }
@@ -1419,8 +1421,9 @@ function completeVisit(){
       var prod=row.querySelector('.inv-prod').value;
       var uds=row.querySelector('.inv-uds').value.trim();
       var venc=row.querySelector('.inv-venc').value;
+      var obs=row.querySelector('.inv-obs').value.trim();
       if(prod&&!uds){invError=true;row.querySelector('.inv-uds').style.border='2px solid #FF6B6B';}
-      else if(prod){row.querySelector('.inv-uds').style.border='';invItems.push({producto:prod,unidades:uds,vencimiento:venc||''});}
+      else if(prod){row.querySelector('.inv-uds').style.border='';invItems.push({producto:prod,unidades:uds,vencimiento:venc||'',observaciones:obs||''});}
     });
     if(invError){toast('Completa las unidades de todos los productos del inventario','err');_guardando=false;return;}
     D.visits[idx].inventario=invItems.length?invItems:null;
@@ -1574,8 +1577,9 @@ function guardarVisitaGeneral(){
       var prod=row.querySelector('.inv-prod').value;
       var uds=row.querySelector('.inv-uds').value.trim();
       var venc=row.querySelector('.inv-venc').value;
+      var obs=row.querySelector('.inv-obs').value.trim();
       if(prod&&!uds){invError=true;row.querySelector('.inv-uds').style.border='2px solid #FF6B6B';}
-      else if(prod){row.querySelector('.inv-uds').style.border='';invItems.push({producto:prod,unidades:uds,vencimiento:venc||''});}
+      else if(prod){row.querySelector('.inv-uds').style.border='';invItems.push({producto:prod,unidades:uds,vencimiento:venc||'',observaciones:obs||''});}
     });
     if(invError){toast('Completa las unidades de todos los productos del inventario','err');_guardando=false;return;}
     if(invItems.length) v.inventario=invItems;

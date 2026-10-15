@@ -613,9 +613,9 @@ function doLogout(){
 // ── TABS ──────────────────────────────────────────────────────
 var _currentTab='panel';
 var _tabs={
-  super:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'correrias',icon:'fa-car',label:'Correría'},{id:'profketolance',icon:'fa-user-doctor',label:'Prof. Ketolance'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'usuarios',icon:'fa-screwdriver-wrench',label:'Gestión'}],
-  adminGeneral:[{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'correrias',icon:'fa-car',label:'Correría'},{id:'informes',icon:'fa-chart-bar',label:'Informes'}],
-  admin:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'correrias',icon:'fa-car',label:'Correría'},{id:'informes',icon:'fa-chart-bar',label:'Informes'}],
+  super:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'correrias',icon:'fa-car',label:'Correría'},{id:'inventarios',icon:'fa-boxes-stacked',label:'Inventarios'},{id:'profketolance',icon:'fa-user-doctor',label:'Prof. Ketolance'},{id:'informes',icon:'fa-chart-bar',label:'Informes'},{id:'usuarios',icon:'fa-screwdriver-wrench',label:'Gestión'}],
+  adminGeneral:[{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'correrias',icon:'fa-car',label:'Correría'},{id:'inventarios',icon:'fa-boxes-stacked',label:'Inventarios'},{id:'informes',icon:'fa-chart-bar',label:'Informes'}],
+  admin:       [{id:'panel',icon:'fa-chart-pie',label:'Panel'},{id:'visitas',icon:'fa-route',label:'Visitas'},{id:'visitadores',icon:'fa-users',label:'Visitadores'},{id:'pendientes',icon:'fa-list-check',label:'Pendientes'},{id:'ausencias',icon:'fa-file-medical',label:'Ausencias'},{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'correrias',icon:'fa-car',label:'Correría'},{id:'inventarios',icon:'fa-boxes-stacked',label:'Inventarios'},{id:'informes',icon:'fa-chart-bar',label:'Informes'}],
   contador:    [{id:'marketing',icon:'fa-receipt',label:'Marketing'},{id:'correrias',icon:'fa-car',label:'Correría'}]
 };
 
@@ -653,6 +653,7 @@ function renderCurrentTab(){
   else if(_currentTab==='ausencias') el.innerHTML=renderAusencias();
   else if(_currentTab==='marketing') el.innerHTML=renderMarketing();
   else if(_currentTab==='correrias') el.innerHTML=renderCorrerias();
+  else if(_currentTab==='inventarios') el.innerHTML=renderInventarios();
   else if(_currentTab==='profketolance') el.innerHTML=renderProfKetolance();
   else if(_currentTab==='informes') renderInformes();
   else if(_currentTab==='usuarios') el.innerHTML=renderUsuarios();
@@ -683,6 +684,93 @@ function eliminarVisita(vid, fbKey){
       window._profVisits=window._profVisits.filter(function(v){return v.id!==vid;});
     }
   });
+}
+
+function renderInventarios(){
+  var hoy=today();
+  // Filtros
+  if(typeof window._invFiltros==='undefined') window._invFiltros={desde:hoy,hasta:hoy,vis:''};
+  var desde=window._invFiltros.desde||hoy;
+  var hasta=window._invFiltros.hasta||hoy;
+
+  // Visitas con inventario en el rango
+  var conInv=D.visits.filter(function(v){
+    return v.inventario&&v.inventario.length&&v.date>=desde&&v.date<=hasta&&(!currentLabId||v.labId===currentLabId);
+  });
+  if(window._invFiltros.vis) conInv=conInv.filter(function(v){return (v.visitorId||v.userId)===window._invFiltros.vis;});
+
+  // Filtros UI
+  var visitadores=D.users.filter(function(u){return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId);});
+  var html='<div class="filters" style="margin-bottom:14px;">'
+    +'<input type="date" value="'+desde+'" onchange="window._invFiltros.desde=this.value;renderCurrentTab()" class="form-input" style="width:auto;">'
+    +'<input type="date" value="'+hasta+'" onchange="window._invFiltros.hasta=this.value;renderCurrentTab()" class="form-input" style="width:auto;">'
+    +'<select class="form-input" style="width:auto;" onchange="window._invFiltros.vis=this.value;renderCurrentTab()">'
+    +'<option value="">Todos los gestores</option>'
+    +visitadores.map(function(u){return '<option value="'+u.id+'"'+(window._invFiltros.vis===u.id?' selected':'')+'>'+esc(u.name)+'</option>';}).join('')
+    +'</select>'
+    +'<button class="btn btn-sm btn-outline" onclick="window._invFiltros={desde:\''+hoy+'\',hasta:\''+hoy+'\',vis:\'\'};renderCurrentTab()">Hoy</button>'
+    +'<button class="btn btn-sm btn-outline" onclick="var d=new Date();d.setDate(1);window._invFiltros.desde=d.toISOString().slice(0,10);window._invFiltros.hasta=new Date(d.getFullYear(),d.getMonth()+1,0).toISOString().slice(0,10);renderCurrentTab()">Este mes</button>'
+    +'</div>';
+
+  // Stats
+  var totalProductos=conInv.reduce(function(s,v){return s+(v.inventario?v.inventario.length:0);},0);
+  html+='<div class="stats-grid">'
+    +'<div class="stat-card"><div class="stat-num">'+conInv.length+'</div><div class="stat-label">Visitas con inventario</div></div>'
+    +'<div class="stat-card"><div class="stat-num">'+totalProductos+'</div><div class="stat-label">Líneas de producto</div></div>'
+    +'</div>';
+
+  if(!conInv.length) return html+'<div class="empty"><i class="fa-solid fa-boxes-stacked"></i><p>Sin inventarios en el periodo</p></div>';
+
+  // Tabla expandida por producto
+  html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
+    +'<th>Fecha</th><th>Hora</th><th>Gestor</th><th>Lab</th><th>Punto</th><th>Producto</th><th>Unidades</th><th>Vencimiento</th><th>Observaciones</th>'
+    +'</tr></thead><tbody>';
+
+  conInv.sort(function(a,b){return (b.date+b.completedAt).localeCompare(a.date+a.completedAt);});
+  conInv.forEach(function(v){
+    var gestor=getUserName(v.visitorId||v.userId);
+    var lab=getLabName(v.labId);
+    var _pt=v.pointId?D.points.find(function(p){return p.id===v.pointId;}):null;
+    var punto=v.pointName||(_pt?_pt.name:'')||v.placeName||'-';
+    var hora=v.completedAt?fmtHoraBogota(v.completedAt):'-';
+    var rowspan=v.inventario.length;
+    v.inventario.forEach(function(item,i){
+      var obsCol=item.observaciones
+        ?'<span style="background:#FEF3C7;color:#92400E;border-radius:6px;padding:2px 8px;font-size:11px;">'+esc(item.observaciones)+'</span>'
+        :'-';
+      var vencCol=item.vencimiento||'-';
+      var vencStyle='';
+      if(item.vencimiento){
+        var hoyMes=hoy.slice(0,7);
+        if(item.vencimiento<hoyMes) vencStyle='color:#DC2626;font-weight:700;';
+        else if(item.vencimiento<=hoyMes.slice(0,4)+'-'+(String(parseInt(hoyMes.slice(5,7))+2).padStart(2,'0'))) vencStyle='color:#D97706;font-weight:700;';
+      }
+      if(i===0){
+        html+='<tr>'
+          +'<td>'+fmtDate(v.date)+'</td>'
+          +'<td style="font-size:11px;color:var(--muted);">'+hora+'</td>'
+          +'<td><b>'+esc(gestor)+'</b></td>'
+          +'<td>'+esc(lab)+'</td>'
+          +'<td>'+esc(punto)+'</td>'
+          +'<td>'+esc(item.producto||'-')+'</td>'
+          +'<td style="text-align:center;font-weight:700;">'+esc(item.unidades||'-')+'</td>'
+          +'<td style="text-align:center;'+vencStyle+'">'+vencCol+'</td>'
+          +'<td>'+obsCol+'</td>'
+          +'</tr>';
+      } else {
+        html+='<tr style="background:#FAFBFF;">'
+          +'<td colspan="5" style="border-right:2px solid var(--border);"></td>'
+          +'<td>'+esc(item.producto||'-')+'</td>'
+          +'<td style="text-align:center;font-weight:700;">'+esc(item.unidades||'-')+'</td>'
+          +'<td style="text-align:center;'+vencStyle+'">'+vencCol+'</td>'
+          +'<td>'+obsCol+'</td>'
+          +'</tr>';
+      }
+    });
+  });
+
+  html+='</tbody></table></div>';
+  return html;
 }
 
 function renderVisitas(){
