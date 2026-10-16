@@ -2606,9 +2606,8 @@ function setRptPreset(preset){
   else if(preset==='semana'){var s=new Date(now);s.setDate(now.getDate()-now.getDay()+1);rptDesde=s.toISOString().slice(0,10);rptHasta=today();label='Esta semana';}
   else if(preset==='mes'){
     var primeroDia=new Date(now.getFullYear(),now.getMonth(),1);
-    var ultimoDia=new Date(now.getFullYear(),now.getMonth()+1,0);
     rptDesde=primeroDia.toISOString().slice(0,10);
-    rptHasta=ultimoDia.toISOString().slice(0,10);
+    rptHasta=today(); // hasta hoy, no hasta el último día del mes
     label='Este mes ('+primeroDia.toLocaleString('es-CO',{month:'long'})+')';
   }
   else if(preset==='mesant'){
