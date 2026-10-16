@@ -375,6 +375,7 @@
       <div class="gps-chip" id="gpsChipGeneral"><i class="fa-solid fa-satellite-dish" style="font-size:10px;"></i> <span id="gpsTextGeneral">Obteniendo ubicacion...</span></div>
       <div class="form-group"><label class="form-label">Nombre del lugar *</label><input class="form-input" id="vg-lugar" placeholder="Ej. Drogueria La Rebaja"></div>
       <div class="form-group"><label class="form-label">Direccion</label><input class="form-input" id="vg-direccion" placeholder="Calle / Carrera / Barrio"></div>
+      <div class="form-group" id="vg-jefe-group"><label class="form-label">Jefe del punto *</label><input class="form-input" id="vg-jefe" placeholder="Nombre del responsable"></div>
       <div class="form-group"><label class="form-label">Contacto</label><input class="form-input" id="vg-contacto" placeholder="Nombre de quien atendio"></div>
       <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="vg-notas" placeholder="Observaciones..."></textarea></div>
       <div class="form-group">
@@ -1404,10 +1405,14 @@ function completeVisit(){
   var idx=(D.visits||[]).findIndex(function(v){return v.id===vid;});
   if(idx<0){_guardando=false;return;}
   var photo=document.getElementById('photoPreview').src;
+  var esKeto=currentUser&&currentUser.labId==='ketolance';
+  if(!esKeto&&(!photo||!photo.startsWith('data:'))){toast('La foto del punto es obligatoria','err');_guardando=false;return;}
+  var jefe=document.getElementById('closeJefe').value.trim();
+  if(!esKeto&&!jefe){toast('El nombre del jefe del punto es obligatorio','err');_guardando=false;return;}
   D.visits[idx].status='completed';
   D.visits[idx].completedAt=new Date().toISOString();
   if(photo&&photo.startsWith('data:')) D.visits[idx].photo=photo;
-  D.visits[idx].jefe=document.getElementById('closeJefe').value.trim();
+  D.visits[idx].jefe=jefe;
   D.visits[idx].notes=document.getElementById('closeNotes').value.trim();
   // Guardar nombre del punto en la visita para que no se pierda si se cambia la ruta
   var _pname=document.getElementById('closeVisitPointName').value;
@@ -1461,6 +1466,8 @@ function guardarVisitaCorreria(){
   var ciudad=document.getElementById('vc-ciudad').value.trim();
   if(!lugar){toast('El nombre del punto es obligatorio','err');_guardando=false;return;}
   if(!ciudad){toast('La ciudad es obligatoria','err');_guardando=false;return;}
+  var esKetoCorr=currentUser&&currentUser.labId==='ketolance';
+  if(!esKetoCorr&&!_visitaFotoCorreria){toast('La foto de evidencia es obligatoria','err');_guardando=false;return;}
   var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentUser.labId,
     date:today(),status:'completed',completedAt:new Date().toISOString(),
     type:'correria',placeName:lugar,ciudad:ciudad,
@@ -1478,7 +1485,7 @@ function guardarVisitaCorreria(){
 }
 function abrirVisitaLibre(){
   _visitaGps=null;_visitaFotoGeneral=null;
-  ['vg-lugar','vg-direccion','vg-contacto','vg-notas'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['vg-lugar','vg-direccion','vg-jefe','vg-contacto','vg-notas'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('vg-preview').style.display='none';
   document.getElementById('vg-foto').value='';
   openModal('modalNuevaVisita');
@@ -1487,7 +1494,7 @@ function abrirVisitaLibre(){
 function abrirNuevaVisita(){
   _visitaGps=null;_visitaFotoGeneral=null;_visitaFotoProf=null;_profFirmaActiva=false;
   selectVisitType(null);
-  ['vg-lugar','vg-direccion','vg-contacto','vg-notas','vp-punto','vp-nombre','vp-especialidad','vp-telefono','vp-direccion','vp-obsequio','vp-notas','vp-especialidad-otro'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['vg-lugar','vg-direccion','vg-jefe','vg-contacto','vg-notas','vp-punto','vp-nombre','vp-especialidad','vp-telefono','vp-direccion','vp-obsequio','vp-notas','vp-especialidad-otro'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var _selReset=document.getElementById('vp-especialidad-select');if(_selReset)_selReset.value='';
   var _otroReset=document.getElementById('vp-especialidad-otro-group');if(_otroReset)_otroReset.style.display='none';
   initEspecialidadField();
@@ -1514,6 +1521,8 @@ function selectVisitType(tipo){
       vgInv.style.display=isAbbott?'':'none';
       document.getElementById('vgInventarioRows').innerHTML='';
     }
+    var jefeGrp=document.getElementById('vg-jefe-group');
+    if(jefeGrp) jefeGrp.style.display=(currentUser&&currentUser.labId==='ketolance')?'none':'';
     initEspecialidadField();
   }
   if(!tipo) initEspecialidadField();
@@ -1566,8 +1575,12 @@ function clearFirma(){
 function guardarVisitaGeneral(){
   if(_guardando)return; _guardando=true;
   var lugar=document.getElementById('vg-lugar').value.trim();
-  if(!lugar){toast('Nombre del lugar obligatorio','err');_guardando=false;return;}
-  var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentUser.labId,date:today(),status:'completed',completedAt:new Date().toISOString(),type:'general',placeName:lugar,address:document.getElementById('vg-direccion').value.trim(),contact:document.getElementById('vg-contacto').value.trim(),notes:document.getElementById('vg-notas').value.trim()};
+  if(!lugar){toast('El nombre del lugar es obligatorio','err');_guardando=false;return;}
+  var esKeto=currentUser&&currentUser.labId==='ketolance';
+  if(!esKeto&&!_visitaFotoGeneral){toast('La foto de evidencia es obligatoria','err');_guardando=false;return;}
+  var jefe=document.getElementById('vg-jefe')?document.getElementById('vg-jefe').value.trim():'';
+  if(!esKeto&&!jefe){toast('El nombre del jefe del punto es obligatorio','err');_guardando=false;return;}
+  var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentUser.labId,date:today(),status:'completed',completedAt:new Date().toISOString(),type:'general',placeName:lugar,address:document.getElementById('vg-direccion').value.trim(),jefe:jefe,contact:document.getElementById('vg-contacto').value.trim(),notes:document.getElementById('vg-notas').value.trim()};
   if(_visitaFotoGeneral) v.photo=_visitaFotoGeneral;
   if(_visitaGps){v.lat=_visitaGps.lat;v.lng=_visitaGps.lng;}
   if(currentUser&&currentUser.labId==='abbott'){
@@ -1596,6 +1609,8 @@ function guardarVisitaProfesional(){
   var tel=document.getElementById('vp-telefono').value.trim();
   var dir=document.getElementById('vp-direccion').value.trim();
   if(!nombre||!tel||!dir){toast('Completa los campos obligatorios','err');_guardando=false;return;}
+  var esKetoPro=currentUser&&currentUser.labId==='ketolance';
+  if(!esKetoPro&&!_visitaFotoProf){toast('La foto de evidencia es obligatoria','err');_guardando=false;return;}
   var _espec='';
   if(currentUser&&currentUser.labId==='ketolance'){
     var _sel=document.getElementById('vp-especialidad-select');
