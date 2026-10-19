@@ -269,6 +269,7 @@
   </div>
   <div class="app-body">
     <div class="tab-content active" id="vTab-hoy">
+      <div id="visitorRegistrosCard" style="margin-bottom:12px;"></div>
       <div id="visitorPendientesSection"></div>
       <div id="visitorTodayPoints"></div>
     </div>
@@ -599,6 +600,18 @@
       <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalCapacitacion')">Cancelar</button>
       <button class="btn btn-primary" style="flex:1;" onclick="guardarCapacitacion()"><i class="fa-solid fa-graduation-cap"></i> Guardar</button>
     </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalMisRegistros">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Mis registros</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button id="mrTabCap" class="btn btn-sm" style="flex:1;background:#16A34A;color:#fff;" onclick="misRegTab('cap')"><i class="fa-solid fa-graduation-cap"></i> Capacitaciones</button>
+      <button id="mrTabCorr" class="btn btn-sm btn-outline" style="flex:1;" onclick="misRegTab('corr')"><i class="fa-solid fa-car"></i> Correrías</button>
+    </div>
+    <div id="misRegBody" style="min-height:140px;"></div>
+    <button class="btn btn-outline" style="margin-top:14px;" onclick="closeModal('modalMisRegistros')">Cerrar</button>
   </div>
 </div>
 <div class="modal-overlay" id="modalNuevoPendiente">
@@ -1000,6 +1013,7 @@ function renderVisitor(){
   if(vcorrBtn)vcorrBtn.style.display='inline-block';
   var capBtn=document.getElementById('visitorCapBtn');
   if(capBtn)capBtn.style.display='inline-block';
+  renderRegistrosCard();
   var profTab=document.getElementById('tabBtnProf');
   if(profTab)profTab.style.display=currentUser.labId==='ketolance'?'flex':'none';
   var d=horaBogota();
@@ -1478,6 +1492,7 @@ function guardarVisitaCorreria(){
   if(_visitaFotoCorreria) v.photo=_visitaFotoCorreria;
   if(_visitaGps){v.lat=_visitaGps.lat;v.lng=_visitaGps.lng;}
   pushVisit(v);
+  _misReg.corr=null;
   closeModal('modalVisitaCorreria');
   setTimeout(function(){_guardando=false;},2000);
   renderHoy();
@@ -1778,6 +1793,7 @@ function guardarCapacitacion(){
   window._db.ref('medvisit/capacitaciones').push(reg)
     .then(function(){
       toast('Capacitación registrada');
+      _misReg.cap=null;
       closeModal('modalCapacitacion');
       if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-graduation-cap"></i> Guardar';}
     })
@@ -1785,6 +1801,115 @@ function guardarCapacitacion(){
       toast('Error: '+e.message,'err');
       if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-graduation-cap"></i> Guardar';}
     });
+}
+// ── MIS REGISTROS (solo fecha + texto, sin fotos) ──────────────
+var _misReg={cap:null,corr:null,tab:'cap'};
+function fechaCorta(f){
+  if(!f)return'';
+  var p=String(f).slice(0,10).split('-');
+  if(p.length<3)return String(f);
+  var m=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  var mi=parseInt(p[1],10)-1;
+  return parseInt(p[2],10)+' '+(m[mi]||'')+' '+p[0];
+}
+function renderRegistrosCard(){
+  var el=document.getElementById('visitorRegistrosCard');
+  if(!el)return;
+  el.innerHTML='<div class="card" style="display:flex;align-items:center;gap:11px;padding:12px 14px;margin-bottom:0;cursor:pointer;" onclick="abrirMisRegistros()">'
+    +'<div style="width:36px;height:36px;border-radius:10px;background:var(--primary-50);color:var(--primary-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;"><i class="fa-solid fa-clipboard-list"></i></div>'
+    +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:800;">Mis registros</div><div style="font-size:11px;color:var(--muted);">Capacitaciones y correrías</div></div>'
+    +'<i class="fa-solid fa-chevron-right" style="color:var(--muted);font-size:12px;"></i>'
+    +'</div>';
+}
+function abrirMisRegistros(){
+  _misReg.tab='cap';
+  pintarMisRegistros();
+  openModal('modalMisRegistros');
+  cargarMisRegistros(function(){pintarMisRegistros();});
+}
+function misRegTab(t){_misReg.tab=t;pintarMisRegistros();}
+function pintarMisRegistros(){
+  var cap=_misReg.tab==='cap';
+  var b1=document.getElementById('mrTabCap'),b2=document.getElementById('mrTabCorr');
+  if(b1&&b2){
+    b1.className='btn btn-sm'+(cap?'':' btn-outline');
+    b1.style.cssText='flex:1;'+(cap?'background:#16A34A;color:#fff;':'');
+    b2.className='btn btn-sm'+(cap?' btn-outline':'');
+    b2.style.cssText='flex:1;'+(cap?'':'background:#0891B2;color:#fff;');
+  }
+  var body=document.getElementById('misRegBody');
+  if(body)body.innerHTML=cap?listaCapacitaciones():listaCorrerias();
+}
+function _mrCargando(){return '<div style="text-align:center;padding:26px;color:var(--muted);font-size:13px;"><i class="spin fa-solid fa-circle-notch"></i> Cargando...</div>';}
+function listaCapacitaciones(){
+  if(!_misReg.cap)return _mrCargando();
+  var arr=_misReg.cap.slice().sort(function(a,b){return (b.fecha||'').localeCompare(a.fecha||'');});
+  var mes=today().slice(0,7);
+  var delMes=arr.filter(function(c){return (c.fecha||'').slice(0,7)===mes;}).length;
+  var html='<div style="background:var(--primary-50);border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">'
+    +'<span style="font-size:12px;color:var(--muted);">Este mes (meta 2)</span>'
+    +'<span style="font-size:13px;font-weight:800;color:'+(delMes>=2?'var(--success)':'var(--primary)')+';">'+delMes+' / 2</span></div>';
+  if(!arr.length)return html+'<div class="empty-state" style="padding:26px 10px;"><i class="fa-solid fa-graduation-cap"></i><p>Aún no has registrado capacitaciones</p></div>';
+  return html+arr.map(function(c){
+    return '<div class="card" style="padding:11px 13px;margin-bottom:8px;">'
+      +'<div style="font-size:11px;font-weight:800;color:var(--primary);margin-bottom:5px;">'+fechaCorta(c.fecha)+'</div>'
+      +'<div style="font-size:13px;line-height:1.45;white-space:pre-wrap;">'+esc(c.notas||'')+'</div></div>';
+  }).join('');
+}
+function listaCorrerias(){
+  if(!_misReg.corr)return _mrCargando();
+  var arr=_misReg.corr.slice().sort(function(a,b){return (b.fecha||'').localeCompare(a.fecha||'');});
+  var mes=today().slice(0,7);
+  var delMes=arr.filter(function(c){return (c.fecha||'').slice(0,7)===mes;}).length;
+  var html='<div style="background:rgba(8,145,178,0.12);border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">'
+    +'<span style="font-size:12px;color:var(--muted);">Este mes</span>'
+    +'<span style="font-size:13px;font-weight:800;color:#0891B2;">'+delMes+'</span></div>';
+  if(!arr.length)return html+'<div class="empty-state" style="padding:26px 10px;"><i class="fa-solid fa-car"></i><p>Aún no has registrado correrías</p></div>';
+  return html+arr.map(function(c){
+    var cab=c.tipo==='factura'
+      ?((c.lugar||'—')+' · $'+Number(c.valor||0).toLocaleString())
+      :((c.lugar||'—')+(c.ciudad?' · '+c.ciudad:''));
+    var det=c.tipo==='factura'?'':(c.notas||'');
+    return '<div class="card" style="padding:11px 13px;margin-bottom:8px;">'
+      +'<div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:4px;">'
+      +'<span style="font-size:11px;font-weight:800;color:#0891B2;">'+fechaCorta(c.fecha)+'</span>'
+      +'<span style="font-size:10px;color:var(--muted);">'+(c.tipo==='factura'?'Correría':'Visita en correría')+'</span></div>'
+      +'<div style="font-size:13px;font-weight:600;">'+esc(cab)+'</div>'
+      +(det?'<div style="font-size:12px;color:var(--muted);margin-top:3px;white-space:pre-wrap;">'+esc(det)+'</div>':'')
+      +'</div>';
+  }).join('');
+}
+function cargarMisRegistros(cb){
+  var db=window._db;
+  if(!db){
+    if(!_misReg.cap)_misReg.cap=[];
+    if(!_misReg.corr)_misReg.corr=[];
+    if(cb)cb();
+    return;
+  }
+  var pend=0;
+  function fin(){pend--;if(pend<=0&&cb)cb();}
+  if(!_misReg.cap){
+    pend++;
+    db.ref('medvisit/capacitaciones').orderByChild('userId').equalTo(currentUser.id).once('value',function(snap){
+      var a=[];
+      snap.forEach(function(c){var v=c.val()||{};a.push({fecha:v.fecha||'',notas:v.notas||''});});
+      _misReg.cap=a;fin();
+    },function(){_misReg.cap=[];fin();});
+  }
+  if(!_misReg.corr){
+    pend++;
+    var base=[];
+    (D.visits||[]).forEach(function(v){
+      if(v.visitorId===currentUser.id&&v.type==='correria')base.push({fecha:v.date||'',tipo:'visita',lugar:v.placeName||'',ciudad:v.ciudad||'',notas:v.notes||''});
+    });
+    db.ref('medvisit/correrias').orderByChild('userId').equalTo(currentUser.id).once('value',function(snap){
+      var a=base.slice();
+      snap.forEach(function(c){var v=c.val()||{};a.push({fecha:v.fecha||'',tipo:'factura',lugar:v.lugar||'',valor:v.valor||0});});
+      _misReg.corr=a;fin();
+    },function(){_misReg.corr=base;fin();});
+  }
+  if(pend===0&&cb)cb();
 }
 // ── CORRERÍA ───────────────────────────────────────────────────
 var _corrFoto=null;
@@ -1856,6 +1981,7 @@ function guardarCorreria(){
   window._db.ref('medvisit/correrias').push(reg)
     .then(function(){
       toast('Correría cargada');closeModal('modalCorreria');
+      _misReg.corr=null;
       if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-upload"></i> Cargar';}
     })
     .catch(function(e){
