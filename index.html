@@ -254,11 +254,12 @@
       <h2 id="visitorGreeting">Hola</h2>
       <div class="sub" id="visitorDate"></div>
     </div>
-    <div style="display:flex;align-items:center;gap:6px;">
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
       <button id="visitorMktBtn" onclick="abrirMarketing()" style="display:none;background:#7C3AED;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-receipt"></i> Factura</button>
       <button id="visitorCorrBtn" onclick="abrirCorreria()" style="display:none;background:#0891B2;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-car"></i> Correría</button>
       <button id="visitorVisitaCorrBtn" onclick="abrirVisitaCorreria()" style="display:none;background:#EA580C;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-map-location-dot"></i> Visita correría</button>
       <button id="visitorCapBtn" onclick="abrirCapacitacion()" style="display:none;background:#16A34A;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-graduation-cap"></i> Capacitación</button>
+      <button id="visitorInvBtn" onclick="abrirInventarioLibre()" style="display:none;background:#0E7490;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-boxes-stacked"></i> Inventario</button>
       <div class="sync-badge synced" id="syncBadge"><span class="sync-dot"></span><span id="syncLabel">Cloud</span></div>
       <button class="header-btn" onclick="confirmLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
     </div>
@@ -612,6 +613,28 @@
     </div>
     <div id="misRegBody" style="min-height:140px;"></div>
     <button class="btn btn-outline" style="margin-top:14px;" onclick="closeModal('modalMisRegistros')">Cerrar</button>
+  </div>
+</div>
+<div class="modal-overlay" id="modalInventarioLibre">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Registrar inventario</div>
+    <div style="background:var(--info-light);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--primary);">
+      <i class="fa-solid fa-circle-info"></i> Inventario sin visita: registra productos y observaciones de cualquier punto.
+    </div>
+    <div class="form-group">
+      <label class="form-label">Punto o lugar <span style="font-size:10px;color:var(--muted);text-transform:none;font-weight:400;">(opcional)</span></label>
+      <input class="form-input" id="inv-lugar" placeholder="Ej: Audifarma Calle 100">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Productos</label>
+      <div id="invLibreRows"></div>
+      <button type="button" class="btn btn-outline btn-sm" style="width:100%;margin-top:4px;" onclick="addInventarioRow('invLibreRows')"><i class="fa-solid fa-plus"></i> Agregar producto</button>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modalInventarioLibre')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="guardarInventarioLibre()"><i class="fa-solid fa-boxes-stacked"></i> Guardar</button>
+    </div>
   </div>
 </div>
 <div class="modal-overlay" id="modalNuevoPendiente">
@@ -1013,6 +1036,8 @@ function renderVisitor(){
   if(vcorrBtn)vcorrBtn.style.display='inline-block';
   var capBtn=document.getElementById('visitorCapBtn');
   if(capBtn)capBtn.style.display='inline-block';
+  var invBtn=document.getElementById('visitorInvBtn');
+  if(invBtn)invBtn.style.display=(currentUser&&currentUser.labId==='abbott')?'inline-block':'none';
   renderRegistrosCard();
   var profTab=document.getElementById('tabBtnProf');
   if(profTab)profTab.style.display=currentUser.labId==='ketolance'?'flex':'none';
@@ -1370,6 +1395,43 @@ function addInventarioRow(containerId){
 }
 function removeInventarioRow(id){
   var el=document.getElementById(id);if(el)el.remove();
+}
+// ── INVENTARIO LIBRE (sin visita · solo Abbott) ────────────────
+var _invLibreGuardando=false;
+function abrirInventarioLibre(){
+  if(!currentUser||currentUser.labId!=='abbott'){toast('El inventario libre es solo para Abbott','err');return;}
+  _invLibreGuardando=false;
+  var l=document.getElementById('inv-lugar');if(l)l.value='';
+  var rows=document.getElementById('invLibreRows');if(rows)rows.innerHTML='';
+  addInventarioRow('invLibreRows');
+  openModal('modalInventarioLibre');
+}
+function guardarInventarioLibre(){
+  if(_invLibreGuardando)return;
+  var items=[],err=false;
+  document.querySelectorAll('#invLibreRows .inv-row').forEach(function(row){
+    var prod=row.querySelector('.inv-prod').value;
+    var uds=row.querySelector('.inv-uds').value.trim();
+    var venc=row.querySelector('.inv-venc').value;
+    var obs=row.querySelector('.inv-obs').value.trim();
+    if(!prod)return;
+    if(!uds){err=true;row.querySelector('.inv-uds').style.border='2px solid #FF6B6B';return;}
+    row.querySelector('.inv-uds').style.border='';
+    items.push({producto:prod,unidades:uds,vencimiento:venc||'',observaciones:obs||''});
+  });
+  if(err){toast('Completa las unidades de todos los productos','err');return;}
+  if(!items.length){toast('Agrega al menos un producto','err');return;}
+  if(!window._db){toast('Sin conexión, intenta en un momento','err');return;}
+  _invLibreGuardando=true;
+  var lugar=document.getElementById('inv-lugar').value.trim();
+  var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentUser.labId,
+    date:today(),status:'inventario',type:'inventario',
+    completedAt:new Date().toISOString(),createdAt:new Date().toISOString(),
+    placeName:lugar,inventario:items};
+  pushVisit(v);
+  closeModal('modalInventarioLibre');
+  toast('Inventario guardado');
+  setTimeout(function(){_invLibreGuardando=false;},1500);
 }
 
 function openCloseVisit(vid,pid){
