@@ -723,6 +723,7 @@ function renderInventarios(){
     +'</select>'
     +'<button class="btn btn-sm btn-outline" onclick="window._invFiltros={desde:\''+hoy+'\',hasta:\''+hoy+'\',vis:\'\'};renderCurrentTab()">Hoy</button>'
     +'<button class="btn btn-sm btn-outline" onclick="var d=new Date();d.setDate(1);window._invFiltros.desde=d.toISOString().slice(0,10);window._invFiltros.hasta=new Date(d.getFullYear(),d.getMonth()+1,0).toISOString().slice(0,10);renderCurrentTab()">Este mes</button>'
+    +'<button class="btn btn-sm btn-success" onclick="abrirExportInventario()"><i class="fa-solid fa-file-excel"></i> Descargar</button>'
     +'</div>';
 
   // Stats
@@ -784,6 +785,140 @@ function renderInventarios(){
 
   html+='</tbody></table></div>';
   return html;
+}
+
+// ── EXPORTAR INVENTARIOS (rango o fechas puntuales) ────────────
+var _expInv={modo:'rango',fechas:[]};
+function abrirExportInventario(){
+  var modal=document.getElementById('modalExportInv');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='modalExportInv';
+    modal.className='modal-overlay';
+    modal.innerHTML='<div class="modal-box">'
+      +'<div class="modal-title">Descargar inventarios</div>'
+      +'<div style="display:flex;gap:8px;margin-bottom:14px;">'
+      +'<button id="eiTabRango" class="btn btn-sm" style="flex:1;" onclick="expInvModo(\'rango\')"><i class="fa-solid fa-calendar-days"></i> Desde / hasta</button>'
+      +'<button id="eiTabFecha" class="btn btn-sm btn-outline" style="flex:1;" onclick="expInvModo(\'fecha\')"><i class="fa-solid fa-calendar-day"></i> Fechas puntuales</button>'
+      +'</div>'
+      +'<div id="eiRango">'
+      +'<div style="display:flex;gap:8px;">'
+      +'<div class="form-group" style="flex:1;"><label class="form-label">Desde</label><input class="form-input" type="date" id="ei-desde"></div>'
+      +'<div class="form-group" style="flex:1;"><label class="form-label">Hasta</label><input class="form-input" type="date" id="ei-hasta"></div>'
+      +'</div></div>'
+      +'<div id="eiFecha" style="display:none;">'
+      +'<div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;">'
+      +'<div class="form-group" style="flex:1;margin-bottom:0;"><label class="form-label">Fecha</label><input class="form-input" type="date" id="ei-fecha"></div>'
+      +'<button class="btn btn-sm btn-outline" style="height:42px;" onclick="expInvAddFecha()"><i class="fa-solid fa-plus"></i> Agregar</button>'
+      +'</div>'
+      +'<div id="ei-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>'
+      +'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-bottom:10px;"><i class="fa-solid fa-circle-info"></i> Respeta el filtro de gestor y el laboratorio activo.</div>'
+      +'<div class="modal-actions">'
+      +'<button class="btn btn-outline" onclick="closeModal(&quot;modalExportInv&quot;)">Cancelar</button>'
+      +'<button class="btn btn-success" onclick="exportarInventarios()"><i class="fa-solid fa-file-excel"></i> Descargar Excel</button>'
+      +'</div></div>';
+    document.body.appendChild(modal);
+  }
+  var f=document.getElementById('ei-desde'), h=document.getElementById('ei-hasta'), g=document.getElementById('ei-fecha');
+  if(f)f.value=(window._invFiltros&&window._invFiltros.desde)||today();
+  if(h)h.value=(window._invFiltros&&window._invFiltros.hasta)||today();
+  if(g&&!g.value)g.value=today();
+  _expInv.fechas=_expInv.fechas||[];
+  expInvModo(_expInv.modo||'rango');
+  expInvPintarChips();
+  openModal('modalExportInv');
+}
+function expInvModo(m){
+  _expInv.modo=m;
+  var r=document.getElementById('eiRango'), f=document.getElementById('eiFecha');
+  var b1=document.getElementById('eiTabRango'), b2=document.getElementById('eiTabFecha');
+  if(r)r.style.display=m==='rango'?'':'none';
+  if(f)f.style.display=m==='fecha'?'':'none';
+  if(b1){b1.className='btn btn-sm'+(m==='rango'?'':' btn-outline');b1.style.cssText='flex:1;'+(m==='rango'?'background:var(--primary);color:#fff;':'');}
+  if(b2){b2.className='btn btn-sm'+(m==='fecha'?'':' btn-outline');b2.style.cssText='flex:1;'+(m==='fecha'?'background:var(--primary);color:#fff;':'');}
+}
+function expInvAddFecha(){
+  var el=document.getElementById('ei-fecha');
+  var v=el&&el.value;
+  if(!v){toast('Selecciona una fecha','err');return;}
+  if(_expInv.fechas.indexOf(v)<0)_expInv.fechas.push(v);
+  _expInv.fechas.sort();
+  expInvPintarChips();
+}
+function expInvQuitarFecha(f){
+  _expInv.fechas=_expInv.fechas.filter(function(x){return x!==f;});
+  expInvPintarChips();
+}
+function expInvPintarChips(){
+  var el=document.getElementById('ei-chips');if(!el)return;
+  if(!_expInv.fechas.length){el.innerHTML='<span style="font-size:11px;color:var(--muted);">Sin fechas agregadas</span>';return;}
+  el.innerHTML=_expInv.fechas.map(function(f){
+    return '<span style="display:inline-flex;align-items:center;gap:6px;background:#EEF2FF;color:var(--primary);border-radius:20px;padding:5px 10px;font-size:11px;font-weight:700;">'+fmtDate(f)
+      +'<i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="expInvQuitarFecha(\''+f+'\')"></i></span>';
+  }).join('');
+}
+function exportarInventarios(){
+  if(typeof XLSX==='undefined'){
+    var s=document.createElement('script');
+    s.src='https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js';
+    s.onload=exportarInventarios;
+    document.head.appendChild(s);
+    return;
+  }
+  var modo=_expInv.modo;
+  var desde,hasta,fechas=[];
+  if(modo==='rango'){
+    desde=document.getElementById('ei-desde').value;
+    hasta=document.getElementById('ei-hasta').value;
+    if(!desde||!hasta){toast('Selecciona desde y hasta','err');return;}
+    if(desde>hasta){toast('La fecha "desde" no puede ser mayor que "hasta"','err');return;}
+  }else{
+    fechas=_expInv.fechas.slice().sort();
+    if(!fechas.length){toast('Agrega al menos una fecha','err');return;}
+    desde=fechas[0];hasta=fechas[fechas.length-1];
+  }
+  var enRango=function(d){
+    if(modo==='rango')return d>=desde&&d<=hasta;
+    return fechas.indexOf(d)>=0;
+  };
+  var fuenteBase=(D.visits||[]).slice();
+  if(window._profVisits&&window._profVisits.length){
+    var ids={};fuenteBase.forEach(function(v){ids[v.id]=true;});
+    window._profVisits.forEach(function(v){if(!ids[v.id])fuenteBase.push(v);});
+  }
+  var conInv=fuenteBase.filter(function(v){
+    return v.inventario&&v.inventario.length&&enRango(v.date)&&(!currentLabId||v.labId===currentLabId);
+  });
+  if(window._invFiltros&&window._invFiltros.vis){
+    conInv=conInv.filter(function(v){return (v.visitorId||v.userId)===window._invFiltros.vis;});
+  }
+  conInv.sort(function(a,b){return (b.date+(b.completedAt||'')).localeCompare(a.date+(a.completedAt||''));});
+  if(!conInv.length){toast('Sin inventarios en las fechas seleccionadas','err');return;}
+  var header=['Fecha','Hora','Gestor','Laboratorio','Punto','Producto','Unidades','Vencimiento','Observaciones'];
+  var rows=[];
+  conInv.forEach(function(v){
+    var gestor=getUserName(v.visitorId||v.userId);
+    var lab=getLabName(v.labId);
+    var _pt=v.pointId?D.points.find(function(p){return p.id===v.pointId;}):null;
+    var punto=v.pointName||(_pt?_pt.name:'')||v.placeName||'-';
+    var hora=v.completedAt?fmtHoraBogota(v.completedAt):'-';
+    (v.inventario||[]).forEach(function(item){
+      rows.push([
+        v.date, hora, gestor, lab, punto,
+        item.producto||'', item.unidades||'', item.vencimiento||'', item.observaciones||''
+      ]);
+    });
+  });
+  var wb=XLSX.utils.book_new();
+  var ws=XLSX.utils.aoa_to_sheet([header].concat(rows));
+  ws['!cols']=[{wch:11},{wch:8},{wch:22},{wch:14},{wch:26},{wch:32},{wch:10},{wch:12},{wch:34}];
+  XLSX.utils.book_append_sheet(wb,ws,'Inventarios');
+  var sufijo=modo==='rango'
+    ?(desde===hasta?desde:desde+'_a_'+hasta)
+    :(fechas.length<=3?fechas.join('_'):(fechas.length+'fechas_'+desde+'_a_'+hasta));
+  XLSX.writeFile(wb,'Inventarios_'+(currentLabId?getLabName(currentLabId).replace(/[^a-zA-Z0-9]/g,'_'):'General')+'_'+sufijo+'.xlsx');
+  toast('Descarga lista: '+rows.length+' líneas');
 }
 
 function renderVisitas(){
