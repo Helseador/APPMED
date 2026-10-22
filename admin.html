@@ -1037,20 +1037,39 @@ function renderVisitasGenerales(){
 }
 
 function renderVisitasCorrerias(){
-  var visits=D.visits.filter(function(v){
-    if(currentLabId) return v.labId===currentLabId;
-    return true;
-  }).filter(function(v){return v.type==='correria';});
-
   var hoy=today();
-  if(typeof window._visFiltros==='undefined') window._visFiltros={desde:hoy,hasta:hoy,lab:'',vis:''};
-  var desde=window._visFiltros.desde||hoy;
-  var hasta=window._visFiltros.hasta||hoy;
-  var filtradas=visits.filter(function(v){return v.date>=desde&&v.date<=hasta;});
-  if(typeof window._visFilVis!=='undefined'&&window._visFilVis) filtradas=filtradas.filter(function(v){return (v.visitorId||v.userId)===window._visFilVis;});
+  // D.visits trae las visitas de los últimos ~4 meses, que hoy cubre todas las correrías.
+  // (No se puede consultar solo type='correria' por REST: falta el .indexOn en las reglas)
+  var visits=(D.visits||[]).filter(function(v){return v.type==='correria'&&(!currentLabId||v.labId===currentLabId);});
 
-  var html='<div class="stats-grid">'
-    +'<div class="stat-card"><div class="stat-num">'+filtradas.filter(function(v){return v.date===hoy;}).length+'</div><div class="stat-label">Hoy</div></div>'
+  // Filtros propios (por defecto: todo el histórico)
+  if(typeof window._corrFiltros==='undefined') window._corrFiltros={desde:'',hasta:'',vis:''};
+  var desde=window._corrFiltros.desde||'';
+  var hasta=window._corrFiltros.hasta||'';
+  var filtradas=visits.filter(function(v){
+    var d=v.date||'';
+    if(desde&&d<desde) return false;
+    if(hasta&&d>hasta) return false;
+    return true;
+  });
+  if(window._corrFiltros.vis) filtradas=filtradas.filter(function(v){return (v.visitorId||v.userId)===window._corrFiltros.vis;});
+  filtradas.sort(function(a,b){return (b.date+(b.completedAt||'')).localeCompare(a.date+(a.completedAt||''));});
+
+  var visitadores=D.users.filter(function(u){return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId);});
+
+  var html='<div class="filters" style="margin-bottom:14px;">'
+    +'<input type="date" value="'+desde+'" onchange="window._corrFiltros.desde=this.value;renderCurrentTab()" class="form-input" style="width:auto;">'
+    +'<input type="date" value="'+hasta+'" onchange="window._corrFiltros.hasta=this.value;renderCurrentTab()" class="form-input" style="width:auto;">'
+    +'<select class="form-input" style="width:auto;" onchange="window._corrFiltros.vis=this.value;renderCurrentTab()"><option value="">Todos los gestores</option>'
+    +visitadores.map(function(u){return '<option value="'+u.id+'"'+(u.id===window._corrFiltros.vis?' selected':'')+'>'+esc(u.name)+'</option>';}).join('')
+    +'</select>'
+    +'<button class="btn btn-sm btn-outline" onclick="window._corrFiltros={desde:\'\',hasta:\'\',vis:\'\'};renderCurrentTab()"><i class="fa-solid fa-clock-rotate-left"></i> Todo</button>'
+    +'<button class="btn btn-sm btn-outline" onclick="window._corrFiltros={desde:\''+hoy+'\',hasta:\''+hoy+'\',vis:\'\'};renderCurrentTab()">Hoy</button>'
+    +'<button class="btn btn-sm btn-outline" onclick="(function(){var d=new Date();d.setDate(d.getDate()-29);window._corrFiltros.desde=d.toISOString().slice(0,10);window._corrFiltros.hasta=\''+hoy+'\';renderCurrentTab();})()">30 días</button>'
+    +'</div>';
+
+  html+='<div class="stats-grid">'
+    +'<div class="stat-card"><div class="stat-num">'+visits.filter(function(v){return v.date===hoy;}).length+'</div><div class="stat-label">Hoy</div></div>'
     +'<div class="stat-card"><div class="stat-num">'+filtradas.length+'</div><div class="stat-label">En el periodo</div></div>'
     +'<div class="stat-card"><div class="stat-num">'+visits.length+'</div><div class="stat-label">Histórico</div></div>'
     +'</div>';
