@@ -1038,9 +1038,28 @@ function renderVisitasGenerales(){
 
 function renderVisitasCorrerias(){
   var hoy=today();
-  // D.visits trae las visitas de los últimos ~4 meses, que hoy cubre todas las correrías.
-  // (No se puede consultar solo type='correria' por REST: falta el .indexOn en las reglas)
-  var visits=(D.visits||[]).filter(function(v){return v.type==='correria'&&(!currentLabId||v.labId===currentLabId);});
+
+  // Histórico completo: medvisit/corr_hist (respaldo sin fotos) + lo que hay en memoria
+  if(typeof window._corrHist==='undefined') window._corrHist=null;
+  if(typeof window._corrLoading==='undefined') window._corrLoading=false;
+  if(window._corrHist===null&&!window._corrLoading){
+    window._corrLoading=true;
+    db.ref('medvisit/corr_hist').once('value',function(snap){
+      window._corrHist=toArray(snap.val()||[]);
+      window._corrLoading=false;
+      renderCurrentTab();
+    },function(){
+      window._corrHist=[];
+      window._corrLoading=false;
+      renderCurrentTab();
+    });
+  }
+
+  var mapa={};
+  (window._corrHist||[]).forEach(function(v){mapa[(v.id||v._k||'')+'|'+(v.completedAt||'')]=v;});
+  (D.visits||[]).forEach(function(v){if(v.type==='correria')mapa[(v.id||v._k||'')+'|'+(v.completedAt||'')]=v;});
+  var visits=Object.keys(mapa).map(function(k){return mapa[k];})
+    .filter(function(v){return !currentLabId||v.labId===currentLabId;});
 
   // Filtros propios (por defecto: todo el histórico)
   if(typeof window._corrFiltros==='undefined') window._corrFiltros={desde:'',hasta:'',vis:''};
