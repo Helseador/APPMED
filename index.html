@@ -336,11 +336,20 @@
     <div class="modal-handle"></div>
     <div class="modal-title"><i class="fa-solid fa-map-location-dot" style="color:#EA580C;margin-right:8px;"></i>Visita en correría</div>
     <div style="background:rgba(234,88,12,0.12);border:1px solid rgba(234,88,12,0.3);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#EA580C;font-weight:600;"><i class="fa-solid fa-location-dot" style="margin-right:6px;"></i>Visita fuera de tu ciudad base</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button id="vcTipoGenBtn" class="btn btn-sm" style="flex:1;background:#EA580C;color:#fff;" onclick="vcTipo('general')"><i class="fa-solid fa-store"></i> Punto general</button>
+      <button id="vcTipoProfBtn" class="btn btn-sm btn-outline" style="flex:1;" onclick="vcTipo('profesional')"><i class="fa-solid fa-user-doctor"></i> Profesional</button>
+    </div>
     <div class="gps-chip" id="gpsChipCorreria"><i class="fa-solid fa-satellite-dish" style="font-size:10px;"></i> <span id="gpsTextCorreria">Obteniendo ubicacion...</span></div>
     <div class="form-group"><label class="form-label">Nombre del punto *</label><input class="form-input" id="vc-lugar" placeholder="Ej. Drogueria La Rebaja" onfocus="memSugerirPunto(this,'vc-lugar','vc-direccion','vc-ciudad',true)" oninput="memSugerirPunto(this,'vc-lugar','vc-direccion','vc-ciudad')" onblur="memAutoPunto('vc-lugar','vc-direccion','vc-ciudad')"></div>
     <div class="form-group"><label class="form-label">Ciudad *</label><input class="form-input" id="vc-ciudad" placeholder="Ciudad donde estás visitando"></div>
     <div class="form-group"><label class="form-label">Dirección</label><input class="form-input" id="vc-direccion" placeholder="Calle / Carrera / Barrio"></div>
-    <div class="form-group"><label class="form-label">Contacto</label><input class="form-input" id="vc-contacto" placeholder="Nombre de quien atendió"></div>
+    <div class="form-group" id="vcGrupoContacto"><label class="form-label">Contacto</label><input class="form-input" id="vc-contacto" placeholder="Nombre de quien atendió"></div>
+    <div id="vcGrupoProf" style="display:none;">
+      <div class="form-group"><label class="form-label">Nombre del profesional *</label><input class="form-input" id="vc-prof-nombre" placeholder="Dr. / Dra. Nombre Apellido" autocomplete="off" oninput="vcSugProf(this)" onblur="vcAutoProf()"></div>
+      <div class="form-group"><label class="form-label">Especialidad</label><input class="form-input" id="vc-prof-espec" placeholder="Ej: Nutricionista"></div>
+      <div class="form-group"><label class="form-label">Teléfono *</label><input class="form-input" type="tel" id="vc-prof-tel" placeholder="3XX XXX XXXX"></div>
+    </div>
     <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="vc-notas" placeholder="Observaciones..."></textarea></div>
     <div class="form-group">
       <label class="form-label">Foto de evidencia</label>
@@ -1530,9 +1539,54 @@ function buildMapsUrl(pts){
   return'https://www.google.com/maps/dir/?api=1&origin='+v[0].lat+','+v[0].lng+'&destination='+v[v.length-1].lat+','+v[v.length-1].lng+(wp?'&waypoints='+wp:'');
 }
 var _visitaFotoCorreria=null;
+var _vcTipo='general';
+function vcTipo(t){
+  _vcTipo=t;
+  var gen=t!=='profesional';
+  var b1=document.getElementById('vcTipoGenBtn'),b2=document.getElementById('vcTipoProfBtn');
+  if(b1){b1.className='btn btn-sm'+(gen?'':' btn-outline');b1.style.cssText='flex:1;'+(gen?'background:#EA580C;color:#fff;':'');}
+  if(b2){b2.className='btn btn-sm'+(gen?' btn-outline':'');b2.style.cssText='flex:1;'+(gen?'':'background:#EA580C;color:#fff;');}
+  var g=document.getElementById('vcGrupoContacto');if(g)g.style.display=gen?'':'none';
+  var p=document.getElementById('vcGrupoProf');if(p)p.style.display=gen?'none':'';
+}
+function vcSugProf(input){
+  var q=memNorm(input.value);
+  if(q.length<2){memCerrarSug();return;}
+  var items=[];
+  function add(nombre,esp,tel){
+    items.push({titulo:nombre,sub:(tel||'')+(esp?' · '+esp:''),pick:function(){
+      var n=document.getElementById('vc-prof-nombre');if(n)n.value=nombre;
+      var t=document.getElementById('vc-prof-tel');if(t&&tel)t.value=tel;
+      var e=document.getElementById('vc-prof-espec');if(e&&esp&&!e.value.trim())e.value=esp;
+      memCerrarSug();
+    }});
+  }
+  Object.keys(_mem.prof||{}).forEach(function(k){
+    if(k.indexOf(q)!==0&&k.indexOf(' '+q)<0)return;
+    var p=_mem.prof[k];add(p.nombre,p.esp||'',p.telefono||'');
+  });
+  if(currentUser&&currentUser.labId==='ketolance'&&_profKetolanceList.length){
+    _profKetolanceList.forEach(function(p){
+      var k=memNorm(p.nombre);
+      if(k.indexOf(q)!==0&&k.indexOf(' '+q)<0&&memNorm(p.especialidad).indexOf(q)<0)return;
+      if(items.some(function(x){return memNorm(x.titulo)===k;}))return;
+      add(p.nombre,p.especialidad||'',p.telefono||'');
+    });
+  }
+  if(!items.length){memCerrarSug();return;}
+  memMostrarSug(input,items.slice(0,6));
+}
+function vcAutoProf(){
+  setTimeout(memCerrarSug,220);
+  var n=document.getElementById('vc-prof-nombre');if(!n)return;
+  var p=_mem.prof[memNorm(n.value)];if(!p)return;
+  var t=document.getElementById('vc-prof-tel');if(t&&!t.value.trim())t.value=p.telefono||'';
+  var e=document.getElementById('vc-prof-espec');if(e&&!e.value.trim()&&p.esp)e.value=p.esp;
+}
 function abrirVisitaCorreria(){
   _visitaGps=null;_visitaFotoCorreria=null;
-  ['vc-lugar','vc-ciudad','vc-direccion','vc-contacto','vc-notas'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['vc-lugar','vc-ciudad','vc-direccion','vc-contacto','vc-notas','vc-prof-nombre','vc-prof-espec','vc-prof-tel'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  vcTipo('general');
   document.getElementById('vc-preview').style.display='none';
   document.getElementById('vc-foto').value='';
   obtenerGPS('gpsTextCorreria');
@@ -1540,19 +1594,36 @@ function abrirVisitaCorreria(){
 }
 function guardarVisitaCorreria(){
   if(_guardando)return; _guardando=true;
+  var esProf=_vcTipo==='profesional';
   var lugar=document.getElementById('vc-lugar').value.trim();
   var ciudad=document.getElementById('vc-ciudad').value.trim();
+  var dir=document.getElementById('vc-direccion').value.trim();
   if(!lugar){toast('El nombre del punto es obligatorio','err');_guardando=false;return;}
   if(!ciudad){toast('La ciudad es obligatoria','err');_guardando=false;return;}
+  var nom='',esp='',tel='';
+  if(esProf){
+    nom=document.getElementById('vc-prof-nombre').value.trim();
+    esp=document.getElementById('vc-prof-espec').value.trim();
+    tel=document.getElementById('vc-prof-tel').value.trim();
+    if(!nom){toast('El nombre del profesional es obligatorio','err');_guardando=false;return;}
+    if(!tel){toast('El teléfono del profesional es obligatorio','err');_guardando=false;return;}
+  }
   var esKetoCorr=currentUser&&currentUser.labId==='ketolance';
   if(!esKetoCorr&&!_visitaFotoCorreria){toast('La foto de evidencia es obligatoria','err');_guardando=false;return;}
   var v={id:uid(),visitorId:currentUser.id,labId:getUserLabId(currentUser.id)||currentUser.labId,
     date:today(),status:'completed',completedAt:new Date().toISOString(),
-    type:'correria',placeName:lugar,ciudad:ciudad,
-    address:document.getElementById('vc-direccion').value.trim(),
+    type:esProf?'profesional':'correria',
+    correria:true,
+    placeName:esProf?nom:lugar,
+    pointName:esProf?lugar:'',
+    speciality:esProf?esp:'',
+    phone:esProf?tel:'',
+    ciudad:ciudad,
+    address:dir,
     contact:document.getElementById('vc-contacto').value.trim(),
     notes:document.getElementById('vc-notas').value.trim(),
     ciudadBase:currentUser.ciudad||''};
+  if(esProf) guardarMemProf(nom,tel,esp);
   guardarMemPunto(lugar,v.address,ciudad);
   if(_visitaFotoCorreria) v.photo=_visitaFotoCorreria;
   if(_visitaGps){v.lat=_visitaGps.lat;v.lng=_visitaGps.lng;}
@@ -1561,7 +1632,7 @@ function guardarVisitaCorreria(){
   closeModal('modalVisitaCorreria');
   setTimeout(function(){_guardando=false;},2000);
   renderHoy();
-  toast('Visita en correría guardada');
+  toast(esProf?'Visita profesional en correría guardada':'Visita en correría guardada');
 }
 function abrirVisitaLibre(){
   _visitaGps=null;_visitaFotoGeneral=null;
