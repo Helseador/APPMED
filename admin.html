@@ -1057,9 +1057,18 @@ function renderVisitasCorrerias(){
 
   var mapa={};
   (window._corrHist||[]).forEach(function(v){mapa[(v.id||v._k||'')+'|'+(v.completedAt||'')]=v;});
-  (D.visits||[]).forEach(function(v){if(v.type==='correria')mapa[(v.id||v._k||'')+'|'+(v.completedAt||'')]=v;});
-  var visits=Object.keys(mapa).map(function(k){return mapa[k];})
+  (D.visits||[]).forEach(function(v){
+    if(v.type==='correria'||(v.type==='profesional'&&v.correria))mapa[(v.id||v._k||'')+'|'+(v.completedAt||'')]=v;
+  });
+  var todos=Object.keys(mapa).map(function(k){return mapa[k];})
     .filter(function(v){return !currentLabId||v.labId===currentLabId;});
+
+  // Sub-pestañas: generales vs profesionales de correría
+  if(typeof window._corrSub==='undefined') window._corrSub='general';
+  var esProfSub=window._corrSub==='profesional';
+  var totGen=todos.filter(function(v){return v.type==='correria';}).length;
+  var totProf=todos.filter(function(v){return v.type==='profesional'&&v.correria;}).length;
+  var visits=todos.filter(function(v){return esProfSub?(v.type==='profesional'&&v.correria):v.type==='correria';});
 
   // Filtros propios (por defecto: todo el histórico)
   if(typeof window._corrFiltros==='undefined') window._corrFiltros={desde:'',hasta:'',vis:''};
@@ -1076,7 +1085,11 @@ function renderVisitasCorrerias(){
 
   var visitadores=D.users.filter(function(u){return u.role==='visitor'&&(!currentLabId||u.labId===currentLabId);});
 
-  var html='<div class="filters" style="margin-bottom:14px;">'
+  var html='<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">'
+    +'<button class="btn btn-sm" style="flex:1;'+(esProfSub?'background:var(--bg);color:var(--fg);border:1.5px solid var(--border);':'background:#EA580C;color:#fff;')+'" onclick="window._corrSub=\'general\';renderCurrentTab()"><i class="fa-solid fa-store"></i> Generales ('+totGen+')</button>'
+    +'<button class="btn btn-sm" style="flex:1;'+(esProfSub?'background:#7C3AED;color:#fff;':'background:var(--bg);color:var(--fg);border:1.5px solid var(--border);')+'" onclick="window._corrSub=\'profesional\';renderCurrentTab()"><i class="fa-solid fa-user-doctor"></i> Profesionales ('+totProf+')</button>'
+    +'</div>';
+  html+='<div class="filters" style="margin-bottom:14px;">'
     +'<input type="date" value="'+desde+'" onchange="window._corrFiltros.desde=this.value;renderCurrentTab()" class="form-input" style="width:auto;">'
     +'<input type="date" value="'+hasta+'" onchange="window._corrFiltros.hasta=this.value;renderCurrentTab()" class="form-input" style="width:auto;">'
     +'<select class="form-input" style="width:auto;" onchange="window._corrFiltros.vis=this.value;renderCurrentTab()"><option value="">Todos los gestores</option>'
@@ -1093,12 +1106,47 @@ function renderVisitasCorrerias(){
     +'<div class="stat-card"><div class="stat-num">'+visits.length+'</div><div class="stat-label">Histórico</div></div>'
     +'</div>';
 
-  if(!filtradas.length) return html+'<div class="empty"><i class="fa-solid fa-map-location-dot"></i><p>Sin visitas en correría en el periodo</p></div>';
+  if(!filtradas.length){
+    return html+'<div class="empty"><i class="fa-solid '+(esProfSub?'fa-user-doctor':'fa-map-location-dot')+'"></i><p>'+(esProfSub?'Sin visitas a profesionales en correría en el periodo':'Sin visitas en correría en el periodo')+'</p></div>';
+  }
 
   var isSuperCorr=currentUser.role==='super';
+
+  if(esProfSub){
+    html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
+      +'<th>Gestor</th><th>Lab</th><th>Profesional</th><th>Especialidad</th><th>Teléfono</th><th>Punto</th><th>Ciudad</th><th>Dirección</th><th>Notas</th><th>Fecha</th><th>Ubicación</th><th>Foto</th>'
+      +(isSuperCorr?'<th></th>':'')
+      +'</tr></thead><tbody>'
+      +filtradas.map(function(v){
+        var visName=getUserName(v.visitorId||v.userId);
+        var labName=getLabName(v.labId);
+        var ubicacion=(v.lat&&v.lng)?'<a href="https://www.google.com/maps?q='+v.lat+','+v.lng+'" target="_blank" class="btn btn-sm btn-outline"><i class="fa-solid fa-location-dot"></i></a>':'-';
+        var foto=v.photo?'<button class="btn btn-sm btn-outline" onclick="openFoto(\''+v.photo+'\')"><i class="fa-solid fa-image"></i></button>':'-';
+        var notasCol=v.notes?'<div style="max-width:160px;font-size:12px;line-height:1.4;white-space:pre-wrap;word-break:break-word;">'+esc(v.notes)+'</div>':'-';
+        var delBtnC=isSuperCorr?'<td><button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="eliminarVisita(\''+esc(v.id)+'\',\''+esc(v._fbKey||'')+'\')"><i class="fa-solid fa-trash"></i></button></td>':'';
+        var tel=v.phone?'<a href="tel:'+esc(v.phone)+'" style="color:var(--primary);font-weight:600;text-decoration:none;">'+esc(v.phone)+'</a>':'-';
+        return '<tr>'
+          +'<td><b>'+esc(visName)+'</b></td>'
+          +'<td>'+esc(labName)+'</td>'
+          +'<td><b>'+esc(v.placeName||'-')+'</b></td>'
+          +'<td style="font-size:11px;">'+esc(v.speciality||'-')+'</td>'
+          +'<td style="font-size:11px;">'+tel+'</td>'
+          +'<td>'+esc(v.pointName||'-')+'</td>'
+          +'<td><span style="background:#EDE9FE;color:#7C3AED;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">'+esc(v.ciudad||'-')+'</span></td>'
+          +'<td style="font-size:11px;">'+esc(v.address||'-')+'</td>'
+          +'<td>'+notasCol+'</td>'
+          +'<td>'+fmtDate(v.date)+(v.completedAt?' <span style="font-size:11px;color:var(--muted);">'+fmtHoraBogota(v.completedAt)+'</span>':'')+'</td>'
+          +'<td>'+ubicacion+'</td>'
+          +'<td>'+foto+'</td>'
+          +delBtnC
+          +'</tr>';
+      }).join('')
+      +'</tbody></table></div>';
+    return html;
+  }
+
   html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
     +'<th>Gestor</th><th>Lab</th><th>Punto</th><th>Ciudad</th><th>Ciudad base</th><th>Dirección</th><th>Contacto</th><th>Notas</th><th>Fecha</th><th>Ubicación</th><th>Foto</th>'
-    +(isSuperCorr?'<th></th>':'')
     +'</tr></thead><tbody>'
     +filtradas.map(function(v){
       var visName=getUserName(v.visitorId||v.userId);
