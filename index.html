@@ -965,6 +965,7 @@ function entrarComoVisitador(){
   setupVisitorListeners();
   loadProfKetolance();
   cargarMemoria();
+  prefetchTotales();
   gpsPermission='unknown';
   if(localStorage.getItem('appmed_gps')==='granted'){
     gpsPermission='granted';
@@ -1296,7 +1297,37 @@ function renderRutas(){
 }
 function irARuta(rn){_visitRoute=rn;switchTab('hoy',document.querySelectorAll('#visitorScreen .tab-btn')[0]);}
 var _mktCache=null;
+var _corrFact=null;
 var _mktMes=today().slice(0,7);
+function fmtPeso(n){return '$'+(Number(n)||0).toLocaleString();}
+function actualizarTotalesBotones(){
+  var mes=today().slice(0,7);
+  if(_mktCache){
+    var t=_mktCache.filter(function(r){return (r.fecha||'').slice(0,7)===mes;})
+      .reduce(function(s,r){return s+(Number(r.valor)||0);},0);
+    var b=document.getElementById('visitorMktBtn');
+    if(b)b.innerHTML='<i class="fa-solid fa-receipt"></i> Factura · '+fmtPeso(t);
+  }
+  if(_corrFact){
+    var t2=_corrFact.filter(function(c){return (c.fecha||'').slice(0,7)===mes;})
+      .reduce(function(s,c){return s+(Number(c.valor)||0);},0);
+    var b2=document.getElementById('visitorCorrBtn');
+    if(b2)b2.innerHTML='<i class="fa-solid fa-car"></i> Correría · '+fmtPeso(t2);
+  }
+}
+function prefetchTotales(){
+  if(!window._db||!currentUser)return;
+  window._db.ref('medvisit/marketing').orderByChild('userId').equalTo(currentUser.id).once('value',function(snap){
+    _mktCache=[];
+    snap.forEach(function(c){_mktCache.push(c.val());});
+    actualizarTotalesBotones();
+  },function(){});
+  window._db.ref('medvisit/correrias').orderByChild('userId').equalTo(currentUser.id).once('value',function(snap){
+    _corrFact=[];
+    snap.forEach(function(c){var v=c.val()||{};v.tipo='factura';_corrFact.push(v);});
+    actualizarTotalesBotones();
+  },function(){});
+}
 function cambiarMesMkt(v){_mktMes=v||today().slice(0,7);pintarMktVisitador();}
 function renderMktVisitador(){
   var el=document.getElementById('visitorMktList');
@@ -1892,6 +1923,7 @@ function guardarMarketing(){
     .then(function(){
       toast('Factura cargada');
       _mktCache=null;_mktMes=today().slice(0,7);
+      prefetchTotales();
       closeModal('modalMarketing');
       if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-upload"></i> Cargar';}
     })
@@ -2146,6 +2178,7 @@ function guardarCorreria(){
       toast('Correría cargada');closeModal('modalCorreria');
       _misReg.corr=null;
       _corrMes=today().slice(0,7);
+      prefetchTotales();
       if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-upload"></i> Cargar';}
     })
     .catch(function(e){
