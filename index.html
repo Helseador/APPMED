@@ -486,6 +486,13 @@
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">Cargar factura</div>
+    <div style="background:var(--primary-50);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+      <input type="month" class="form-input" id="mkt-mes" style="font-size:12px;flex:1;padding:8px 10px;" max="" onchange="cambiarMesMktModal(this.value)">
+      <div style="text-align:right;white-space:nowrap;">
+        <div style="font-size:10px;color:var(--muted);">Total del mes</div>
+        <div style="font-size:16px;font-weight:900;color:var(--primary);" id="mkt-mes-total">$0</div>
+      </div>
+    </div>
     <div class="form-group">
       <label class="form-label">Establecimiento *</label>
       <input class="form-input" id="mkt-lugar" placeholder="Ej: Exito, Jumbo..." oninput="autocompletarNit(this.value)">
@@ -550,6 +557,13 @@
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">Cargar correría</div>
+    <div style="background:rgba(8,145,178,0.14);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+      <input type="month" class="form-input" id="corr-mes" style="font-size:12px;flex:1;padding:8px 10px;" max="" onchange="cambiarMesCorrModal(this.value)">
+      <div style="text-align:right;white-space:nowrap;">
+        <div style="font-size:10px;color:var(--muted);">Total del mes</div>
+        <div style="font-size:16px;font-weight:900;color:#0891B2;" id="corr-mes-total">$0</div>
+      </div>
+    </div>
     <div class="form-group">
       <label class="form-label">Establecimiento *</label>
       <input class="form-input" id="corr-lugar" placeholder="Ej: Exito, Jumbo..." oninput="autocompletarNitCorr(this.value)">
@@ -1300,32 +1314,45 @@ var _mktCache=null;
 var _corrFact=null;
 var _mktMes=today().slice(0,7);
 function fmtPeso(n){return '$'+(Number(n)||0).toLocaleString();}
-function actualizarTotalesBotones(){
-  var mes=today().slice(0,7);
-  if(_mktCache){
-    var t=_mktCache.filter(function(r){return (r.fecha||'').slice(0,7)===mes;})
-      .reduce(function(s,r){return s+(Number(r.valor)||0);},0);
-    var b=document.getElementById('visitorMktBtn');
-    if(b)b.innerHTML='<i class="fa-solid fa-receipt"></i> Factura · '+fmtPeso(t);
+var _mktMesModal=today().slice(0,7), _corrMesModal=today().slice(0,7);
+function totalMktMes(mes){
+  return (_mktCache||[]).filter(function(r){return (r.fecha||'').slice(0,7)===mes;})
+    .reduce(function(s,r){return s+(Number(r.valor)||0);},0);
+}
+function totalCorrMes(mes){
+  return (_corrFact||[]).filter(function(c){return (c.fecha||'').slice(0,7)===mes;})
+    .reduce(function(s,c){return s+(Number(c.valor)||0);},0);
+}
+function pintarTotalesModal(){
+  var mesHoy=today().slice(0,7);
+  var i=document.getElementById('mkt-mes'),t=document.getElementById('mkt-mes-total');
+  if(i&&t){
+    _mktMesModal=_mktMesModal||mesHoy;
+    i.value=_mktMesModal;
+    i.max=mesHoy;
+    t.textContent=fmtPeso(totalMktMes(_mktMesModal));
   }
-  if(_corrFact){
-    var t2=_corrFact.filter(function(c){return (c.fecha||'').slice(0,7)===mes;})
-      .reduce(function(s,c){return s+(Number(c.valor)||0);},0);
-    var b2=document.getElementById('visitorCorrBtn');
-    if(b2)b2.innerHTML='<i class="fa-solid fa-car"></i> Correría · '+fmtPeso(t2);
+  var i2=document.getElementById('corr-mes'),t2=document.getElementById('corr-mes-total');
+  if(i2&&t2){
+    _corrMesModal=_corrMesModal||mesHoy;
+    i2.value=_corrMesModal;
+    i2.max=mesHoy;
+    t2.textContent=fmtPeso(totalCorrMes(_corrMesModal));
   }
 }
+function cambiarMesMktModal(v){_mktMesModal=v||today().slice(0,7);pintarTotalesModal();}
+function cambiarMesCorrModal(v){_corrMesModal=v||today().slice(0,7);pintarTotalesModal();}
 function prefetchTotales(){
   if(!window._db||!currentUser)return;
   window._db.ref('medvisit/marketing').orderByChild('userId').equalTo(currentUser.id).once('value',function(snap){
     _mktCache=[];
     snap.forEach(function(c){_mktCache.push(c.val());});
-    actualizarTotalesBotones();
+    pintarTotalesModal();
   },function(){});
   window._db.ref('medvisit/correrias').orderByChild('userId').equalTo(currentUser.id).once('value',function(snap){
     _corrFact=[];
     snap.forEach(function(c){var v=c.val()||{};v.tipo='factura';_corrFact.push(v);});
-    actualizarTotalesBotones();
+    pintarTotalesModal();
   },function(){});
 }
 function cambiarMesMkt(v){_mktMes=v||today().slice(0,7);pintarMktVisitador();}
@@ -1866,6 +1893,8 @@ function abrirMarketing(){
   wrap.innerHTML='<img id="mkt-foto-preview" style="max-height:150px;border-radius:8px;width:100%;object-fit:cover;">';
   wrap.style.display='none';
   document.getElementById('mkt-foto-input').value='';
+  _mktMesModal=today().slice(0,7);
+  pintarTotalesModal();
   openModal('modalMarketing');
 }
 function mktPreviewFoto(input){
@@ -2128,6 +2157,8 @@ function abrirCorreria(){
   wrap.innerHTML='<img id="corr-foto-preview" style="max-height:150px;border-radius:8px;width:100%;object-fit:cover;">';
   wrap.style.display='none';
   document.getElementById('corr-foto-input').value='';
+  _corrMesModal=today().slice(0,7);
+  pintarTotalesModal();
   openModal('modalCorreria');
 }
 function corrPreviewFoto(input){
