@@ -879,7 +879,8 @@ function setupVisitorListeners(){
   if(!db||!currentUser)return;
   var _init=false;
   // Visitas de HOY (con foto completa) - lo que se muestra en la ruta del dia
-  var qHoy=db.ref('medvisit/visits').orderByChild('visitorId').equalTo(currentUser.id);
+  // Solo las últimas 40 visitas: antes traía TODO el historial con fotos (decenas de MB)
+  var qHoy=db.ref('medvisit/visits').orderByChild('visitorId').equalTo(currentUser.id).limitToLast(40);
   qHoy.once('value',function(snap){
     try{
       toArray(snap.val()).filter(function(v){return v.date===today();}).forEach(function(v){
@@ -904,7 +905,8 @@ function setupVisitorListeners(){
     }catch(e){}
   });
   // Historico LIGERO (sin foto/firma) - solo para contadores de Perfil y % de Rutas
-  var qHist=db.ref('medvisit/visits').orderByChild('visitorId').equalTo(currentUser.id).limitToLast(400);
+  // Tope de 150 para no descargar cientos de registros con fotos en cada apertura
+  var qHist=db.ref('medvisit/visits').orderByChild('visitorId').equalTo(currentUser.id).limitToLast(150);
   qHist.once('value',function(snap){
     try{
       toArray(snap.val()).forEach(function(v){
