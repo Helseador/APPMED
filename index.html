@@ -739,6 +739,7 @@ var _profFirmaCanvas=null, _profFirmaCtx=null, _profFirmaActiva=false;
 var _currentTab='hoy';
 var _confirmCb=null;
 var _mktFoto=null;
+var _mktIdActual=null;
 var _mktFotoTipo='image';
 var _lockoutEnd=0, _loginAttempts=0, _lockoutInterval=null;
 var _renderTimer=null;
@@ -794,7 +795,7 @@ function flushQueue(){
   if(!_online||!window._db||!_pendingQueue.length)return;
   var toFlush=_pendingQueue.slice();
   toFlush.forEach(function(visit){
-    var ref=window._db.ref('medvisit/visits').push();
+    var ref=window._db.ref('medvisit/visits/'+visit.id);
     ref.set(visit).then(function(){
       removeFromQueue(visit.id);
       if(D.visits.findIndex(function(v){return v.id===visit.id;})<0){
@@ -820,7 +821,7 @@ function pushVisit(visit){
     toast('Visita guardada localmente','warn');
     return;
   }
-  var ref=window._db.ref('medvisit/visits').push();
+  var ref=window._db.ref('medvisit/visits/'+visit.id);
   visit._fbKey=ref.key;
   ref.set(visit)
     .then(function(){
@@ -1888,6 +1889,7 @@ function autocompletarNit(v){
 function abrirMarketing(){
   _mktFoto=null;
   _mktFotoTipo='image';
+  _mktIdActual='mkt_'+Date.now()+'_'+Math.random().toString(36).substr(2,4);
   ['mkt-lugar','mkt-valor'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var n=document.getElementById('mkt-nit');if(n){n.value='';n.readOnly=false;n.style.background='var(--bg)';}
   var r=document.getElementById('mkt-razon');if(r)r.textContent='';
@@ -1947,10 +1949,10 @@ function guardarMarketing(){
   if(!valor){toast('Escribe el valor','err');return;}
   if(!_mktFoto){toast('Toma la foto de la factura','err');return;}
   if(!window._db){toast('Sin conexion, intenta en un momento','err');return;}
-  var reg={id:'mkt_'+Date.now(),userId:currentUser.id,userName:currentUser.name,labId:currentUser.labId||'',lugar:lugar,nit:document.getElementById('mkt-nit').value.trim(),razonSocial:document.getElementById('mkt-razon').textContent.trim(),valor:parseFloat(valor),foto:_mktFoto,fotoTipo:_mktFotoTipo,fecha:today(),creadoAt:new Date().toISOString()};
+  var reg={id:_mktIdActual||('mkt_'+Date.now()+'_'+Math.random().toString(36).substr(2,4)),userId:currentUser.id,userName:currentUser.name,labId:currentUser.labId||'',lugar:lugar,nit:document.getElementById('mkt-nit').value.trim(),razonSocial:document.getElementById('mkt-razon').textContent.trim(),valor:parseFloat(valor),foto:_mktFoto,fotoTipo:_mktFotoTipo,fecha:today(),creadoAt:new Date().toISOString()};
   var btn=document.querySelector('#modalMarketing .btn-primary');
   if(btn){btn.disabled=true;btn.innerHTML='<i class="spin fa-solid fa-circle-notch"></i> Subiendo...';}
-  window._db.ref('medvisit/marketing').push(reg)
+  window._db.ref('medvisit/marketing/'+reg.id).set(reg)
     .then(function(){
       toast('Factura cargada');
       _mktCache=null;_mktMes=today().slice(0,7);
@@ -2139,6 +2141,7 @@ function cargarMisRegistros(cb){
 }
 // ── CORRERÍA ───────────────────────────────────────────────────
 var _corrFoto=null;
+var _corrIdActual=null;
 var _corrFotoTipo='image';
 function autocompletarNitCorr(v){
   var nitEl=document.getElementById('corr-nit'),razonEl=document.getElementById('corr-razon');
@@ -2152,6 +2155,7 @@ function autocompletarNitCorr(v){
 function abrirCorreria(){
   _corrFoto=null;
   _corrFotoTipo='image';
+  _corrIdActual='corr_'+Date.now()+'_'+Math.random().toString(36).substr(2,4);
   ['corr-lugar','corr-valor'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var n=document.getElementById('corr-nit');if(n){n.value='';n.readOnly=false;n.style.background='var(--bg)';}
   var r=document.getElementById('corr-razon');if(r)r.textContent='';
@@ -2203,10 +2207,10 @@ function guardarCorreria(){
   if(!valor){toast('Escribe el valor','err');return;}
   if(!_corrFoto){toast('Adjunta la foto o PDF del soporte','err');return;}
   if(!window._db){toast('Sin conexión, intenta en un momento','err');return;}
-  var reg={id:'corr_'+Date.now(),userId:currentUser.id,userName:currentUser.name,labId:currentUser.labId||'',lugar:lugar,nit:document.getElementById('corr-nit').value.trim(),razonSocial:document.getElementById('corr-razon').textContent.trim(),valor:parseFloat(valor),foto:_corrFoto,fotoTipo:_corrFotoTipo,fecha:today(),creadoAt:new Date().toISOString()};
+  var reg={id:_corrIdActual||('corr_'+Date.now()+'_'+Math.random().toString(36).substr(2,4)),userId:currentUser.id,userName:currentUser.name,labId:currentUser.labId||'',lugar:lugar,nit:document.getElementById('corr-nit').value.trim(),razonSocial:document.getElementById('corr-razon').textContent.trim(),valor:parseFloat(valor),foto:_corrFoto,fotoTipo:_corrFotoTipo,fecha:today(),creadoAt:new Date().toISOString()};
   var btn=document.querySelector('#modalCorreria .btn');
   if(btn){btn.disabled=true;btn.innerHTML='<i class="spin fa-solid fa-circle-notch"></i> Subiendo...';}
-  window._db.ref('medvisit/correrias').push(reg)
+  window._db.ref('medvisit/correrias/'+reg.id).set(reg)
     .then(function(){
       toast('Correría cargada');closeModal('modalCorreria');
       _misReg.corr=null;
