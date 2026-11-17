@@ -543,8 +543,37 @@ function initFirebase(){
       LABS=BASE_LABS.slice().concat(extra.filter(function(l){return !BASE_LABS.some(function(b){return b.id===l.id;});}));
       render();
     });
-    // Marketing, correrías, ausencias y capacitaciones se cargan al abrir su pestaña
+    // Marketing, correrías, ausencias y capacitaciones se van cargando en segundo plano
+    precargarResto();
   }catch(e){console.error('Firebase error:',e);}
+}
+
+// ── PRECARGA EN SEGUNDO PLANO (una cosa a la vez) ─────────────
+function precargarResto(){
+  var cola=[
+    {n:'marketing',p:'medvisit/marketing',f:'marketing'},
+    {n:'correrias',p:'medvisit/correrias',f:'correrias'},
+    {n:'ausencias',p:'medvisit/ausencias',f:'ausencias'},
+    {n:'capacitaciones',p:'medvisit/capacitaciones',f:'capacitaciones'}
+  ];
+  var i=0;
+  function paso(){
+    if(i>=cola.length||!db) return;
+    var it=cola[i++];
+    if(_cargado[it.n]){setTimeout(paso,60);return;}
+    _cargando[it.n]=true;
+    db.ref(it.p).once('value',function(snap){
+      D[it.f]=toArray(snap.val()||[]);
+      _cargado[it.n]=true;_cargando[it.n]=false;
+      render();
+      db.ref(it.p).on('value',function(s2){D[it.f]=toArray(s2.val()||[]);render();});
+      setTimeout(paso,120);
+    },function(){
+      _cargando[it.n]=false;
+      setTimeout(paso,800);
+    });
+  }
+  setTimeout(paso,900);
 }
 
 // ── CARGA DIFERIDA Y VENTANA DE VISITAS ───────────────────────
@@ -691,7 +720,8 @@ function renderCurrentTab(){
   if(!el) return;
   asegurarDatos(_currentTab);
   if((_currentTab==='marketing'&&!_cargado.marketing)||(_currentTab==='correrias'&&!_cargado.correrias)||(_currentTab==='ausencias'&&!_cargado.ausencias)){
-    el.innerHTML='<div class="loading"><div class="spinner"></div><p>Cargando datos de la pestaña...</p></div>';
+    var _nom=_currentTab==='marketing'?'facturas de marketing':(_currentTab==='correrias'?'correrías':'ausencias');
+    el.innerHTML='<div class="loading"><div class="spinner"></div><p>Cargando '+_nom+'...<br><span style="font-size:11px;color:var(--muted);">se está descargando en segundo plano, la app sigue respondiendo</span></p></div>';
     return;
   }
   if(_currentTab==='panel') renderCanvasDashboard();
