@@ -3281,6 +3281,68 @@ function abrirCargaExcel(){
   openModal('modalCargaExcel');
 }
 
+// ── LECTOR ÚNICO DE RUTAS (soporta varios bloques semanales en el mismo archivo) ──
+function rutaNorm(s){
+  return String(s||'').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ').trim();
+}
+function rutaNombre(h){
+  return String(h||'')
+    .replace(/\s+[0-9O]{1,2}\s*[-\u2013]\s*[A-Za-zÁÉÍÓÚÑ]{3,4}\s*$/,'')
+    .replace(/\s+/g,' ').trim();
+}
+function parsearRutaExcel(raw){
+  var HDR=/^(DIA|DÍA)\s*\d/i;
+  function esItem(row){
+    var v=String((row&&row[0])!==undefined?(row[0]||''):'').trim();
+    return /^\d+$/.test(v);
+  }
+  function esCab(row){
+    for(var i=0;i<(row||[]).length;i++){
+      var c=String(row[i]===undefined?'':row[i]).trim();
+      if(c&&HDR.test(c))return true;
+    }
+    return false;
+  }
+  var puntos=[],vistos={};
+  var r=0;
+  while(r<raw.length){
+    if(esCab(raw[r])){
+      var cols={};
+      (raw[r]||[]).forEach(function(c,i){
+        c=String(c===undefined?'':c).trim();
+        if(c&&HDR.test(c))cols[i]=rutaNombre(c);
+      });
+      r++;
+      while(r<raw.length&&!esCab(raw[r])){
+        if(esItem(raw[r])){
+          var nameRow=raw[r],order=parseInt(nameRow[0],10),k=r+1,parts={};
+          while(k<raw.length&&!esItem(raw[k])&&!esCab(raw[k])){
+            Object.keys(cols).forEach(function(c){
+              var v=String(((raw[k]||[])[c]===undefined?'':(raw[k]||[])[c])).trim();
+              if(v)parts[c]=((parts[c]||'')+' '+v).trim();
+            });
+            k++;
+          }
+          Object.keys(cols).forEach(function(c){
+            var n=String(nameRow[c]===undefined?'':nameRow[c]).trim();
+            if(!n)return;
+            var nn=rutaNorm(n);
+            if(!nn||nn==='festivo')return;
+            var key=cols[c]+'|'+nn;
+            if(vistos[key])return;
+            vistos[key]=1;
+            puntos.push({ruta:cols[c],nombre:n,direccion:parts[c]||'',orden:order});
+          });
+          r=k;
+        } else r++;
+      }
+    } else r++;
+  }
+  return puntos;
+}
+
 function previewExcelRuta(input){
   if(!input.files||!input.files[0]) return;
   window._excelPendingFile=input.files[0];
@@ -3302,57 +3364,16 @@ function _previewExcelRuta(){
       var wb=XLSX.read(data,{type:'array'});
       var ws=wb.Sheets[wb.SheetNames[0]];
       var raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      // Reusar la misma lógica de detección de días que _previewExcel
-      var headerRow=-1,dayCols={};
-      for(var r=0;r<Math.min(10,raw.length);r++){
-        var row=raw[r];
-        var hasDays=row.some(function(c){
-          var s=String(c||'').toUpperCase();
-          return s.indexOf('LUNES')>=0||s.indexOf('MARTES')>=0||s.indexOf('MIERCOLES')>=0||s.indexOf('MIÉRCOLES')>=0||s.indexOf('JUEVES')>=0||s.indexOf('VIERNES')>=0||s.indexOf('SABADO')>=0||s.indexOf('SÁBADO')>=0||s.indexOf('DIA')>=0||s.indexOf('DÍA')>=0;
-        });
-        if(hasDays){
-          headerRow=r;
-          row.forEach(function(c,i){
-            if(c&&String(c).trim()){
-              var s=String(c).toUpperCase();
-              if(s.indexOf('LUNES')>=0||s.indexOf('MARTES')>=0||s.indexOf('MIERCOLES')>=0||s.indexOf('MIÉRCOLES')>=0||s.indexOf('JUEVES')>=0||s.indexOf('VIERNES')>=0||s.indexOf('SABADO')>=0||s.indexOf('SÁBADO')>=0||s.indexOf('DIA')>=0||s.indexOf('DÍA')>=0){
-                dayCols[i]=String(c).trim();
-              }
-            }
-          });
-          break;
-        }
-      }
-      if(headerRow<0){toast('Formato no reconocido. Usa días en columnas (Lunes, Martes...).','err');return;}
-      // Contar puntos por ruta
+      var pts=parsearRutaExcel(raw);
+      if(!pts.length){toast('Formato no reconocido o sin puntos. Los días deben ir en columnas (DIA 1...).','err');return;}
+      window._excelPuntos=pts;
       var rutaCount={};
-      var totalPuntos=0;
-      var r2=headerRow+1;
-      while(r2<raw.length){
-        var numVal=raw[r2][0];
-        if(numVal!==''&&!isNaN(parseInt(numVal))){
-          Object.keys(dayCols).forEach(function(col){
-            var nombre=String(raw[r2][parseInt(col)]||'').trim();
-            if(nombre){
-              var ruta=dayCols[col];
-              if(!rutaCount[ruta]) rutaCount[ruta]=0;
-              rutaCount[ruta]++;
-              totalPuntos++;
-            }
-          });
-        }
-        r2++;
-      }
-      if(!totalPuntos){toast('No se encontraron puntos en el archivo','err');return;}
-      // Guardar para uso posterior
-      window._excelData=raw;
-      window._excelDayCols=dayCols;
-      window._excelHeaderRow=headerRow;
+      pts.forEach(function(p){rutaCount[p.ruta]=(rutaCount[p.ruta]||0)+1;});
       var prev=document.getElementById('ar-preview');
       if(prev){
         var resumen=Object.keys(rutaCount).map(function(r){return '<b>'+esc(r)+'</b>: '+rutaCount[r]+' puntos';}).join(' · ');
         prev.innerHTML='<div style="background:#DCFCE7;border-radius:8px;padding:10px;margin-top:8px;color:#166534;">'
-          +'<i class="fa-solid fa-check"></i> <b>'+totalPuntos+' puntos detectados</b><br>'
+          +'<i class="fa-solid fa-check"></i> <b>'+pts.length+' puntos detectados</b><br>'
           +'<span style="font-size:11px;">'+resumen+'</span></div>';
       }
     }catch(err){
@@ -3384,56 +3405,17 @@ function _previewExcel(){
       var wb=XLSX.read(data,{type:'array'});
       var ws=wb.Sheets[wb.SheetNames[0]];
       var raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      // Detectar fila con días
-      var headerRow=-1,dayCols={};
-      for(var r=0;r<Math.min(10,raw.length);r++){
-        var row=raw[r];
-        var hasDays=row.some(function(c){
-          var s=String(c||'').toUpperCase();
-          return s.indexOf('LUNES')>=0||s.indexOf('MARTES')>=0||s.indexOf('MIERCOLES')>=0||s.indexOf('JUEVES')>=0||s.indexOf('VIERNES')>=0||s.indexOf('SABADO')>=0||s.indexOf('DIA')>=0;
-        });
-        if(hasDays){
-          headerRow=r;
-          row.forEach(function(c,i){
-            if(c&&String(c).trim()){
-              var s=String(c).toUpperCase();
-              if(s.indexOf('LUNES')>=0||s.indexOf('MARTES')>=0||s.indexOf('MIERCOLES')>=0||s.indexOf('JUEVES')>=0||s.indexOf('VIERNES')>=0||s.indexOf('SABADO')>=0||s.indexOf('DIA')>=0){
-                dayCols[i]=String(c).trim();
-              }
-            }
-          });
-          break;
-        }
-      }
-      if(headerRow<0){toast('Formato no reconocido. Usa días en columnas.','err');return;}
+      // Parser único (soporta varios bloques semanales)
+      var pts=parsearRutaExcel(raw);
+      if(!pts.length){toast('Formato no reconocido o sin puntos. Los días deben ir en columnas (DIA 1...).','err');return;}
       window._excelRoutes={};
-      Object.keys(dayCols).forEach(function(col){window._excelRoutes[col]=[];});
-      var r2=headerRow+1;
-      while(r2<raw.length){
-        var numVal=raw[r2][0];
-        if(numVal!==''&&!isNaN(parseInt(numVal))){
-          var order=parseInt(numVal);
-          var nameRow=raw[r2];
-          var nextRow=raw[r2+1]||[];
-          var addrRow=raw[r2+2]||[];
-          var nextHasAddr=Object.keys(dayCols).some(function(col){
-            var v=String(nextRow[parseInt(col)]||'');
-            return v.match(/#|Calle|Cra|Carrera|Av|Km/i);
-          });
-          var skip=nextHasAddr?2:3;
-          if(!nextHasAddr) addrRow=raw[r2+2]||[];
-          else addrRow=nextRow;
-          Object.keys(dayCols).forEach(function(col){
-            var name=nameRow[parseInt(col)]||'';
-            var addr=addrRow[parseInt(col)]||'';
-            if(String(name).trim()&&String(name).trim()!=='nan'){
-              window._excelRoutes[col].push({order:order,name:String(name).trim(),address:String(addr).trim()});
-            }
-          });
-          r2+=skip;
-        } else {r2++;}
-      }
-      var totalPts=Object.values(window._excelRoutes).reduce(function(s,a){return s+a.length;},0);
+      pts.forEach(function(p){
+        if(!window._excelRoutes[p.ruta]) window._excelRoutes[p.ruta]=[];
+        window._excelRoutes[p.ruta].push({order:p.orden,name:p.nombre,address:p.direccion});
+      });
+      var dayCols={};
+      Object.keys(window._excelRoutes).forEach(function(rn){dayCols[rn]=rn;});
+      var totalPts=pts.length;
       var prevEl=document.getElementById('excelPreviewArea');
       prevEl.style.display='block';
       prevEl.innerHTML='<div style="background:var(--primary-50);border-radius:10px;padding:12px;font-size:13px;">'
@@ -3959,7 +3941,7 @@ function ejecutarActualizarRuta(){
   var uid=window._arUid;
   var tipo=window._arTipo;
   if(!uid){toast('Error interno','err');return;}
-  if(!window._excelData||!window._excelDayCols){toast('Carga el archivo Excel primero','err');return;}
+  if(!window._excelPuntos||!window._excelPuntos.length){toast('Carga el archivo Excel primero','err');return;}
   var rutaReemplazar=tipo==='parcial'?document.getElementById('ar-ruta-select').value:null;
 
   // Filtrar puntos que NO son de la ruta a reemplazar
@@ -3969,41 +3951,17 @@ function ejecutarActualizarRuta(){
     return (p.routeName||'Sin ruta')!==rutaReemplazar;
   });
 
-  // Construir nuevos puntos usando el formato de días (igual que la carga masiva)
-  var raw=window._excelData;
-  var dayCols=window._excelDayCols;
-  var headerRow=window._excelHeaderRow||0;
   var userLab=(D.users.find(function(u){return u.id===uid;})||{}).labId||'';
   var nuevos=[];
-  var r=headerRow+1;
-  while(r<raw.length){
-    var numVal=raw[r][0];
-    if(numVal!==''&&!isNaN(parseInt(numVal))){
-      var order=parseInt(numVal);
-      var nameRow=raw[r];
-      var nextRow=raw[r+1]||[];
-      var hasAddr=Object.keys(dayCols).some(function(col){
-        var v=String(nextRow[parseInt(col)]||'');
-        return v.match(/#|Calle|Cra|Carrera|Av|Km/i);
-      });
-      var addrRow=hasAddr?nextRow:(raw[r+2]||[]);
-      var skip=hasAddr?2:3;
-      Object.keys(dayCols).forEach(function(col){
-        var nombre=String(nameRow[parseInt(col)]||'').trim();
-        if(!nombre) return;
-        var direccion=String(addrRow[parseInt(col)]||'').trim();
-        // Si es parcial, solo incluir la ruta seleccionada
-        if(tipo==='parcial'&&dayCols[col]!==rutaReemplazar) return;
-        nuevos.push({
-          id:'pt_'+Date.now()+'_'+Math.random().toString(36).substr(2,4)+'_'+nuevos.length,
-          name:nombre,address:direccion,lat:null,lng:null,
-          order:order,routeName:dayCols[col],
-          assignedTo:uid,labId:userLab,inactive:false
-        });
-      });
-      r+=skip;
-    } else { r++; }
-  }
+  window._excelPuntos.forEach(function(p){
+    if(tipo==='parcial'&&p.ruta!==rutaReemplazar) return;
+    nuevos.push({
+      id:'pt_'+Date.now()+'_'+Math.random().toString(36).substr(2,4)+'_'+nuevos.length,
+      name:p.nombre,address:p.direccion,lat:null,lng:null,
+      order:p.orden,routeName:p.ruta,
+      assignedTo:uid,labId:userLab,inactive:false
+    });
+  });
 
   if(!nuevos.length){toast('El Excel no tiene puntos válidos','err');return;}
 
@@ -4020,6 +3978,7 @@ function ejecutarActualizarRuta(){
           closeModal('modalActualizarRuta');
           window._excelData=null;
           window._excelDayCols=null;
+          window._excelPuntos=null;
           document.getElementById('tabContent').innerHTML=renderGestionDetalle(uid);
         })
         .catch(function(e){toast('Error: '+e.message,'err');});
