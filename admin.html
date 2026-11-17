@@ -480,6 +480,27 @@ function toArray(obj){
   if(Array.isArray(obj)) return obj.filter(function(x){return x!=null;});
   return Object.keys(obj).map(function(k){var v=obj[k];if(v&&typeof v==='object') v._fbKey=k;return v;}).filter(function(x){return x!=null;});
 }
+// ── PAGINACIÓN DE TABLAS (100 filas por página) ───────────────
+var _pagina={};
+function paginar(key,items){
+  var tam=100;
+  var total=items.length;
+  var paginas=Math.max(1,Math.ceil(total/tam));
+  var pag=parseInt(_pagina[key]||1,10);
+  if(!pag||pag<1)pag=1;
+  if(pag>paginas)pag=paginas;
+  _pagina[key]=pag;
+  var ini=(pag-1)*tam;
+  var ctrl='';
+  if(paginas>1){
+    ctrl='<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 0;">'
+      +'<button class="btn btn-sm btn-outline" '+(pag<=1?'disabled':'')+' onclick="_pagina[\''+key+'\']='+(pag-1)+';renderCurrentTab()">Anterior</button>'
+      +'<span style="font-size:12px;color:var(--muted);">Página '+pag+' de '+paginas+' · '+total.toLocaleString('es-CO')+' registros</span>'
+      +'<button class="btn btn-sm btn-outline" '+(pag>=paginas?'disabled':'')+' onclick="_pagina[\''+key+'\']='+(pag+1)+';renderCurrentTab()">Siguiente</button>'
+      +'</div>';
+  }
+  return {items:items.slice(ini,ini+tam),ctrl:ctrl};
+}
 function initials(n){if(!n) return '?';var p=n.trim().split(/\s+/);return p.length>=2?(p[0][0]+p[p.length-1][0]).toUpperCase():n.substring(0,2).toUpperCase();}
 function avatarColor(s){var h=0;for(var i=0;i<(s||'').length;i++) h=(h*31+s.charCodeAt(i))%AV_COLORS.length;return AV_COLORS[Math.abs(h)%AV_COLORS.length];}
 function fmtDate(d){if(!d) return '-';var p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
@@ -512,47 +533,69 @@ function initFirebase(){
     });
     // Cargar datos
     db.ref('medvisit/users').on('value',function(snap){D.users=toArray(snap.val());render();});
-    var _fechaLimiteAdmin=new Date();_fechaLimiteAdmin.setDate(1);_fechaLimiteAdmin.setMonth(_fechaLimiteAdmin.getMonth()-3);
-    var _fechaLimiteAdminStr=_fechaLimiteAdmin.toISOString().slice(0,10);
-    var _fechaLimiteAdminStr=_fechaLimiteAdmin.toISOString().slice(0,10);
-    var _fechaFoto=new Date();_fechaFoto.setDate(_fechaFoto.getDate()-7);
-    var _fechaFotoStr=_fechaFoto.toISOString().slice(0,10);
-    db.ref('medvisit/visits').orderByChild('date').startAt(_fechaLimiteAdminStr).on('value',function(snap){
-      var generales=toArray(snap.val()).map(function(v){
-        if(v.date&&v.date<_fechaFotoStr){delete v.photo;delete v.firma;}
-        return v;
-      });
-      // Fusionar con profesionales ya cargadas para no perderlas
-      var profIds={};
-      (window._profVisits||[]).forEach(function(v){profIds[v.id]=true;});
-      var merged=generales.filter(function(v){return !profIds[v.id];}).concat(window._profVisits||[]);
-      D.visits=merged;
-      render();
-    },function(err){console.error('Error visits:',err);toast('No se pudieron cargar las visitas. Contacta soporte.','err');});
-    // Cargar todas las visitas profesionales por separado (sin límite de registros)
-    db.ref('medvisit/visits').orderByChild('type').equalTo('profesional').once('value',function(snap){
-      window._profVisits=toArray(snap.val()).filter(function(v){
-        return !currentLabId||v.labId===currentLabId;
-      });
-      // Fusionar en D.visits sin duplicar
-      var profIds={};
-      window._profVisits.forEach(function(v){profIds[v.id]=true;});
-      D.visits=D.visits.filter(function(v){return !profIds[v.id];}).concat(window._profVisits);
-      render();
-    });
+    // Visitas: ventana configurable (por defecto 15 días en vez de 4 meses)
+    cargarVisitasAdmin();
     db.ref('medvisit/points').on('value',function(snap){D.points=toArray(snap.val());render();});
     db.ref('medvisit/pendientes').on('value',function(snap){D.pendientes=toArray(snap.val()||[]);render();});
-    db.ref('medvisit/ausencias').on('value',function(snap){D.ausencias=toArray(snap.val()||[]);render();});
-    db.ref('medvisit/capacitaciones').on('value',function(snap){D.capacitaciones=toArray(snap.val()||[]);render();});
-    db.ref('medvisit/correrias').on('value',function(snap){D.correrias=toArray(snap.val()||[]);render();});
     db.ref('medvisit/profKetolance').on('value',function(snap){D.profKetolance=toArray(snap.val()||[]);});
     db.ref('medvisit/labs').on('value',function(snap){
       var extra=toArray(snap.val());
       LABS=BASE_LABS.slice().concat(extra.filter(function(l){return !BASE_LABS.some(function(b){return b.id===l.id;});}));
       render();
     });
-    db.ref('medvisit/marketing').on('value',function(snap){D.marketing=toArray(snap.val());render();});
+    // Marketing, correrías, ausencias y capacitaciones se cargan al abrir su pestaña
   }catch(e){console.error('Firebase error:',e);}
+}
+
+// ── CARGA DIFERIDA Y VENTANA DE VISITAS ───────────────────────
+var _diasVisitas=7;
+var _visitasRef=null;
+var _cargado={marketing:false,correrias:false,ausencias:false,capacitaciones:false};
+var _cargando={marketing:false,correrias:false,ausencias:false,capacitaciones:false};
+
+function cargarVisitasAdmin(){
+  if(!db) return;
+  if(_visitasRef){try{_visitasRef.off();}catch(e){}}
+  var d=new Date();d.setDate(d.getDate()-_diasVisitas);
+  var desde=d.toISOString().slice(0,10);
+  var fF=new Date();fF.setDate(fF.getDate()-7);var fFStr=fF.toISOString().slice(0,10);
+  _visitasRef=db.ref('medvisit/visits').orderByChild('date').startAt(desde);
+  _visitasRef.on('value',function(snap){
+    var arr=toArray(snap.val()).map(function(v){
+      if(v.date&&v.date<fFStr){delete v.photo;delete v.firma;}
+      return v;
+    });
+    D.visits=arr;
+    render();
+  },function(err){console.error('Error visits:',err);toast('No se pudieron cargar las visitas.','err');});
+}
+function refrescarVentanaVisitas(dias){
+  _diasVisitas=parseInt(dias,10)||15;
+  _visitasRef=null;
+  D.visits=[];
+  cargarVisitasAdmin();
+  renderCurrentTab();
+}
+function asegurarDatos(tab){
+  if(!db) return;
+  if(tab==='marketing'&&!_cargado.marketing&&!_cargando.marketing){
+    _cargando.marketing=true;
+    db.ref('medvisit/marketing').on('value',function(snap){D.marketing=toArray(snap.val());_cargado.marketing=true;_cargando.marketing=false;render();});
+  }
+  if(tab==='correrias'&&!_cargado.correrias&&!_cargando.correrias){
+    _cargando.correrias=true;
+    db.ref('medvisit/correrias').on('value',function(snap){D.correrias=toArray(snap.val()||[]);_cargado.correrias=true;_cargando.correrias=false;render();});
+  }
+  if(tab==='ausencias'&&!_cargado.ausencias&&!_cargando.ausencias){
+    _cargando.ausencias=true;
+    db.ref('medvisit/ausencias').on('value',function(snap){D.ausencias=toArray(snap.val()||[]);_cargado.ausencias=true;_cargando.ausencias=false;render();});
+  }
+  if(tab==='visitas'&&!_cargado.capacitaciones&&!_cargando.capacitaciones){
+    if(window._visSubTab==='capacitaciones'){
+      _cargando.capacitaciones=true;
+      db.ref('medvisit/capacitaciones').on('value',function(snap){D.capacitaciones=toArray(snap.val()||[]);_cargado.capacitaciones=true;_cargando.capacitaciones=false;render();});
+    }
+  }
 }
 
 // ── RENDER DEBOUNCE ───────────────────────────────────────────
@@ -646,6 +689,11 @@ function switchTab(id){
 function renderCurrentTab(){
   var el=document.getElementById('tabContent');
   if(!el) return;
+  asegurarDatos(_currentTab);
+  if((_currentTab==='marketing'&&!_cargado.marketing)||(_currentTab==='correrias'&&!_cargado.correrias)||(_currentTab==='ausencias'&&!_cargado.ausencias)){
+    el.innerHTML='<div class="loading"><div class="spinner"></div><p>Cargando datos de la pestaña...</p></div>';
+    return;
+  }
   if(_currentTab==='panel') renderCanvasDashboard();
   else if(_currentTab==='visitas') el.innerHTML=renderVisitas();
   else if(_currentTab==='visitadores') el.innerHTML=renderVisitadores();
@@ -953,7 +1001,14 @@ function renderVisitasGenerales(){
   var hoyVisitas=visits.filter(function(v){return v.date===hoy;});
   var completadas=hoyVisitas.filter(function(v){return v.status==='completed';}).length;
 
-  var html='<div class="stats-grid">'
+  var html='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">'
+    +'<span style="font-size:11px;color:var(--muted);"><i class="fa-solid fa-database"></i> Datos cargados:</span>'
+    +'<select class="form-input" style="width:auto;font-size:12px;padding:6px 10px;" onchange="refrescarVentanaVisitas(this.value)">'
+    +[7,15,30,60,90].map(function(d){return '<option value="'+d+'"'+(d===_diasVisitas?' selected':'')+'>'+d+' días</option>';}).join('')
+    +'</select>'
+    +'</div>';
+
+  html+='<div class="stats-grid">'
     +'<div class="stat-card"><div class="stat-num">'+completadas+'</div><div class="stat-label">Completadas hoy</div></div>'
     +'<div class="stat-card"><div class="stat-num">'+hoyVisitas.length+'</div><div class="stat-label">Iniciadas hoy</div></div>'
     +'<div class="stat-card"><div class="stat-num">'+visits.length+'</div><div class="stat-label">Total registros</div></div>'
@@ -994,6 +1049,9 @@ function renderVisitasGenerales(){
 
   if(!filtradas.length) return html+'<div class="empty"><i class="fa-solid fa-route"></i><p>Sin visitas en el periodo</p></div>';
 
+  var _pgGen=paginar('visitasGen',filtradas);
+  filtradas=_pgGen.items;
+
   var isSuper=currentUser.role==='super';
   html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
     +'<th>Visitador</th><th>Laboratorio</th><th>Punto</th><th>Jefe</th><th>Notas</th><th>Fecha</th><th>Estado</th><th>Ubicación</th><th>Foto</th><th>Inventario</th>'
@@ -1031,7 +1089,7 @@ function renderVisitasGenerales(){
       var delBtn=isSuper?'<td><button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="eliminarVisita(\''+esc(v.id)+'\',\''+esc(v._fbKey||'')+'\')"><i class="fa-solid fa-trash"></i></button></td>':'';
       return '<tr><td><b>'+esc(visName)+'</b></td><td>'+esc(labName)+'</td><td>'+esc(punto)+'</td><td>'+esc(v.jefe||'-')+'</td><td>'+notasCol+'</td><td>'+fmtDate(v.date)+(v.completedAt?' <span style="font-size:11px;color:var(--muted);">'+fmtHoraBogota(v.completedAt)+'</span>':'')+'</td><td>'+estado+'</td><td>'+ubicacion+'</td><td>'+foto+'</td><td>'+invCol+'</td>'+delBtn+'</tr>';
     }).join('')
-    +'</tbody></table></div>';
+    +'</tbody></table></div>'+_pgGen.ctrl;
 
   return html;
 }
@@ -1175,30 +1233,11 @@ function renderVisitasCorrerias(){
 }
 
 function renderVisitasProfesionales(){
-  // Carga historial completo desde Firebase para visitas a profesionales
-  if(typeof window._profVisits==='undefined') window._profVisits=null;
-  if(typeof window._profLoading==='undefined') window._profLoading=false;
-
-  // Primero usar lo que ya está en D.visits
+  // Usa lo que ya está cargado en D.visits (la consulta por type no está indexada en Firebase)
   var enMemoria=D.visits.filter(function(v){
     return v.type==='profesional'&&(!currentLabId||v.labId===currentLabId);
   });
-
-  // Si no hay en memoria, cargar desde Firebase
-  if(!enMemoria.length&&!window._profLoading){
-    window._profLoading=true;
-    db.ref('medvisit/visits').orderByChild('type').equalTo('profesional').once('value',function(snap){
-      var all=toArray(snap.val()).filter(function(v){
-        return !currentLabId||v.labId===currentLabId;
-      });
-      window._profVisits=all;
-      window._profLoading=false;
-      renderCurrentTab();
-    });
-    return '<div class="loading"><div class="spinner"></div><p>Cargando visitas a profesionales...</p></div>';
-  }
-
-  var prof=window._profVisits||enMemoria;
+  var prof=enMemoria;
   prof=prof.filter(function(v){return v.type==='profesional';});
   prof.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
 
@@ -1230,6 +1269,9 @@ function renderVisitasProfesionales(){
 
   if(!filtradas.length) return html+'<div class="empty"><i class="fa-solid fa-user-doctor"></i><p>Sin visitas a profesionales</p></div>';
 
+  var _pgProf=paginar('visitasProf',filtradas);
+  filtradas=_pgProf.items;
+
   var isSuperProf=currentUser.role==='super';
   html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
     +'<th>Visitador</th><th>Lab</th><th>Profesional</th><th>Especialidad</th><th>Teléfono</th><th>Dirección</th><th>Obsequio</th><th>Notas</th><th>Fecha</th><th>Firma</th><th>Foto</th>'
@@ -1256,7 +1298,7 @@ function renderVisitasProfesionales(){
         +delBtnP
         +'</tr>';
     }).join('')
-    +'</tbody></table></div>';
+    +'</tbody></table></div>'+_pgProf.ctrl;
 
   return html;
 }
@@ -1650,6 +1692,9 @@ function renderMarketing(){
 
   if(!filtered.length) return html+'<div class="empty"><i class="fa-solid fa-receipt"></i><p>Sin registros</p></div>';
 
+  var _pgMkt=paginar('marketing',filtered);
+  filtered=_pgMkt.items;
+
   html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
     +'<th>Fecha</th><th>Visitador</th><th>Lab</th><th>Establecimiento</th><th>NIT</th><th>Valor</th><th>Foto</th>'
     +(currentUser.role==='super'?'<th></th>':'')
@@ -1691,7 +1736,7 @@ function renderMarketing(){
         +editBtn
         +'</tr>';
     }).join('')
-    +'</tbody></table></div>';
+    +'</tbody></table></div>'+_pgMkt.ctrl;
   return html;
 }
 
@@ -1716,7 +1761,7 @@ function renderUsuarios(){
         +'<td>'+estado+'</td>'
         +'</tr>';
     }).join('')
-    +'</tbody></table></div>';
+    +'</tbody></table></div>'+_pgCorr.ctrl;
   return html;
 }
 
@@ -1774,6 +1819,9 @@ function renderCorrerias(){
     +'</div>';
 
   if(!filtradas.length) return html+'<div class="empty"><i class="fa-solid fa-car"></i><p>Sin correría registrada</p></div>';
+
+  var _pgCorr=paginar('correrias',filtradas);
+  filtradas=_pgCorr.items;
 
   html+='<div class="table-wrap"><table class="data-table"><thead><tr>'
     +'<th>Fecha</th><th>Gestor</th><th>Lab</th><th>Establecimiento</th><th>NIT</th><th>Valor</th><th>Archivo</th>'
